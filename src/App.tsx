@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { readDir, readTextFile, stat } from "@tauri-apps/plugin-fs";
+import { readDir, readTextFile, stat, exists } from "@tauri-apps/plugin-fs";
 import { parseFrontmatter } from "./utils/frontmatter";
 import { Sidebar } from "./components/sidebar/Sidebar";
 import { EditorArea } from "./components/editor/EditorArea";
@@ -166,10 +166,52 @@ function App() {
       console.log(`[Marknote] 태그 ${Object.keys(tagMap).length}개, 최근 파일 ${fileTimes.length}개 로드 완료`);
     }
 
+    async function restoreTabs() {
+      const state = useAppStore.getState();
+      const tabs = state.tabs;
+      const restoredTabs = [];
+
+      for (const tab of tabs) {
+        if (tab.type === "tag-explorer") {
+          restoredTabs.push(tab);
+          continue;
+        }
+        if (!tab.filePath) continue;
+        try {
+          const fileExists = await exists(tab.filePath);
+          if (fileExists) {
+            const content = await readTextFile(tab.filePath);
+            restoredTabs.push({ ...tab, content, isDirty: false });
+          }
+          // 파일이 없으면 탭 제거 (push 안 함)
+        } catch {
+          // 읽기 실패 시 탭 제거
+        }
+      }
+
+      // 태그 탐색 탭이 없으면 추가
+      if (!restoredTabs.find((t) => t.type === "tag-explorer")) {
+        restoredTabs.unshift({ id: "tag-explorer", title: "태그", filePath: null, content: "", isDirty: false, type: "tag-explorer" as const, tagFilters: [] });
+      }
+
+      // activeTabId 검증
+      const activeTab = restoredTabs.find((t) => t.id === state.activeTabId);
+      useAppStore.setState({
+        tabs: restoredTabs,
+        activeTabId: activeTab ? state.activeTabId : restoredTabs[0]?.id ?? null,
+        selectedFile: activeTab?.filePath ?? null,
+        fileContent: activeTab?.content ?? "",
+      });
+
+      console.log(`[Marknote] 탭 ${restoredTabs.length}개 복원 완료`);
+    }
+
     const unsub = useAppStore.persist.onFinishHydration(() => {
+      restoreTabs();
       scanFiles();
     });
     if (useAppStore.persist.hasHydrated()) {
+      restoreTabs();
       scanFiles();
     }
     return unsub;
@@ -180,7 +222,7 @@ function App() {
     const appWindow = getCurrentWindow();
     const unlisten = appWindow.onCloseRequested(async (event) => {
       const { tabs } = useAppStore.getState();
-      const unsaved = tabs.filter((t) => !t.filePath && t.content);
+      const unsaved = tabs.filter((t) => t.type !== "tag-explorer" && !t.filePath && t.content);
       if (unsaved.length > 0) {
         event.preventDefault();
         setShowExitConfirm(true);

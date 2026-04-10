@@ -311,7 +311,25 @@ export const useAppStore = create<AppState>()(
         sidebarCollapsed: state.sidebarCollapsed,
         folderSort: state.folderSort,
         fileSort: state.fileSort,
+        // Set → Array로 변환하여 저장
+        expandedFolders: [...state.expandedFolders],
+        // 탭: content 제외, filePath 있는 탭만 저장
+        tabs: state.tabs
+          .filter((t) => t.type === "tag-explorer" || t.filePath)
+          .map((t) => ({ id: t.id, title: t.title, filePath: t.filePath, content: "", isDirty: false, type: t.type, tagFilters: t.tagFilters })),
+        activeTabId: state.activeTabId,
       }),
+      merge: (persisted: any, current: AppState) => {
+        const p = persisted as Partial<AppState> & { expandedFolders?: string[] };
+        return {
+          ...current,
+          ...p,
+          // Array → Set으로 복원
+          expandedFolders: new Set(p.expandedFolders ?? []),
+          // 런타임 전용 상태 복원
+          selectedPaths: new Set<string>(),
+        };
+      },
     }
   )
 );
