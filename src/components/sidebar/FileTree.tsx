@@ -347,6 +347,39 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
       if (target) {
         const itemPaths = s.paths;
         if (!itemPaths.includes(target)) {
+          // 고스트를 대상 폴더로 날리는 애니메이션
+          const targetEl = document.querySelector(`[data-path="${CSS.escape(target)}"]`) as HTMLElement
+            ?? document.querySelector(`[data-tree-root="${CSS.escape(target)}"]`) as HTMLElement;
+          const ghost = dragGhostRef.current;
+
+          if (ghost && targetEl) {
+            const targetRect = targetEl.getBoundingClientRect();
+            ghost.style.transition = "all 0.25s ease";
+            ghost.style.left = `${targetRect.left}px`;
+            ghost.style.top = `${targetRect.top}px`;
+            ghost.style.opacity = "0.3";
+            ghost.style.transform = "scale(0.8)";
+
+            // 하이라이트 정리
+            document.querySelectorAll("[data-drop-active]").forEach((el) => {
+              (el as HTMLElement).removeAttribute("data-drop-active");
+            });
+            dropTargetRef.current = null;
+            setDropTarget(null);
+            setDragMovePaths(null);
+
+            await new Promise((r) => setTimeout(r, 250));
+            removeDragGhost();
+
+            if (itemPaths.length > 1) {
+              setMoveConfirm({ paths: itemPaths, target });
+            } else {
+              await doMove(itemPaths, target);
+            }
+            dragMoveState.current = { startY: 0, active: false, paths: [] };
+            return;
+          }
+
           if (itemPaths.length > 1) {
             setMoveConfirm({ paths: itemPaths, target });
           } else {
