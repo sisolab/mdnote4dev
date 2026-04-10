@@ -93,6 +93,13 @@ body {
   background: var(--color-text-tertiary);
 }
 
+/* 드래그 드롭 타겟 하이라이트 */
+[data-drop-active] {
+  background: var(--color-bg-hover) !important;
+  border-radius: 4px;
+  transition: background 0.1s;
+}
+
 /* 이미지 */
 .tiptap img {
   border-radius: 3px;

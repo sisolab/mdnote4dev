@@ -104,14 +104,8 @@ function FileTreeItem({
   };
 
   const isMarkdown = entry.name.endsWith(".md");
-  const isFolderDropTarget = entry.isDirectory && dropTargetPath === entry.path;
-
   return (
-    <div style={{
-      background: isFolderDropTarget ? "var(--color-bg-hover)" : undefined,
-      borderRadius: isFolderDropTarget ? "4px" : undefined,
-      transition: "background 0.1s",
-    }}>
+    <div>
       <button
         data-path={entry.path}
         data-is-dir={String(!!entry.isDirectory)}
@@ -293,6 +287,21 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
         const dragDir = dragMoveState.current.paths[0]?.substring(0, dragMoveState.current.paths[0].lastIndexOf("\\"));
         if (target === dragDir) target = null;
 
+        // 이전 하이라이트 제거
+        document.querySelectorAll("[data-drop-active]").forEach((el) => {
+          (el as HTMLElement).removeAttribute("data-drop-active");
+        });
+        // 새 하이라이트 설정 (해당 폴더 전체 영역)
+        if (target) {
+          // data-tree-root가 target인 컨테이너 또는 data-path가 target인 폴더 div
+          const treeEl = document.querySelector(`[data-tree-root="${CSS.escape(target)}"]`);
+          if (treeEl) (treeEl as HTMLElement).setAttribute("data-drop-active", "true");
+          // 서브폴더의 wrapper div (FileTreeItem의 최상위 div)
+          const folderBtn = document.querySelector(`[data-path="${CSS.escape(target)}"][data-is-dir="true"]`);
+          const folderWrapper = folderBtn?.closest("div:not([data-tree-root])");
+          if (folderWrapper && folderWrapper !== treeEl) (folderWrapper as HTMLElement).setAttribute("data-drop-active", "true");
+        }
+
         dropTargetRef.current = target;
         setDropTarget(target);
       }
@@ -333,6 +342,9 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
       setDragMovePaths(null);
       setDropTarget(null);
       removeDragGhost();
+      document.querySelectorAll("[data-drop-active]").forEach((el) => {
+        (el as HTMLElement).removeAttribute("data-drop-active");
+      });
     };
 
     window.addEventListener("mousemove", onMove);
@@ -652,12 +664,7 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
       ref={containerRef}
       data-tree-root={rootPath}
       className="py-0.5"
-      style={{
-        position: "relative",
-        background: dropTarget === rootPath ? "var(--color-bg-hover)" : undefined,
-        borderRadius: dropTarget === rootPath ? "4px" : undefined,
-        transition: "background 0.1s",
-      }}
+      style={{ position: "relative" }}
       onMouseLeave={() => setHighlight(null)}
       onClick={(e) => {
         // 빈 공간 클릭 시 선택 해제
