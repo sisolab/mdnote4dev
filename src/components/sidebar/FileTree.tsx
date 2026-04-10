@@ -347,35 +347,14 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
       if (target) {
         const itemPaths = s.paths;
         if (!itemPaths.includes(target)) {
-          // 고스트가 폴더로 빨려들어가는 애니메이션
-          const ghost = dragGhostRef.current;
-          const folderEl = document.querySelector(`[data-path="${CSS.escape(target)}"][data-is-dir="true"]`) as HTMLElement
-            ?? document.querySelector(`[data-fav-path="${CSS.escape(target)}"] [data-path]`) as HTMLElement;
-
-          if (ghost && folderEl) {
-            const folderRect = folderEl.getBoundingClientRect();
-            const folderCenterX = folderRect.left + 20; // 아이콘 위치쯤
-            const folderCenterY = folderRect.top + folderRect.height / 2;
-            ghost.style.transition = "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)";
-            ghost.style.left = `${folderCenterX}px`;
-            ghost.style.top = `${folderCenterY}px`;
-            ghost.style.opacity = "0";
-            ghost.style.transform = "scale(0.2)";
-          } else if (ghost) {
-            ghost.style.transition = "opacity 0.2s ease";
-            ghost.style.opacity = "0";
-          }
-
-          // 하이라이트 정리
+          // 정리
+          removeDragGhost();
           document.querySelectorAll("[data-drop-active]").forEach((el) => {
             (el as HTMLElement).removeAttribute("data-drop-active");
           });
           dropTargetRef.current = null;
           setDropTarget(null);
           setDragMovePaths(null);
-
-          await new Promise((r) => setTimeout(r, 300));
-          removeDragGhost();
 
           if (itemPaths.length > 1) {
             setMoveConfirm({ paths: itemPaths, target });
