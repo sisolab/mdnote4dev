@@ -462,6 +462,8 @@ export function Sidebar() {
                 >
                   {(
                   <div
+                    data-path={fav.path}
+                    data-is-dir="true"
                     onMouseDown={(e) => startFavDrag(e, favIdx)}
                     onClick={() => { if (!dragFavState.current.active) toggleFav(fav.path); }}
                     onContextMenu={(e) => handleContextMenu(e, fav.path)}

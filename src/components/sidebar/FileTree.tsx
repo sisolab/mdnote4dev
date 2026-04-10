@@ -109,6 +109,7 @@ function FileTreeItem({
     <div>
       <button
         data-path={entry.path}
+        data-is-dir={String(!!entry.isDirectory)}
         onClick={handleClick}
         onDoubleClick={handleDoubleClick}
         onMouseEnter={(e) => { onHover(e.currentTarget); if (entry.isDirectory && onDragOverFolder) onDragOverFolder(e, entry.path); }}
@@ -216,6 +217,7 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
 
   const startItemDrag = (e: React.MouseEvent, entry: FileEntry) => {
     if (e.button !== 0) return;
+    e.preventDefault();
     const paths = selectedPaths.has(entry.path) ? [...selectedPaths] : [entry.path];
     const startY = e.clientY;
     dragMoveState.current = { startY, active: false, paths };
@@ -228,6 +230,20 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
         document.body.style.userSelect = "none";
         document.body.style.cursor = "grabbing";
       }
+      // 드래그 중 폴더 위 감지 (elementFromPoint)
+      if (dragMoveState.current.active) {
+        const el = document.elementFromPoint(me.clientX, me.clientY);
+        const btn = el?.closest("[data-path]") as HTMLElement | null;
+        const path = btn?.dataset.path;
+        const isDir = btn?.dataset.isDir === "true";
+        if (path && isDir) {
+          dropTargetRef.current = path;
+          setDropTarget(path);
+        } else {
+          dropTargetRef.current = null;
+          setDropTarget(null);
+        }
+      }
     };
 
     const onUp = async () => {
@@ -236,16 +252,24 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
       document.body.style.userSelect = "";
       document.body.style.cursor = "";
       const s = dragMoveState.current;
+
+      if (!s.active) {
+        // 드래그 안 됨 → 클릭 이벤트 발생시킴
+        const btn = document.querySelector(`[data-path="${CSS.escape(entry.path)}"]`) as HTMLElement;
+        if (btn) btn.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+        cleanup();
+        return;
+      }
+
       const target = dropTargetRef.current;
-      if (s.active && target) {
+      if (target) {
         const itemPaths = s.paths;
-        // 대상 폴더가 드래그 항목 중 하나면 스킵
-        if (itemPaths.includes(target)) { cleanup(); return; }
-        // 멀티 이동 확인창
-        if (itemPaths.length > 1) {
-          setMoveConfirm({ paths: itemPaths, target });
-        } else {
-          await doMove(itemPaths, target);
+        if (!itemPaths.includes(target)) {
+          if (itemPaths.length > 1) {
+            setMoveConfirm({ paths: itemPaths, target });
+          } else {
+            await doMove(itemPaths, target);
+          }
         }
       }
       cleanup();
