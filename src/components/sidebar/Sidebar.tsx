@@ -404,6 +404,7 @@ export function Sidebar() {
                 (d.over === favIdx - 1 && d.pos === "below" && d.from !== favIdx - 1) ||
                 (d.over === favIdx && d.pos === "above")
               ));
+              const isDragged = d?.from === favIdx;
               return (
                 <div key={fav.path}>
                 {showTop && <div style={{ height: "4px", background: "var(--color-accent)", margin: "0 16px", borderRadius: "2px" }} />}
@@ -412,9 +413,7 @@ export function Sidebar() {
                   onMouseMove={(e) => updateFavDragTarget(e, favIdx)}
                   style={{
                     display: searchQuery && !foldersWithResults.has(fav.path) ? "none" : undefined,
-                    borderTop: "2px solid transparent",
-                    borderBottom: "2px solid transparent",
-                    opacity: d?.from === favIdx ? 0.4 : 1,
+                    opacity: isDragged ? 0.4 : 1,
                     transform: pushUp ? "translateY(-4px)" : pushDown ? "translateY(4px)" : "translateY(0)",
                     transition: "transform 0.15s ease, opacity 0.15s ease",
                   }}
