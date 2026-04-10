@@ -120,7 +120,7 @@ export function TiptapEditor({ content, onSave }: TiptapEditorProps) {
     <div className="flex flex-col h-full">
       <Toolbar editor={editor} />
       <div
-        className="flex-1 overflow-auto"
+        className={`flex-1 overflow-auto ${s.pageAlign === "center" ? "flex justify-center" : ""}`}
         style={{ padding: `${s.editorPaddingY}px ${s.editorPaddingX}px` }}
       >
         <div style={{

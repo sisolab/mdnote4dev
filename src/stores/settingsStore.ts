@@ -13,6 +13,7 @@ export interface EditorSettings {
   editorPaddingY: number;
   letterSpacing: number;
   widthMode: "fixed" | "fluid";
+  pageAlign: "left" | "center";
 }
 
 export interface Preset {
@@ -30,10 +31,11 @@ export const DEFAULT_SETTINGS: EditorSettings = {
   headingScale: 1.3,
   codeFontSize: 13,
   codeLineHeight: 1.6,
-  editorPaddingX: 24,
-  editorPaddingY: 24,
+  editorPaddingX: 48,
+  editorPaddingY: 48,
   letterSpacing: 0,
   widthMode: "fluid" as const,
+  pageAlign: "left" as const,
 };
 
 export const PRESETS: Preset[] = [
@@ -45,7 +47,7 @@ export const PRESETS: Preset[] = [
       lineHeight: 1.4,
       paragraphSpacing: 0.2,
       fontFamily: "system",
-      editorMaxWidth: 700,
+      editorMaxWidth: 720,
       headingScale: 1.2,
       codeFontSize: 12,
       codeLineHeight: 1.4,
@@ -53,6 +55,7 @@ export const PRESETS: Preset[] = [
       editorPaddingY: 24,
       letterSpacing: 0,
       widthMode: "fluid" as const,
+      pageAlign: "left" as const,
     },
   },
   {
@@ -76,6 +79,7 @@ export const PRESETS: Preset[] = [
       editorPaddingY: 48,
       letterSpacing: 0.2,
       widthMode: "fluid" as const,
+      pageAlign: "left" as const,
     },
   },
 ];

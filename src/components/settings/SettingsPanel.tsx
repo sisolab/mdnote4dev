@@ -12,7 +12,7 @@ import { Sun, Moon, Minimize2, AlignCenter, Maximize2, SlidersHorizontal, Rotate
 import { FontPreview } from "./FontPreview";
 
 function ResetButton({ onClick, visible }: { onClick: () => void; visible: boolean }) {
-  if (!visible) return <div style={{ width: "20px", flexShrink: 0 }} />;
+  if (!visible) return null;
   return (
     <button
       onClick={onClick}
@@ -43,11 +43,11 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 function SettingRow({ label, children, onReset, changed }: { label: string; children: React.ReactNode; onReset?: () => void; changed?: boolean }) {
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", minHeight: "36px", padding: "4px 0", gap: "8px" }}>
-      <span style={{ fontSize: "13px", fontWeight: 500, color: "var(--color-text-primary)" }}>{label}</span>
-      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-        {children}
+      <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+        <span style={{ fontSize: "13px", fontWeight: 500, color: "var(--color-text-primary)" }}>{label}</span>
         {onReset && <ResetButton onClick={onReset} visible={!!changed} />}
       </div>
+      {children}
     </div>
   );
 }
@@ -64,17 +64,18 @@ function ChipSetting({
   label: string; value: number; options: number[]; unit: string; decimals?: number; onChange: (v: number) => void; defaultValue?: number;
 }) {
   return (
-    <SettingRow label={label} onReset={defaultValue !== undefined ? () => onChange(defaultValue) : undefined} changed={defaultValue !== undefined && value !== defaultValue}>
+    <SettingRow label={label} onReset={defaultValue !== undefined ? () => onChange(defaultValue) : undefined} changed={defaultValue !== undefined && Math.abs(value - defaultValue) > 0.001}>
       <div style={{ display: "flex", borderRadius: "6px", border: "1px solid var(--color-border-input)", overflow: "hidden", width: "240px" }}>
         {options.map((opt) => (
           <button
             key={opt}
             onClick={() => onChange(opt)}
             style={{
-              width: `${240 / 8}px`, padding: "5px 0", fontSize: "11px", fontWeight: value === opt ? 600 : 400,
+              width: `${240 / 6}px`, padding: "5px 0", fontSize: "12px", fontWeight: value === opt ? 600 : 400,
               border: "none", cursor: "pointer", position: "relative",
+              fontFamily: "inherit",
               background: "var(--color-bg-primary)",
-              color: value === opt ? "var(--color-accent)" : "var(--color-text-secondary)",
+              color: value === opt ? "var(--color-accent)" : "var(--color-text-primary)",
               transition: "all 0.15s",
               fontVariantNumeric: "tabular-nums",
               flexShrink: 0,
@@ -106,10 +107,11 @@ function ToggleButtons({ options, value, onChange }: {
           onClick={() => onChange(opt.value)}
           style={{
             display: "flex", alignItems: "center", justifyContent: "center", gap: "5px",
-            padding: "5px 12px", fontSize: "12px", fontWeight: value === opt.value ? 600 : 400,
+            padding: "5px 12px", fontSize: "12px", fontWeight: value === opt.value ? 600 : 500,
             border: "none", cursor: "pointer", position: "relative",
+            fontFamily: "inherit",
             background: "var(--color-bg-primary)",
-            color: value === opt.value ? "var(--color-accent)" : "var(--color-text-secondary)",
+            color: value === opt.value ? "var(--color-accent)" : "var(--color-text-primary)",
             transition: "all 0.15s",
           }}
         >
@@ -158,14 +160,14 @@ export function SettingsPanel() {
   const isPresetActive = (preset: EditorSettings) =>
     JSON.stringify(settings) === JSON.stringify(preset);
 
-  // ESC로 닫기
+  // ESC로 닫기 (글꼴 미리보기가 열려있으면 무시)
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setShowSettings(false);
+      if (e.key === "Escape" && !showFontPreview) setShowSettings(false);
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [setShowSettings]);
+  }, [setShowSettings, showFontPreview]);
 
   // 드래그 이동
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
@@ -287,6 +289,31 @@ export function SettingsPanel() {
 
           <div style={{ height: "1px", background: "var(--color-border-light)", margin: "16px 0" }} />
 
+          {/* 페이지 정렬 */}
+          <SectionTitle>페이지 정렬</SectionTitle>
+          <SettingRow label="에디터 폭 모드" onReset={() => updateSetting("widthMode", "fluid")} changed={settings.widthMode !== "fluid"}>
+            <ToggleButtons
+              options={[
+                { value: "fluid", label: "가변폭" },
+                { value: "fixed", label: "고정폭" },
+              ]}
+              value={settings.widthMode}
+              onChange={(v) => updateSetting("widthMode", v as "fixed" | "fluid")}
+            />
+          </SettingRow>
+          <SettingRow label="정렬" onReset={() => updateSetting("pageAlign", "left")} changed={settings.pageAlign !== "left"}>
+            <ToggleButtons
+              options={[
+                { value: "left", label: "왼쪽" },
+                { value: "center", label: "가운데" },
+              ]}
+              value={settings.pageAlign}
+              onChange={(v) => updateSetting("pageAlign", v as "left" | "center")}
+            />
+          </SettingRow>
+
+          <div style={{ height: "1px", background: "var(--color-border-light)", margin: "16px 0" }} />
+
           {/* 프리셋 + 프리셋 항목들 */}
           <SectionTitle>에디터 프리셋</SectionTitle>
           <div style={{ display: "flex", gap: "10px", marginBottom: "12px" }}>
@@ -325,34 +352,24 @@ export function SettingsPanel() {
 
           {/* 타이포그래피 */}
           <SectionTitle>타이포그래피</SectionTitle>
-          <ChipSetting label="글자 크기" value={settings.fontSize} options={[9, 10, 11, 12, 13, 14, 15, 16]} unit="" defaultValue={DEFAULT_SETTINGS.fontSize} onChange={(v) => updateSetting("fontSize", v)} />
-          <ChipSetting label="줄 간격" value={settings.lineHeight} options={[1.4, 1.6, 1.8, 2.0, 2.2, 2.4]} unit="" decimals={1} defaultValue={DEFAULT_SETTINGS.lineHeight} onChange={(v) => updateSetting("lineHeight", v)} />
-          <ChipSetting label="자간" value={settings.letterSpacing} options={[-0.4, -0.2, 0, 0.2, 0.4, 0.6]} unit="" decimals={1} defaultValue={DEFAULT_SETTINGS.letterSpacing} onChange={(v) => updateSetting("letterSpacing", v)} />
+          <ChipSetting label="글자 크기" value={settings.fontSize} options={[12, 13, 14, 15, 16, 17]} unit="" defaultValue={DEFAULT_SETTINGS.fontSize} onChange={(v) => updateSetting("fontSize", v)} />
+          <ChipSetting label="줄 간격" value={settings.lineHeight} options={[1.2, 1.4, 1.6, 1.8, 2.0, 2.2]} unit="" decimals={1} defaultValue={DEFAULT_SETTINGS.lineHeight} onChange={(v) => updateSetting("lineHeight", v)} />
+          <ChipSetting label="자간" value={settings.letterSpacing} options={[-0.2, 0, 0.1, 0.2, 0.3, 0.4]} unit="" decimals={1} defaultValue={DEFAULT_SETTINGS.letterSpacing} onChange={(v) => updateSetting("letterSpacing", v)} />
           <ChipSetting label="문단 간격" value={settings.paragraphSpacing} options={[0, 0.2, 0.4, 0.6, 0.8, 1.0]} unit="" decimals={1} defaultValue={DEFAULT_SETTINGS.paragraphSpacing} onChange={(v) => updateSetting("paragraphSpacing", v)} />
           <ChipSetting label="제목 배율" value={settings.headingScale} options={[1.1, 1.2, 1.3, 1.4, 1.5, 1.6]} unit="" decimals={1} defaultValue={DEFAULT_SETTINGS.headingScale} onChange={(v) => updateSetting("headingScale", v)} />
 
           {/* 코드 블록 */}
           <div style={{ marginTop: "16px" }} />
           <SectionTitle>코드 블록</SectionTitle>
-          <ChipSetting label="글자 크기" value={settings.codeFontSize} options={[10, 11, 12, 13, 14, 15, 16]} unit="" defaultValue={DEFAULT_SETTINGS.codeFontSize} onChange={(v) => updateSetting("codeFontSize", v)} />
+          <ChipSetting label="글자 크기" value={settings.codeFontSize} options={[11, 12, 13, 14, 15, 16]} unit="" defaultValue={DEFAULT_SETTINGS.codeFontSize} onChange={(v) => updateSetting("codeFontSize", v)} />
           <ChipSetting label="줄 간격" value={settings.codeLineHeight} options={[1.2, 1.4, 1.6, 1.8, 2.0, 2.2]} unit="" decimals={1} defaultValue={DEFAULT_SETTINGS.codeLineHeight} onChange={(v) => updateSetting("codeLineHeight", v)} />
 
-          <div style={{ height: "1px", background: "var(--color-border-light)", margin: "16px 0" }} />
+          {/* 에디터 영역 (프리셋 포함) */}
+          <div style={{ marginTop: "16px" }} />
+          <SectionTitle>에디터 영역</SectionTitle>
+          <ChipSetting label="최대 폭" value={settings.editorMaxWidth} options={[640, 720, 780, 860, 960, 1080]} unit="" defaultValue={DEFAULT_SETTINGS.editorMaxWidth} onChange={(v) => updateSetting("editorMaxWidth", v)} />
+          <ChipSetting label="여백" value={settings.editorPaddingX} options={[24, 32, 40, 48, 56, 64]} unit="" defaultValue={DEFAULT_SETTINGS.editorPaddingX} onChange={(v) => updateSetting("editorPaddingX", v)} />
 
-          {/* 레이아웃 (프리셋 독립) */}
-          <SectionTitle>레이아웃</SectionTitle>
-          <SettingRow label="에디터 폭 모드" onReset={() => updateSetting("widthMode", "fluid")} changed={settings.widthMode !== "fluid"}>
-            <ToggleButtons
-              options={[
-                { value: "fluid", label: "가변폭" },
-                { value: "fixed", label: "고정폭" },
-              ]}
-              value={settings.widthMode}
-              onChange={(v) => updateSetting("widthMode", v as "fixed" | "fluid")}
-            />
-          </SettingRow>
-          <ChipSetting label={settings.widthMode === "fixed" ? "에디터 폭" : "최대 폭"} value={settings.editorMaxWidth} options={[560, 640, 720, 780, 860, 960, 1080]} unit="" defaultValue={DEFAULT_SETTINGS.editorMaxWidth} onChange={(v) => updateSetting("editorMaxWidth", v)} />
-          <ChipSetting label="여백" value={settings.editorPaddingX} options={[8, 16, 24, 32, 48, 64]} unit="" defaultValue={DEFAULT_SETTINGS.editorPaddingX} onChange={(v) => updateSetting("editorPaddingX", v)} />
         </div>
 
         {/* 푸터 */}
