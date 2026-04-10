@@ -184,8 +184,8 @@ export function TabBar() {
                   alignItems: "center",
                   justifyContent: "space-between",
                   gap: "8px",
-                  padding: "0 14px 0 24px",
-                  minWidth: "120px",
+                  padding: tab.filePath ? "0 14px 0 24px" : "0 10px 0 24px",
+                  minWidth: tab.filePath ? "120px" : "140px",
                   cursor: isDragging ? "grabbing" : "pointer",
                   position: "relative",
                   zIndex: 1,
@@ -261,16 +261,16 @@ export function TabBar() {
                     }}
                     title="저장"
                     style={{
-                      width: "16px", height: "16px",
+                      width: "22px", height: "22px",
                       display: "flex", alignItems: "center", justifyContent: "center",
-                      borderRadius: "3px", border: "none", background: "transparent",
+                      borderRadius: "4px", border: "none", background: "transparent",
                       color: "var(--color-accent)", cursor: "pointer", flexShrink: 0,
                       transition: "all 0.1s",
                     }}
                     onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-active)"; }}
                     onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
                   >
-                    <Save size={12} />
+                    <Save size={15} />
                   </button>
                 )}
 
