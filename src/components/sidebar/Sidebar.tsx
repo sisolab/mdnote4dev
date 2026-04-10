@@ -226,7 +226,7 @@ export function Sidebar() {
         i++;
       }
       const filePath = `${folderPath}\\${name}`;
-      const content = "# " + name.replace(/\.md$/, "") + "\n";
+      const content = "";
       await mkdir(folderPath, { recursive: true }).catch(() => {});
       const file = await create(filePath);
       await file.write(new TextEncoder().encode(content));

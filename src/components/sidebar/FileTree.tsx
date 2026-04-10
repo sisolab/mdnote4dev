@@ -326,7 +326,7 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
         i++;
       }
       const filePath = `${folderPath}\\${name}`;
-      const content = "# " + name.replace(/\.md$/, "") + "\n";
+      const content = "";
       const file = await create(filePath);
       await file.write(new TextEncoder().encode(content));
       await file.close();

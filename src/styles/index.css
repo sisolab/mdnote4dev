@@ -96,6 +96,7 @@ body {
 /* 이미지 */
 .tiptap img {
   border-radius: 3px;
+  max-width: 100%;
 }
 
 .tiptap img[src=""],
@@ -277,7 +278,6 @@ body {
 }
 
 .tiptap img {
-  max-width: 100%;
   height: auto;
   border-radius: 8px;
   margin: 0.75rem 0;
