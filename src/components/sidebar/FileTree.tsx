@@ -388,10 +388,17 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
 
         // 현재 순서 가져오기 (없으면 현재 표시 순서로 초기화)
         let order = customFileOrder[folderPath] ? [...customFileOrder[folderPath]] : entries.map((e) => e.name);
+        // 순서에 없는 항목 추가 (새 파일 등)
+        if (!order.includes(dragName)) order.push(dragName);
+        if (!order.includes(targetName)) order.push(targetName);
+        // 드래그 항목 제거
         const fromIdx = order.indexOf(dragName);
-        if (fromIdx >= 0) order.splice(fromIdx, 1);
+        order.splice(fromIdx, 1);
+        // 삽입 위치 계산
         let toIdx = order.indexOf(targetName);
+        if (toIdx < 0) toIdx = order.length;
         if (rt.pos === "below") toIdx++;
+        if (toIdx > order.length) toIdx = order.length;
         order.splice(toIdx, 0, dragName);
 
         const oldOrder = customFileOrder[folderPath] ? [...customFileOrder[folderPath]] : entries.map((e) => e.name);
@@ -426,9 +433,10 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
                 htmlEl.style.transform = `translateY(${delta}px)`;
                 htmlEl.style.transition = "none";
                 requestAnimationFrame(() => {
-                  htmlEl.style.transition = "transform 0.4s ease";
+                  const dur = Math.min(0.8, Math.max(0.3, Math.abs(delta) * 0.004));
+                  htmlEl.style.transition = `transform ${dur}s cubic-bezier(0.25, 0.1, 0.25, 1)`;
                   htmlEl.style.transform = "translateY(0)";
-                  setTimeout(() => { htmlEl.style.transition = ""; htmlEl.style.transform = ""; }, 420);
+                  setTimeout(() => { htmlEl.style.transition = ""; htmlEl.style.transform = ""; }, dur * 1000 + 20);
                 });
               });
             }));
