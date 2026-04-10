@@ -236,13 +236,28 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
         const btn = el?.closest("[data-path]") as HTMLElement | null;
         const path = btn?.dataset.path;
         const isDir = btn?.dataset.isDir === "true";
+
+        let target: string | null = null;
         if (path && isDir) {
-          dropTargetRef.current = path;
-          setDropTarget(path);
+          // 폴더 위 → 그 폴더로 이동
+          target = path;
+        } else if (path && !isDir) {
+          // 파일 위 → 파일의 부모 폴더로 이동
+          target = path.substring(0, path.lastIndexOf("\\"));
         } else {
-          dropTargetRef.current = null;
-          setDropTarget(null);
+          // 빈 공간 → 가장 가까운 FileTree 루트 폴더 찾기
+          const treeRoot = el?.closest("[data-tree-root]") as HTMLElement | null;
+          if (treeRoot?.dataset.treeRoot) {
+            target = treeRoot.dataset.treeRoot;
+          }
         }
+
+        // 드래그 중인 파일의 현재 폴더와 같으면 스킵
+        const dragDir = dragMoveState.current.paths[0]?.substring(0, dragMoveState.current.paths[0].lastIndexOf("\\"));
+        if (target === dragDir) target = null;
+
+        dropTargetRef.current = target;
+        setDropTarget(target);
       }
     };
 
@@ -597,6 +612,7 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
   return (
     <div
       ref={containerRef}
+      data-tree-root={rootPath}
       className="py-0.5"
       style={{ position: "relative" }}
       onMouseLeave={() => setHighlight(null)}
