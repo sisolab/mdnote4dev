@@ -22,6 +22,8 @@ export interface Tab {
   filePath: string | null; // null이면 임시 문서
   content: string;
   isDirty: boolean;
+  type?: "document" | "tag-explorer";
+  tagFilters?: string[]; // tag-explorer 탭에서 선택된 태그들
 }
 
 let tabCounter = 0;
@@ -39,6 +41,10 @@ interface AppState {
   favoriteFiles: string[];
   addFavoriteFile: (path: string) => void;
   removeFavoriteFile: (path: string) => void;
+
+  // 태그
+  allTags: Record<string, string[]>;
+  setAllTags: (tags: Record<string, string[]>) => void;
 
   // 정렬
   folderSort: SortMode;
@@ -62,6 +68,7 @@ interface AppState {
   updateTabFilePath: (id: string, filePath: string, title: string) => void;
   markTabClean: (id: string) => void;
   reorderTabs: (fromIndex: number, toIndex: number) => void;
+  openTagExplorer: (tag?: string) => void;
 
   // 사이드바
   sidebarCollapsed: boolean;
@@ -126,6 +133,9 @@ export const useAppStore = create<AppState>((set) => ({
       favoriteFiles: state.favoriteFiles.filter((p) => p !== path),
     })),
 
+  allTags: {} as Record<string, string[]>,
+  setAllTags: (tags) => set({ allTags: tags }),
+
   folderSort: "name" as SortMode,
   fileSort: "name" as SortMode,
   setFolderSort: (mode) => set({ folderSort: mode }),
@@ -140,7 +150,7 @@ export const useAppStore = create<AppState>((set) => ({
       return { expandedFolders: next };
     }),
 
-  tabs: [],
+  tabs: [{ id: "tag-explorer", title: "태그", filePath: null, content: "", isDirty: false, type: "tag-explorer" as const, tagFilters: [] }],
   activeTabId: null,
 
   openTab: (filePath, title, content) =>
@@ -248,6 +258,27 @@ export const useAppStore = create<AppState>((set) => ({
       const [moved] = newTabs.splice(fromIndex, 1);
       newTabs.splice(toIndex, 0, moved);
       return { tabs: newTabs };
+    }),
+
+  openTagExplorer: (tag) =>
+    set((state) => {
+      // 이미 열린 태그 탐색 탭이 있으면 그걸 활성화
+      const existing = state.tabs.find((t) => t.type === "tag-explorer");
+      if (existing) {
+        const current = existing.tagFilters ?? [];
+        const newFilters = tag ? (current.includes(tag) ? current : [...current, tag]) : current;
+        return {
+          tabs: state.tabs.map((t) => t.id === existing.id ? { ...t, tagFilters: newFilters } : t),
+          activeTabId: existing.id,
+        };
+      }
+      // 없으면 첫 번째 위치에 생성
+      const id = `tab-${++tabCounter}`;
+      const tab: Tab = { id, title: "태그 탐색", filePath: null, content: "", isDirty: false, type: "tag-explorer", tagFilters: tag ? [tag] : [] };
+      return {
+        tabs: [tab, ...state.tabs],
+        activeTabId: id,
+      };
     }),
 
   sidebarCollapsed: false,

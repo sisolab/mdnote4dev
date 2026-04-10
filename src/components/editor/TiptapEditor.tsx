@@ -12,8 +12,10 @@ import { Underline } from "@tiptap/extension-underline";
 import { Typography } from "@tiptap/extension-typography";
 import { useEffect, useCallback, useRef, useState } from "react";
 import { htmlToMarkdown, markdownToHtml } from "./markdown";
+import { parseFrontmatter } from "@/utils/frontmatter";
 import { Toolbar } from "./Toolbar";
 import { useSettingsStore, getFontFamily } from "@/stores/settingsStore";
+import { useAppStore } from "@/stores/appStore";
 
 interface TiptapEditorProps {
   content: string;
@@ -22,6 +24,8 @@ interface TiptapEditorProps {
 
 export function TiptapEditor({ content, onSave }: TiptapEditorProps) {
   const lastMarkdown = useRef(content);
+  const contentRef = useRef(content);
+  contentRef.current = content;
   const { settings } = useSettingsStore();
 
   const editor = useEditor({
@@ -31,7 +35,7 @@ export function TiptapEditor({ content, onSave }: TiptapEditorProps) {
         codeBlock: { HTMLAttributes: { class: "code-block" } },
       }),
       Placeholder.configure({
-        placeholder: "마크다운을 입력하세요...",
+        placeholder: "",
       }),
       TaskList,
       TaskItem.configure({ nested: true }),
@@ -65,10 +69,18 @@ export function TiptapEditor({ content, onSave }: TiptapEditorProps) {
 
   const handleSave = useCallback(() => {
     if (!editor) return;
-    const md = htmlToMarkdown(editor.getHTML());
+    const body = htmlToMarkdown(editor.getHTML());
+    // frontmatter: store의 allTags에서 현재 파일의 태그를 가져와서 구성
+    const state = useAppStore.getState();
+    const filePath = state.selectedFile;
+    const liveTags = filePath
+      ? Object.keys(state.allTags).filter((tag) => state.allTags[tag]?.includes(filePath))
+      : parseFrontmatter(contentRef.current).tags;
+    const tagsStr = liveTags.length > 0 ? `tags: [${liveTags.join(", ")}]` : "";
+    const md = tagsStr ? `---\n${tagsStr}\n---\n${body}` : body;
     lastMarkdown.current = md;
     onSave(md);
-  }, [editor, onSave]);
+  }, [editor, onSave, content]);
 
   // 실시간 자동 저장 (타이핑 멈추고 500ms 후)
   const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);

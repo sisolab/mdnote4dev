@@ -1,10 +1,13 @@
-import { useCallback, useEffect } from "react";
-import { writeTextFile } from "@tauri-apps/plugin-fs";
+import { useCallback, useEffect, useState } from "react";
+import { writeTextFile, stat } from "@tauri-apps/plugin-fs";
 import { save } from "@tauri-apps/plugin-dialog";
 import { useAppStore } from "@/stores/appStore";
 import { TiptapEditor } from "./TiptapEditor";
 import { TabBar } from "./TabBar";
+import { StatusBar } from "./StatusBar";
+import { TagExplorer } from "./TagExplorer";
 import { FileText } from "lucide-react";
+import { parseFrontmatter, updateFrontmatterTags } from "@/utils/frontmatter";
 
 export function EditorArea() {
   const {
@@ -13,12 +16,33 @@ export function EditorArea() {
   } = useAppStore();
 
   const activeTab = tabs.find((t) => t.id === activeTabId);
+  const [fileSize, setFileSize] = useState(0);
+  const [lineCount, setLineCount] = useState(0);
+  const [charCount, setCharCount] = useState(0);
+  const [currentTags, setCurrentTags] = useState<string[]>([]);
 
-  // 자동 저장: 임시 문서는 메모리만 업데이트, 저장된 파일은 디스크에 씀
+  // 탭 변경 시 파일 정보 업데이트
+  useEffect(() => {
+    if (!activeTab) return;
+    const content = activeTab.content;
+    setLineCount(content.split("\n").length);
+    setCharCount(content.length);
+    const fm = parseFrontmatter(content);
+    setCurrentTags(fm.tags);
+
+    if (activeTab.filePath) {
+      stat(activeTab.filePath).then((s) => {
+        setFileSize(s.size);
+      }).catch(() => setFileSize(0));
+    } else {
+      setFileSize(new TextEncoder().encode(content).length);
+    }
+  }, [activeTab?.id, activeTab?.content]);
+
+  // 자동 저장
   const handleSave = useCallback(async (markdown: string) => {
     if (!activeTab) return;
 
-    // 임시 문서: 메모리만 업데이트 (저장 다이얼로그 안 띄움)
     if (!activeTab.filePath) {
       updateTabContent(activeTab.id, markdown);
       return;
@@ -33,11 +57,71 @@ export function EditorArea() {
     }
   }, [activeTab, updateTabContent, markTabClean]);
 
-  // Ctrl+S 수동 저장: 임시 문서면 저장 다이얼로그
+  // 태그 추가
+  const handleAddTag = useCallback(async (tag: string) => {
+    if (!activeTab) return;
+    const content = activeTab.content;
+    const fm = parseFrontmatter(content);
+    if (fm.tags.includes(tag)) return;
+
+    const newTags = [...fm.tags, tag];
+    const newContent = updateFrontmatterTags(content, newTags);
+    updateTabContent(activeTab.id, newContent);
+    setCurrentTags(newTags);
+
+    if (activeTab.filePath) {
+      try {
+        await writeTextFile(activeTab.filePath, newContent);
+        markTabClean(activeTab.id);
+      } catch (err) {
+        console.error("태그 저장 실패:", err);
+      }
+    }
+
+    // 전역 태그 갱신
+    const state = useAppStore.getState();
+    const allTags = { ...state.allTags };
+    if (!allTags[tag]) allTags[tag] = [];
+    if (activeTab.filePath && !allTags[tag].includes(activeTab.filePath)) {
+      allTags[tag] = [...allTags[tag], activeTab.filePath];
+    }
+    state.setAllTags(allTags);
+  }, [activeTab, updateTabContent, markTabClean]);
+
+  // 태그 제거
+  const handleRemoveTag = useCallback(async (tag: string) => {
+    if (!activeTab) return;
+    const content = activeTab.content;
+    const fm = parseFrontmatter(content);
+    const newTags = fm.tags.filter((t) => t !== tag);
+    const newContent = updateFrontmatterTags(content, newTags);
+    updateTabContent(activeTab.id, newContent);
+    setCurrentTags(newTags);
+
+    if (activeTab.filePath) {
+      try {
+        await writeTextFile(activeTab.filePath, newContent);
+        markTabClean(activeTab.id);
+      } catch (err) {
+        console.error("태그 저장 실패:", err);
+      }
+    }
+
+    // 전역 태그 갱신
+    const state = useAppStore.getState();
+    const allTags = { ...state.allTags };
+    if (allTags[tag] && activeTab.filePath) {
+      allTags[tag] = allTags[tag].filter((p) => p !== activeTab.filePath);
+      if (allTags[tag].length === 0) delete allTags[tag];
+    }
+    state.setAllTags(allTags);
+  }, [activeTab, updateTabContent, markTabClean]);
+
+  // Ctrl+S 수동 저장
   useEffect(() => {
     const handler = async (e: KeyboardEvent) => {
       if (e.ctrlKey && e.key === "s") {
-        if (!activeTab || activeTab.filePath) return; // 저장된 파일은 TiptapEditor에서 처리
+        if (!activeTab || activeTab.filePath) return;
         e.preventDefault();
         const selected = await save({
           defaultPath: undefined,
@@ -63,7 +147,12 @@ export function EditorArea() {
     <main className="flex-1 flex flex-col min-w-0 bg-bg-primary">
       <TabBar />
 
-      {activeTab ? (
+      {activeTab?.type === "tag-explorer" ? (
+        <div className="flex-1 min-h-0">
+          <TagExplorer />
+        </div>
+      ) : activeTab ? (
+        <>
         <div className="flex-1 min-h-0">
           <TiptapEditor
             key={activeTab.id}
@@ -71,6 +160,16 @@ export function EditorArea() {
             onSave={handleSave}
           />
         </div>
+        <StatusBar
+          filePath={activeTab.filePath}
+          fileSize={fileSize}
+          lineCount={lineCount}
+          charCount={charCount}
+          tags={currentTags}
+          onAddTag={handleAddTag}
+          onRemoveTag={handleRemoveTag}
+        />
+        </>
       ) : (
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">

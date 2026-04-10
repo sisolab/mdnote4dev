@@ -6,7 +6,7 @@ import { useAppStore } from "@/stores/appStore";
 import { FileTree } from "./FileTree";
 import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
 import { Tooltip } from "@/components/ui/Tooltip";
-import { Unlink, ChevronRight, Folder, Tag, Search, ChevronsDownUp, ChevronsUpDown, ArrowUpDown, FilePlus, FolderPlus, FileText, FolderOpen, ListCollapse, icons } from "lucide-react";
+import { Unlink, ChevronRight, Folder, Tag, ChevronsDownUp, ChevronsUpDown, ArrowUpDown, FilePlus, FolderPlus, FileText, FolderOpen, ListCollapse, icons } from "lucide-react";
 import { IconPicker } from "@/components/settings/IconPicker";
 
 function shortenPath(path: string): string {
@@ -19,8 +19,7 @@ function shortenPath(path: string): string {
 
 export function Sidebar() {
   const { favorites, sidebarCollapsed, removeFavorite, addFavorite, openTab, refreshFileTree, fileTreeVersion, setFavoriteAlias, updateFavoritePath, setFavoriteIcon, folderSort, fileSort, setFolderSort, setFileSort, favoriteFiles, addFavoriteFile, removeFavoriteFile, selectedPaths } = useAppStore();
-  const [sidebarTab, setSidebarTab] = useState("files");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery] = useState("");
   const [favoritesExpanded, setStandaloneExpanded] = useState(true);
   const [folderSectionExpanded, setFolderSectionExpanded] = useState(true);
   const [compactMode, setCompactMode] = useState(false);
@@ -352,32 +351,6 @@ export function Sidebar() {
       }}
     >
       <>
-      {/* 검색창 */}
-      <div style={{
-        display: "flex", alignItems: "center", gap: "8px",
-        padding: "0 16px", height: "40px",
-        borderBottom: "1px solid var(--color-border-light)",
-        flexShrink: 0,
-      }}>
-        <Search size={13} style={{ color: "var(--color-text-light)", flexShrink: 0 }} />
-        <input
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="파일 검색"
-          style={{
-            flex: 1, border: "none", outline: "none", background: "transparent",
-            fontSize: "12px", color: "var(--color-text-primary)",
-          }}
-        />
-        {searchQuery && (
-          <button
-            onClick={() => setSearchQuery("")}
-            style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--color-text-muted)", fontSize: "14px", lineHeight: 1 }}
-          >
-            ×
-          </button>
-        )}
-      </div>
 
       {/* 액션 바 */}
       <div style={{
@@ -749,32 +722,6 @@ export function Sidebar() {
 
       </div>
 
-      {/* 태그 섹션 (하단 접이식) */}
-      <div style={{ flexShrink: 0 }}>
-        <div
-          onClick={() => setSidebarTab(sidebarTab === "tags" ? "files" : "tags")}
-          style={{
-            display: "flex", alignItems: "center", justifyContent: "space-between",
-            padding: "0 16px", height: "28px", cursor: "pointer",
-            borderTop: "1px solid var(--color-border-light)",
-            borderBottom: sidebarTab === "tags" ? "1px solid var(--color-border-light)" : "none",
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-hover)"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = ""; }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-            <ChevronRight size={10} className={`shrink-0 text-text-light transition-transform duration-[0.15s] ${sidebarTab === "tags" ? "rotate-90" : ""}`} />
-            <span style={{ fontSize: "11px", fontWeight: 600, color: "var(--color-text-tertiary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-              태그
-            </span>
-          </div>
-        </div>
-        {sidebarTab === "tags" && (
-          <div style={{ height: "120px", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--color-text-light)", fontSize: "12px" }}>
-            태그 기능 준비 중
-          </div>
-        )}
-      </div>
 
 
       {/* 아이콘 피커 */}

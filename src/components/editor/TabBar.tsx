@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { rename, readTextFile } from "@tauri-apps/plugin-fs";
 import { open } from "@tauri-apps/plugin-dialog";
 import { useAppStore } from "@/stores/appStore";
-import { Save, FolderOpen, PanelLeft, Settings } from "lucide-react";
+import { Save, FolderOpen, PanelLeft, Settings, Tag } from "lucide-react";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { Tooltip } from "@/components/ui/Tooltip";
 
@@ -305,14 +305,14 @@ export function TabBar() {
                       className="truncate"
                       style={{ maxWidth: "120px" }}
                     >
-                      {tab.title.replace(/\.(md|markdown)$/i, "")}
+                      {tab.type === "tag-explorer" ? <Tag size={13} /> : tab.title.replace(/\.(md|markdown)$/i, "")}
                     </span>
                     </Tooltip>
                   )}
                 </div>
 
-                {/* 저장 버튼 (임시 문서만) */}
-                {!tab.filePath && (
+                {/* 저장 버튼 (임시 문서만, 태그탭 제외) */}
+                {!tab.filePath && tab.type !== "tag-explorer" && (
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -334,8 +334,8 @@ export function TabBar() {
                   </button>
                 )}
 
-                {/* 닫기 버튼 */}
-                <button
+                {/* 닫기 버튼 (태그탭은 닫기 불가) */}
+                {tab.type !== "tag-explorer" && <button
                   onClick={(e) => {
                     e.stopPropagation();
                     if (!tab.filePath && tab.content) {
@@ -355,7 +355,7 @@ export function TabBar() {
                   onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--color-text-muted)"; }}
                 >
                   ×
-                </button>
+                </button>}
               </div>
 
               {/* 드롭 인디케이터 */}

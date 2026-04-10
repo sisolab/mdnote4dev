@@ -71,8 +71,8 @@ export function htmlToMarkdown(html: string): string {
 }
 
 export function markdownToHtml(md: string): string {
-  // 간단한 마크다운 → HTML 변환
-  let html = md;
+  // frontmatter 제거
+  let html = md.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, "");
 
   // 코드 블록 (먼저 처리)
   html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (_m, lang, code) => {
