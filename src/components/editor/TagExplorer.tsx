@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useAppStore } from "@/stores/appStore";
 import { getTagColor } from "@/utils/frontmatter";
-import { readTextFile } from "@tauri-apps/plugin-fs";
+import { readTextFile, writeTextFile } from "@tauri-apps/plugin-fs";
+import { parseFrontmatter, updateFrontmatterTags } from "@/utils/frontmatter";
+import { shortenPath } from "@/utils/pathUtils";
 import { FileText, Search, X, Star, ChevronRight, Clock } from "lucide-react";
 
 export function TagExplorer() {
@@ -142,25 +144,18 @@ export function TagExplorer() {
     );
   };
 
-  const shortenPath = (path: string) => {
-    const m = path.match(/^([A-Z]:\\Users\\[^\\]+)/i);
-    return m ? path.replace(m[1], "~") : path;
-  };
-
   // 태그 전체 삭제
   const [deleteConfirmTag, setDeleteConfirmTag] = useState<string | null>(null);
   const handleDeleteTag = async (tag: string) => {
-    const { readTextFile: readFile, writeTextFile: writeFile } = await import("@tauri-apps/plugin-fs");
-    const { parseFrontmatter, updateFrontmatterTags } = await import("@/utils/frontmatter");
     const paths = allTags[tag] ?? [];
     const state = useAppStore.getState();
     for (const path of paths) {
       try {
-        const content = await readFile(path);
+        const content = await readTextFile(path);
         const fm = parseFrontmatter(content);
         const newTags = fm.tags.filter((t) => t !== tag);
         const newContent = updateFrontmatterTags(content, newTags);
-        await writeFile(path, newContent);
+        await writeTextFile(path, newContent);
         const openT = state.tabs.find((t) => t.filePath === path);
         if (openT) state.updateTabContent(openT.id, newContent);
       } catch {}

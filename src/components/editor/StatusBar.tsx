@@ -4,6 +4,7 @@ import { useSettingsStore } from "@/stores/settingsStore";
 import { getTagColor, getTagColorDark } from "@/utils/frontmatter";
 import { X, Tag, FolderOpen, ChevronDown, ChevronUp } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
+import { shortenPath } from "@/utils/pathUtils";
 
 interface StatusBarProps {
   filePath: string | null;
@@ -67,11 +68,6 @@ export function StatusBar({ filePath, fileSize, lineCount, charCount, tags: prop
       setShowSuggestions(false);
       setInput("");
     }
-  };
-
-  const shortenPath = (path: string) => {
-    const m = path.match(/^([A-Z]:\\Users\\[^\\]+)/i);
-    return m ? path.replace(m[1], "~") : path;
   };
 
   const formatSize = (bytes: number) => {

@@ -8,15 +8,7 @@ import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { Unlink, ChevronRight, Folder, Tag, ChevronsDownUp, ChevronsUpDown, ArrowUpDown, FilePlus, FolderPlus, FileText, FolderOpen, ListCollapse, icons } from "lucide-react";
 import { IconPicker } from "@/components/settings/IconPicker";
-
-function shortenPath(path: string): string {
-  const userHome = path.match(/^([A-Z]:\\Users\\[^\\]+)/i);
-  if (userHome) {
-    return path.replace(userHome[1], "~");
-  }
-  return path;
-}
-
+import { shortenPath } from "@/utils/pathUtils";
 export function Sidebar() {
   const { favorites, sidebarCollapsed, removeFavorite, addFavorite, openTab, refreshFileTree, fileTreeVersion, setFavoriteAlias, updateFavoritePath, setFavoriteIcon, folderSort, fileSort, setFolderSort, setFileSort, favoriteFiles, addFavoriteFile, removeFavoriteFile, selectedPaths } = useAppStore();
   const [searchQuery] = useState("");
