@@ -28,7 +28,7 @@ export interface Tab {
   tagFilters?: string[]; // tag-explorer 탭에서 선택된 태그들
 }
 
-let tabCounter = 0;
+let tabCounter = Date.now();
 
 interface AppState {
   // 즐겨찾기
