@@ -529,9 +529,10 @@ export function Sidebar() {
                   <button
                     onClick={() => toggleFav(fav.path)}
                     onContextMenu={(e) => handleContextMenu(e, fav.path)}
-                    className="group w-full flex items-center gap-2 text-[13px] font-semibold transition-all duration-[0.15s]"
+                    className={`group w-full flex items-center gap-2 font-semibold transition-all duration-[0.15s]`}
                     style={{
-                      height: "30px",
+                      fontSize: compactMode ? "11px" : "13px",
+                      height: compactMode ? "26px" : "30px",
                       padding: "0 16px",
                       color: isBroken ? "var(--color-text-muted)" : "var(--color-text-secondary)",
                       cursor: isBroken ? "default" : "pointer",
