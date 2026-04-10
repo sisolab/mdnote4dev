@@ -190,63 +190,34 @@ export function useAccent(): ThemeColors {
   return getAccentColors(accentColor);
 }
 
-// fontFamily → 커스텀 이름이면 직접 지정된 family를 사용
-let customFontFamily: string | null = null;
+const FONT_FAMILIES: Record<string, string> = {
+  "inter": '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+  "noto-sans-kr": '"Noto Sans KR", -apple-system, BlinkMacSystemFont, sans-serif',
+  "noto-serif-kr": '"Noto Serif KR", -apple-system, BlinkMacSystemFont, serif',
+  "ibm-plex-sans-kr": '"IBM Plex Sans KR", -apple-system, BlinkMacSystemFont, sans-serif',
+  "gowun-dodum": '"Gowun Dodum", -apple-system, BlinkMacSystemFont, sans-serif',
+  "gowun-batang": '"Gowun Batang", -apple-system, BlinkMacSystemFont, serif',
+  "nanum-gothic": '"Nanum Gothic", -apple-system, BlinkMacSystemFont, sans-serif',
+  "nanum-myeongjo": '"Nanum Myeongjo", -apple-system, BlinkMacSystemFont, serif',
+  "roboto": '"Roboto", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+  "open-sans": '"Open Sans", -apple-system, BlinkMacSystemFont, sans-serif',
+  "lora": '"Lora", Georgia, serif',
+  "merriweather": '"Merriweather", Georgia, serif',
+  "jetbrains-mono": '"JetBrains Mono", "Fira Code", "Consolas", monospace',
+  "noto-sans-jp": '"Noto Sans JP", -apple-system, BlinkMacSystemFont, sans-serif',
+  "noto-serif-jp": '"Noto Serif JP", -apple-system, BlinkMacSystemFont, serif',
+  "zen-kaku-gothic": '"Zen Kaku Gothic New", -apple-system, BlinkMacSystemFont, sans-serif',
+  "zen-old-mincho": '"Zen Old Mincho", -apple-system, BlinkMacSystemFont, serif',
+  "noto-sans-sc": '"Noto Sans SC", -apple-system, BlinkMacSystemFont, sans-serif',
+  "noto-serif-sc": '"Noto Serif SC", -apple-system, BlinkMacSystemFont, serif',
+  "noto-sans-tc": '"Noto Sans TC", -apple-system, BlinkMacSystemFont, sans-serif',
+  "noto-serif-tc": '"Noto Serif TC", -apple-system, BlinkMacSystemFont, serif',
+  "serif": '"Georgia", "Noto Serif KR", "Times New Roman", serif',
+  "mono": '"Cascadia Code", "Fira Code", "Consolas", monospace',
+};
 
-export function setCustomFontFamily(family: string | null) {
-  customFontFamily = family;
-}
+const DEFAULT_FONT = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
 
 export function getFontFamily(value: string): string {
-  switch (value) {
-    case "inter":
-      return '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-    case "noto-sans-kr":
-      return '"Noto Sans KR", -apple-system, BlinkMacSystemFont, sans-serif';
-    case "noto-serif-kr":
-      return '"Noto Serif KR", -apple-system, BlinkMacSystemFont, serif';
-    case "ibm-plex-sans-kr":
-      return '"IBM Plex Sans KR", -apple-system, BlinkMacSystemFont, sans-serif';
-    case "gowun-dodum":
-      return '"Gowun Dodum", -apple-system, BlinkMacSystemFont, sans-serif';
-    case "gowun-batang":
-      return '"Gowun Batang", -apple-system, BlinkMacSystemFont, serif';
-    case "nanum-gothic":
-      return '"Nanum Gothic", -apple-system, BlinkMacSystemFont, sans-serif';
-    case "nanum-myeongjo":
-      return '"Nanum Myeongjo", -apple-system, BlinkMacSystemFont, serif';
-    case "roboto":
-      return '"Roboto", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-    case "open-sans":
-      return '"Open Sans", -apple-system, BlinkMacSystemFont, sans-serif';
-    case "lora":
-      return '"Lora", Georgia, serif';
-    case "merriweather":
-      return '"Merriweather", Georgia, serif';
-    case "jetbrains-mono":
-      return '"JetBrains Mono", "Fira Code", "Consolas", monospace';
-    case "noto-sans-jp":
-      return '"Noto Sans JP", -apple-system, BlinkMacSystemFont, sans-serif';
-    case "noto-serif-jp":
-      return '"Noto Serif JP", -apple-system, BlinkMacSystemFont, serif';
-    case "zen-kaku-gothic":
-      return '"Zen Kaku Gothic New", -apple-system, BlinkMacSystemFont, sans-serif';
-    case "zen-old-mincho":
-      return '"Zen Old Mincho", -apple-system, BlinkMacSystemFont, serif';
-    case "noto-sans-sc":
-      return '"Noto Sans SC", -apple-system, BlinkMacSystemFont, sans-serif';
-    case "noto-serif-sc":
-      return '"Noto Serif SC", -apple-system, BlinkMacSystemFont, serif';
-    case "noto-sans-tc":
-      return '"Noto Sans TC", -apple-system, BlinkMacSystemFont, sans-serif';
-    case "noto-serif-tc":
-      return '"Noto Serif TC", -apple-system, BlinkMacSystemFont, serif';
-    case "serif":
-      return '"Georgia", "Noto Serif KR", "Times New Roman", serif';
-    case "mono":
-      return '"Cascadia Code", "Fira Code", "Consolas", monospace';
-    default:
-      if (customFontFamily) return `"${customFontFamily}", -apple-system, BlinkMacSystemFont, sans-serif`;
-      return '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
-  }
+  return FONT_FAMILIES[value] ?? DEFAULT_FONT;
 }

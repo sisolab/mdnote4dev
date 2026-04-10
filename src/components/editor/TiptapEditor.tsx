@@ -81,7 +81,7 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
           if (!blob) return;
           const fp = filePathRef.current;
           if (!fp) {
-            console.warn("[Marknote] 이미지 붙여넣기: 먼저 문서를 저장하세요");
+            // 미저장 문서 — 이미지 붙여넣기 무시
             return;
           }
           try {
@@ -95,9 +95,7 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
             await new Promise((resolve) => { img.onload = resolve; img.onerror = resolve; });
             const width = img.naturalWidth > 0 && img.naturalWidth < 320 ? 0 : 320;
             editor.chain().focus().setImage({ src: assetUrl, width, align: "left" } as any).run();
-          } catch (err) {
-            console.error("[Marknote] 이미지 저장 실패:", err);
-          }
+          } catch {}
           return;
         }
       }

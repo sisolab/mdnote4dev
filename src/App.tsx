@@ -144,8 +144,6 @@ function App() {
         }
       }
 
-      console.log(`[Marknote] 스캔 대상: ${allPaths.length}개 파일, 즐겨찾기 폴더: ${favorites.length}개`);
-
       for (const filePath of allPaths) {
         try {
           const [content, fileStat] = await Promise.all([
@@ -173,7 +171,6 @@ function App() {
       fileTimes.sort((a, b) => b.mtime - a.mtime);
       setRecentFiles(fileTimes.slice(0, 50).map((f) => f.path));
 
-      console.log(`[Marknote] 태그 ${Object.keys(tagMap).length}개, 최근 파일 ${fileTimes.length}개 로드 완료`);
     }
 
     async function restoreTabs() {
@@ -213,7 +210,6 @@ function App() {
         fileContent: activeTab?.content ?? "",
       });
 
-      console.log(`[Marknote] 탭 ${restoredTabs.length}개 복원 완료`);
     }
 
     const unsub = useAppStore.persist.onFinishHydration(() => {
