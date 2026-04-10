@@ -231,7 +231,6 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
   const [reorderTarget, setReorderTarget] = useState<{ path: string; pos: "above" | "below" } | null>(null);
   const reorderTargetRef = useRef<{ path: string; pos: "above" | "below" } | null>(null);
   const fileFlipPositions = useRef<Record<string, number>>({});
-  const [fileFlipPending, setFileFlipPending] = useState(false);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
   const dragMoveState = useRef<{ startY: number; active: boolean; paths: string[] }>({ startY: 0, active: false, paths: [] });
   const dropTargetRef = useRef<string | null>(null);
@@ -418,7 +417,7 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
         executeUndoable({
           type: "reorder-files",
           description: `파일 순서 변경: ${dragName}`,
-          execute: async () => { setCustomFileOrder(folderPath, newOrder); refreshFileTree(); setFileFlipPending(true); },
+          execute: async () => { setCustomFileOrder(folderPath, newOrder); refreshFileTree(); },
           undo: async () => { setCustomFileOrder(folderPath, oldOrder); refreshFileTree(); },
         });
         cleanup();
@@ -788,14 +787,11 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
     loadDirectory(rootPath).then(setEntries);
   }, [rootPath, fileTreeVersion]);
 
-  // FLIP 애니메이션: entries 갱신 후 실행
+  // FLIP 애니메이션: entries 갱신 후 캡처된 위치가 있으면 실행
   useEffect(() => {
-    if (!fileFlipPending) return;
     const oldPositions = fileFlipPositions.current;
-    if (!containerRef.current || Object.keys(oldPositions).length === 0) {
-      setFileFlipPending(false);
-      return;
-    }
+    if (!containerRef.current || Object.keys(oldPositions).length === 0) return;
+    fileFlipPositions.current = {};
     const els = containerRef.current.querySelectorAll("[data-path]");
     els.forEach((el) => {
       const path = (el as HTMLElement).dataset.path!;
@@ -816,9 +812,7 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
         });
       });
     });
-    setFileFlipPending(false);
-    fileFlipPositions.current = {};
-  }, [fileFlipPending, entries]);
+  }, [entries]);
 
   useEffect(() => {
     const q = searchQuery.toLowerCase();
