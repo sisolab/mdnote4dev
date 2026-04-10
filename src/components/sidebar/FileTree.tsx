@@ -338,6 +338,29 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
     }
   };
 
+  const handleDuplicateFile = async (entry: FileEntry) => {
+    try {
+      const dir = entry.path.substring(0, entry.path.lastIndexOf("\\"));
+      const ext = entry.name.match(/\.[^.]+$/)?.[0] ?? "";
+      const baseName = entry.name.replace(/\.[^.]+$/, "");
+      let name = `${baseName} 복사${ext}`;
+      let i = 1;
+      while (await readDir(dir).then((entries) => entries.some((e) => e.name === name)).catch(() => false)) {
+        name = `${baseName} 복사 ${i}${ext}`;
+        i++;
+      }
+      const content = await readTextFile(entry.path);
+      const newPath = `${dir}\\${name}`;
+      const file = await create(newPath);
+      await file.write(new TextEncoder().encode(content));
+      await file.close();
+      refreshFileTree();
+      openTab(newPath, name, content);
+    } catch (err) {
+      console.error("복제 실패:", err);
+    }
+  };
+
   const handleNewFolder = async (folderPath: string) => {
     try {
       let name = "새 폴더";
@@ -378,6 +401,7 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
       { label: isFav ? "즐겨찾기 해제" : "즐겨찾기 등록", onClick: () => isFav ? removeFav(entry.path) : addFav(entry.path) },
       { divider: true, label: "", onClick: () => {} },
       { label: "경로 복사", onClick: () => navigator.clipboard.writeText(entry.path) },
+      { label: "복제", onClick: () => handleDuplicateFile(entry) },
       { label: "이름 바꾸기", onClick: () => startRename(entry) },
       { divider: true, label: "", onClick: () => {} },
       { label: "삭제", onClick: () => setDeleteConfirm(items), danger: true },

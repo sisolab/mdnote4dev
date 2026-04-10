@@ -94,6 +94,13 @@ export function markdownToHtml(md: string, docFilePath?: string | null): string 
   // frontmatter 제거
   let html = md.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, "");
 
+  // HTML 태그 보호 (img 등) — 마크다운 변환에 의해 깨지지 않도록 placeholder로 대체
+  const htmlBlocks: string[] = [];
+  html = html.replace(/<(img|div|span|table|iframe)\s[^>]*\/?>/gi, (match) => {
+    htmlBlocks.push(match);
+    return `%%HTML_BLOCK_${htmlBlocks.length - 1}%%`;
+  });
+
   // 코드 블록 (먼저 처리)
   html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (_m, lang, code) => {
     return `<pre><code class="language-${lang}">${escapeHtml(code.trimEnd())}</code></pre>`;
@@ -165,13 +172,31 @@ export function markdownToHtml(md: string, docFilePath?: string | null): string 
     return `<img src="${resolvedSrc}" alt="${alt}">`;
   });
 
-  // HTML img 태그의 상대경로를 asset URL로 변환
+  // 링크
+  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+
+  // 문단 (빈 줄로 구분)
+  html = html
+    .split("\n\n")
+    .map((block) => {
+      block = block.trim();
+      if (!block) return "";
+      if (block.startsWith("<") || block.startsWith("%%HTML_BLOCK_")) return block;
+      return `<p>${block.replace(/\n/g, "<br>")}</p>`;
+    })
+    .join("");
+
+  // HTML 태그 placeholder 복원
+  html = html.replace(/%%HTML_BLOCK_(\d+)%%/g, (_m, idx) => htmlBlocks[parseInt(idx)]);
+
+  // <img> 태그의 상대경로를 asset URL로 변환
   if (docFilePath) {
-    html = html.replace(/<img\s([^>]*?)src="(\.\/[^"]+)"([^>]*)>/g, (_m, pre, src, post) => {
+    html = html.replace(/<img\s([^>]*?)src="(\.\/[^"]+)"([^>]*)>/g, (_m) => {
+      const srcMatch = _m.match(/src="([^"]+)"/);
+      const src = srcMatch?.[1] ?? "";
       const docDir = docFilePath.substring(0, docFilePath.lastIndexOf("\\"));
       const absPath = `${docDir}\\${src.substring(2).replace(/\//g, "\\")}`;
       const resolvedSrc = convertFileSrc(absPath);
-      // width/align 속성 파싱
       const widthMatch = _m.match(/width="(\d+)"/);
       const alignMatch = _m.match(/align="(\w+)"/);
       const width = widthMatch ? parseInt(widthMatch[1]) : 320;
@@ -182,20 +207,6 @@ export function markdownToHtml(md: string, docFilePath?: string | null): string 
       return `<img src="${resolvedSrc}" alt="${alt}" data-width="${width}" data-align="${align}" class="${alignClass}" style="${style}">`;
     });
   }
-
-  // 링크
-  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
-
-  // 문단 (빈 줄로 구분)
-  html = html
-    .split("\n\n")
-    .map((block) => {
-      block = block.trim();
-      if (!block) return "";
-      if (block.startsWith("<")) return block;
-      return `<p>${block.replace(/\n/g, "<br>")}</p>`;
-    })
-    .join("");
 
   return html;
 }

@@ -174,7 +174,7 @@ export const useAppStore = create<AppState>()(
           return { expandedFolders: next };
         }),
 
-      tabs: [{ id: "tag-explorer", title: "태그", filePath: null, content: "", isDirty: false, type: "tag-explorer" as const, tagFilters: [] }],
+      tabs: [{ id: "tag-explorer", title: "검색", filePath: null, content: "", isDirty: false, type: "tag-explorer" as const, tagFilters: [] }],
       activeTabId: "tag-explorer",
 
       openTab: (filePath, title, content) =>
