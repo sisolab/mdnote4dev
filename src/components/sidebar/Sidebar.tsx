@@ -341,7 +341,7 @@ export function Sidebar() {
           </button>
         )}
       </div>
-      <div className="flex-1 overflow-y-auto" style={{ padding: "0", fontSize: compactMode ? "12px" : "14px" }} onContextMenu={handleSidebarContextMenu}>
+      <div className="flex-1 overflow-y-auto hide-scrollbar" style={{ padding: "0", fontSize: compactMode ? "12px" : "14px" }} onContextMenu={handleSidebarContextMenu}>
 
         {/* ── 즐겨찾기 섹션 ── */}
         {(!searchQuery || favoriteFiles.some((f) => f.split("\\").pop()?.toLowerCase().includes(searchQuery.toLowerCase()))) && (
