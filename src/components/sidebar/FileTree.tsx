@@ -118,12 +118,17 @@ function FileTreeItem({
   };
 
   const isMarkdown = entry.name.endsWith(".md");
-  const showReorderAbove = reorderTargetProp?.path === entry.path && reorderTargetProp?.pos === "above";
-  const showReorderBelow = reorderTargetProp?.path === entry.path && reorderTargetProp?.pos === "below";
+  // 리오더 드롭선: 이 항목 아래에 선 표시 (below이거나, 다음 항목이 above)
+  const rt = reorderTargetProp;
+  const showReorderLine = rt && !dragPaths?.includes(entry.path) && (
+    (rt.path === entry.path && rt.pos === "below")
+  );
+  // 맨 위 드롭선: 첫 항목이 above일 때
+  const showReorderTop = rt && rt.path === entry.path && rt.pos === "above" && !dragPaths?.includes(entry.path);
 
   return (
     <div>
-      {showReorderAbove && <div style={{ height: "3px", background: "var(--color-accent)", margin: "0 16px", borderRadius: "2px" }} />}
+      {showReorderTop && <div style={{ height: "3px", background: "var(--color-accent)", margin: "0 16px", borderRadius: "2px" }} />}
       <button
         data-path={entry.path}
         data-is-dir={String(!!entry.isDirectory)}
@@ -191,7 +196,7 @@ function FileTreeItem({
           transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
         }} />
       </button>
-      {showReorderBelow && <div style={{ height: "3px", background: "var(--color-accent)", margin: "0 16px", borderRadius: "2px" }} />}
+      {showReorderLine && <div style={{ height: "3px", background: "var(--color-accent)", margin: "0 16px", borderRadius: "2px" }} />}
 
       {(searchMode ? entry.isDirectory : isExpanded) &&
         (searchMode ? entry.children ?? [] : children).map((child) => (
@@ -395,10 +400,42 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
         const oldOrder = customFileOrder[folderPath] ? [...customFileOrder[folderPath]] : entries.map((e) => e.name);
         const newOrder = [...order];
 
+        // FLIP: 위치 캡처
+        const flipPositions: Record<string, number> = {};
+        if (containerRef.current) {
+          containerRef.current.querySelectorAll("[data-path]").forEach((el) => {
+            const p = (el as HTMLElement).dataset.path!;
+            flipPositions[p] = el.getBoundingClientRect().top;
+          });
+        }
+
         executeUndoable({
           type: "reorder-files",
           description: `파일 순서 변경: ${dragName}`,
-          execute: async () => { setCustomFileOrder(folderPath, newOrder); refreshFileTree(); },
+          execute: async () => {
+            setCustomFileOrder(folderPath, newOrder);
+            refreshFileTree();
+            // FLIP 애니메이션
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+              if (!containerRef.current) return;
+              containerRef.current.querySelectorAll("[data-path]").forEach((el) => {
+                const p = (el as HTMLElement).dataset.path!;
+                const oldTop = flipPositions[p];
+                if (oldTop === undefined) return;
+                const newTop = el.getBoundingClientRect().top;
+                const delta = oldTop - newTop;
+                if (Math.abs(delta) < 1) return;
+                const htmlEl = el as HTMLElement;
+                htmlEl.style.transform = `translateY(${delta}px)`;
+                htmlEl.style.transition = "none";
+                requestAnimationFrame(() => {
+                  htmlEl.style.transition = "transform 0.25s ease";
+                  htmlEl.style.transform = "translateY(0)";
+                  setTimeout(() => { htmlEl.style.transition = ""; htmlEl.style.transform = ""; }, 260);
+                });
+              });
+            }));
+          },
           undo: async () => { setCustomFileOrder(folderPath, oldOrder); refreshFileTree(); },
         });
         cleanup();
