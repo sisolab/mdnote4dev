@@ -1,14 +1,27 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAppStore } from "@/stores/appStore";
 import { getTagColor } from "@/utils/frontmatter";
-import { readTextFile, writeTextFile } from "@tauri-apps/plugin-fs";
+import { readTextFile, writeTextFile, exists } from "@tauri-apps/plugin-fs";
 import { parseFrontmatter, updateFrontmatterTags } from "@/utils/frontmatter";
 import { shortenPath } from "@/utils/pathUtils";
 import { FileText, Search, X, Star, ChevronRight, Clock } from "lucide-react";
 
 export function TagExplorer() {
-  const { allTags, openTab, tabs, activeTabId, recentFiles, filePreviews, fileContents, favoriteFiles, removeFavoriteFile } = useAppStore();
+  const { allTags, openTab, tabs, activeTabId, recentFiles, setRecentFiles, filePreviews, fileContents, favoriteFiles, removeFavoriteFile } = useAppStore();
   const activeTab = tabs.find((t) => t.id === activeTabId);
+
+  // 검색 탭 활성화 시 최근 문서 존재 여부 체크
+  useEffect(() => {
+    if (activeTab?.type !== "tag-explorer") return;
+    async function checkFiles() {
+      const valid: string[] = [];
+      for (const fp of recentFiles) {
+        try { if (await exists(fp)) valid.push(fp); } catch {}
+      }
+      if (valid.length !== recentFiles.length) setRecentFiles(valid);
+    }
+    checkFiles();
+  }, [activeTab?.id === activeTabId && activeTab?.type]);
   const selectedTags = activeTab?.tagFilters ?? [];
   const [searchQuery, setSearchQuery] = useState("");
   const [favExpanded, setFavExpanded] = useState(true);
