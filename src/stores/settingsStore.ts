@@ -36,8 +36,8 @@ export const DEFAULT_SETTINGS: EditorSettings = {
   editorPaddingX: 48,
   editorPaddingY: 48,
   letterSpacing: 0,
-  widthMode: "fluid" as const,
-  pageAlign: "left" as const,
+  widthMode: "fixed" as const,
+  pageAlign: "center" as const,
 };
 
 export const PRESETS: Preset[] = [
@@ -57,8 +57,8 @@ export const PRESETS: Preset[] = [
       editorPaddingX: 32,
       editorPaddingY: 24,
       letterSpacing: 0,
-      widthMode: "fluid" as const,
-      pageAlign: "left" as const,
+      widthMode: "fixed" as const,
+      pageAlign: "center" as const,
     },
   },
   {
@@ -82,8 +82,8 @@ export const PRESETS: Preset[] = [
       editorPaddingX: 64,
       editorPaddingY: 48,
       letterSpacing: 0.2,
-      widthMode: "fluid" as const,
-      pageAlign: "left" as const,
+      widthMode: "fixed" as const,
+      pageAlign: "center" as const,
     },
   },
 ];
@@ -151,7 +151,7 @@ interface SettingsState {
 export const useSettingsStore = create<SettingsState>((set) => ({
   settings: { ...DEFAULT_SETTINGS },
   showSettings: false,
-  themeMode: "light",
+  themeMode: "newspaper",
   accentColor: "blue",
 
   updateSetting: (key, value) =>

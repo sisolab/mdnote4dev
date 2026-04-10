@@ -2,7 +2,8 @@ import { useState, useRef, useEffect } from "react";
 import { useAppStore } from "@/stores/appStore";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { getTagColor, getTagColorDark } from "@/utils/frontmatter";
-import { X, Tag } from "lucide-react";
+import { X, Tag, FolderOpen, ChevronDown, ChevronUp } from "lucide-react";
+import { invoke } from "@tauri-apps/api/core";
 
 interface StatusBarProps {
   filePath: string | null;
@@ -80,8 +81,29 @@ export function StatusBar({ filePath, fileSize, lineCount, charCount, tags: prop
   };
 
   const getColor = (tag: string) => isDark ? getTagColorDark(tag) : getTagColor(tag);
+  const [collapsed, setCollapsed] = useState(false);
 
   if (!filePath) return null;
+
+  if (collapsed) {
+    return (
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "flex-end",
+        height: "34px", padding: "0 16px",
+        flexShrink: 0,
+      }}>
+        <button
+          onClick={() => setCollapsed(false)}
+          style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--color-accent)", padding: 0, display: "flex" }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = "var(--color-accent-hover)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.color = "var(--color-accent)"; }}
+          title="상태바 표시"
+        >
+          <ChevronUp size={13} strokeWidth={3} />
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div style={{
@@ -93,6 +115,15 @@ export function StatusBar({ filePath, fileSize, lineCount, charCount, tags: prop
     }}>
       {/* 파일 정보 */}
       <span className="truncate" style={{ maxWidth: "180px" }}>{shortenPath(filePath)}</span>
+      <button
+        onClick={() => invoke("open_in_explorer", { path: filePath.substring(0, filePath.lastIndexOf("\\")) })}
+        style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--color-text-light)", padding: 0, display: "flex", flexShrink: 0 }}
+        onMouseEnter={(e) => { e.currentTarget.style.color = "var(--color-text-secondary)"; }}
+        onMouseLeave={(e) => { e.currentTarget.style.color = "var(--color-text-light)"; }}
+        title="폴더 열기"
+      >
+        <FolderOpen size={12} />
+      </button>
       <div style={{ width: "1px", height: "14px", background: "var(--color-border-light)", flexShrink: 0 }} />
       <span>{formatSize(fileSize)}</span>
       <div style={{ width: "1px", height: "14px", background: "var(--color-border-light)", flexShrink: 0 }} />
@@ -183,6 +214,19 @@ export function StatusBar({ filePath, fileSize, lineCount, charCount, tags: prop
             })}
           </div>
         )}
+      </div>
+
+      {/* 숨기기 버튼 */}
+      <div style={{ marginLeft: "auto", flexShrink: 0 }}>
+        <button
+          onClick={() => setCollapsed(true)}
+          style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--color-accent)", padding: 0, display: "flex" }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = "var(--color-accent-hover)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.color = "var(--color-accent)"; }}
+          title="상태바 숨기기"
+        >
+          <ChevronDown size={13} strokeWidth={3} />
+        </button>
       </div>
     </div>
   );

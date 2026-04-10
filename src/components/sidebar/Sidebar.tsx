@@ -302,6 +302,7 @@ export function Sidebar() {
     if (path.startsWith("__favorite__")) {
       const filePath = path.replace("__favorite__", "");
       return [
+        { label: "경로 복사", onClick: () => navigator.clipboard.writeText(filePath) },
         { label: "탐색기에서 열기", onClick: () => { const dir = filePath.substring(0, filePath.lastIndexOf("\\")); invoke("open_in_explorer", { path: dir }); } },
         { divider: true, label: "", onClick: () => {} },
         { label: "즐겨찾기 해제", onClick: () => removeFavoriteFile(filePath), danger: true },
@@ -333,6 +334,7 @@ export function Sidebar() {
         setFolderRenameValue(path.split("\\").pop() ?? "");
       }},
       { divider: true, label: "", onClick: () => {} },
+      { label: "경로 복사", onClick: () => navigator.clipboard.writeText(path) },
       { label: "탐색기에서 열기", onClick: () => { invoke("open_in_explorer", { path }); } },
       { divider: true, label: "", onClick: () => {} },
       { label: "즐겨찾기에서 제거", onClick: () => removeFavorite(path), danger: true },
@@ -682,17 +684,18 @@ export function Sidebar() {
           x={sortMenu.x}
           y={sortMenu.y}
           items={[
-            { label: "폴더 내 정렬", header: true, onClick: () => {} },
-            { label: `${folderSort === "name" ? "✓  " : "    "}이름순`, onClick: () => { setFolderSort("name"); refreshFileTree(); } },
-            { label: `${folderSort === "date-added" ? "✓  " : "    "}추가 날짜순`, onClick: () => { setFolderSort("date-added"); refreshFileTree(); } },
-            { label: `${folderSort === "custom" ? "✓  " : "    "}사용자 지정`, onClick: () => { setFolderSort("custom"); refreshFileTree(); } },
-            { divider: true, label: "", onClick: () => {} },
             { label: "즐겨찾기 정렬", header: true, onClick: () => {} },
             { label: `${fileSort === "name" ? "✓  " : "    "}이름순`, onClick: () => setFileSort("name") },
             { label: `${fileSort === "date-added" ? "✓  " : "    "}추가 날짜순`, onClick: () => setFileSort("date-added") },
             { label: `${fileSort === "custom" ? "✓  " : "    "}사용자 지정`, onClick: () => setFileSort("custom") },
+            { divider: true, label: "", onClick: () => {} },
+            { label: "폴더 내 정렬", header: true, onClick: () => {} },
+            { label: `${folderSort === "name" ? "✓  " : "    "}이름순`, onClick: () => { setFolderSort("name"); refreshFileTree(); } },
+            { label: `${folderSort === "date-added" ? "✓  " : "    "}추가 날짜순`, onClick: () => { setFolderSort("date-added"); refreshFileTree(); } },
+            { label: `${folderSort === "custom" ? "✓  " : "    "}사용자 지정`, onClick: () => { setFolderSort("custom"); refreshFileTree(); } },
           ]}
           onClose={() => setSortMenu(null)}
+          anchorBottom
         />
       )}
       </>

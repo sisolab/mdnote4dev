@@ -76,8 +76,8 @@ body {
 
 /* 스크롤바 스타일링 */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 12px;
+  height: 12px;
 }
 
 ::-webkit-scrollbar-track {
@@ -86,7 +86,7 @@ body {
 
 ::-webkit-scrollbar-thumb {
   background: var(--color-border-medium);
-  border-radius: 3px;
+  border-radius: 6px;
 }
 
 ::-webkit-scrollbar-thumb:hover {

@@ -8,7 +8,7 @@ import {
   getFontFamily,
   type EditorSettings,
 } from "@/stores/settingsStore";
-import { Sun, Moon, Minimize2, AlignCenter, Maximize2, SlidersHorizontal, RotateCcw, Type, X } from "lucide-react";
+import { Sun, Moon, BookOpen, CloudMoon, Minimize2, AlignCenter, Maximize2, SlidersHorizontal, RotateCcw, Type, X } from "lucide-react";
 import { FontPreview } from "./FontPreview";
 
 function ResetButton({ onClick, visible }: { onClick: () => void; visible: boolean }) {
@@ -239,12 +239,12 @@ export function SettingsPanel() {
 
           {/* 테마 */}
           <SectionTitle>테마</SectionTitle>
-          <SettingRow label="배경" onReset={() => setThemeMode("light")} changed={themeMode !== "light"}>
+          <SettingRow label="배경" onReset={() => setThemeMode("newspaper")} changed={themeMode !== "newspaper"}>
             <ToggleButtons
               options={[
                 { value: "light", label: "라이트", icon: <Sun size={12} /> },
-                { value: "newspaper", label: "뉴스페이퍼" },
-                { value: "charcoal", label: "차콜" },
+                { value: "newspaper", label: "뉴스페이퍼", icon: <BookOpen size={12} /> },
+                { value: "charcoal", label: "차콜", icon: <CloudMoon size={12} /> },
                 { value: "dark", label: "다크", icon: <Moon size={12} /> },
               ]}
               value={themeMode}

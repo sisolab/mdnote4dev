@@ -361,6 +361,7 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
         { label: "새 문서", onClick: () => handleNewFile(entry.path) },
         { label: "새 폴더", onClick: () => handleNewFolder(entry.path) },
         { divider: true, label: "", onClick: () => {} },
+        { label: "경로 복사", onClick: () => navigator.clipboard.writeText(entry.path) },
         { label: "이름 바꾸기", onClick: () => startRename(entry) },
         { divider: true, label: "", onClick: () => {} },
         { label: "삭제", onClick: () => setDeleteConfirm(items), danger: true },
@@ -371,6 +372,7 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
     return [
       { label: isFav ? "즐겨찾기 해제" : "즐겨찾기 등록", onClick: () => isFav ? removeFav(entry.path) : addFav(entry.path) },
       { divider: true, label: "", onClick: () => {} },
+      { label: "경로 복사", onClick: () => navigator.clipboard.writeText(entry.path) },
       { label: "이름 바꾸기", onClick: () => startRename(entry) },
       { divider: true, label: "", onClick: () => {} },
       { label: "삭제", onClick: () => setDeleteConfirm(items), danger: true },
