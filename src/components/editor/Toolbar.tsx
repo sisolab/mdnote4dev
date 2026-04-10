@@ -1,5 +1,5 @@
 import type { Editor } from "@tiptap/react";
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useEffect } from "react";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { useAppStore } from "@/stores/appStore";
 import {
@@ -74,6 +74,81 @@ function Divider() {
   return <div style={{ width: "1px", height: "24px", background: "var(--color-border-light)", margin: "0 10px", flexShrink: 0 }} />;
 }
 
+function TableGridButton({ editor, onHover }: { editor: Editor; onHover: (el: HTMLButtonElement | null) => void }) {
+  const [open, setOpen] = useState(false);
+  const [hoverRow, setHoverRow] = useState(0);
+  const [hoverCol, setHoverCol] = useState(0);
+  const ref = useRef<HTMLDivElement>(null);
+  const MAX = 6;
+  const CELL = 20;
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    setTimeout(() => window.addEventListener("click", handler), 0);
+    return () => window.removeEventListener("click", handler);
+  }, [open]);
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <button
+        onClick={() => setOpen(!open)}
+        onMouseEnter={(e) => onHover(e.currentTarget)}
+        title="표 삽입"
+        style={{
+          width: "34px", height: "40px", flexShrink: 0,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          border: "none", background: "transparent", cursor: "pointer",
+          position: "relative", zIndex: 1, transition: "color 0.1s",
+          color: open ? "var(--color-accent)" : "var(--color-text-secondary)",
+          borderRadius: "3px",
+        }}
+      >
+        <Table size={15} />
+      </button>
+      {open && (
+        <div style={{
+          position: "absolute", top: "100%", left: "0", zIndex: 9999,
+          background: "var(--color-bg-elevated)", border: "1px solid var(--color-border-medium)",
+          borderRadius: "6px", boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
+          padding: "8px",
+        }}>
+          <div style={{ display: "grid", gridTemplateColumns: `repeat(${MAX}, ${CELL}px)`, gap: "2px" }}>
+            {Array.from({ length: MAX * MAX }).map((_, i) => {
+              const r = Math.floor(i / MAX);
+              const c = i % MAX;
+              const active = r <= hoverRow && c <= hoverCol;
+              return (
+                <div
+                  key={i}
+                  onMouseEnter={() => { setHoverRow(r); setHoverCol(c); }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    editor.chain().focus().insertTable({ rows: r + 1, cols: c + 1, withHeaderRow: true }).run();
+                    setOpen(false);
+                  }}
+                  style={{
+                    width: CELL, height: CELL,
+                    borderRadius: "2px",
+                    border: `1px solid ${active ? "var(--color-accent)" : "var(--color-border-light)"}`,
+                    background: active ? "var(--color-accent-subtle)" : "transparent",
+                    cursor: "pointer", transition: "all 0.05s",
+                  }}
+                />
+              );
+            })}
+          </div>
+          <div style={{ textAlign: "center", fontSize: "11px", color: "var(--color-text-secondary)", marginTop: "6px", fontWeight: 500 }}>
+            {hoverRow + 1} × {hoverCol + 1}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function Toolbar({ editor }: ToolbarProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [highlight, setHighlight] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
@@ -96,7 +171,7 @@ export function Toolbar({ editor }: ToolbarProps) {
       ref={containerRef}
       onMouseLeave={() => setHighlight(null)}
       style={{ padding: "0 16px", position: "relative" }}
-      className="flex items-center gap-0 border-b border-border-light bg-bg-frosted backdrop-blur-[8px] shrink-0 overflow-hidden"
+      className="flex items-center gap-0 border-b border-border-light bg-bg-frosted backdrop-blur-[8px] shrink-0"
     >
       <div style={{
         position: "absolute",
@@ -163,9 +238,7 @@ export function Toolbar({ editor }: ToolbarProps) {
 
       <Divider />
 
-      <ToolbarButton onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} title="표 삽입" onHover={handleHover}>
-        <Table size={15} />
-      </ToolbarButton>
+      <TableGridButton editor={editor} onHover={handleHover} />
 
       {/* 오른쪽: 레이아웃 토글 */}
       <div style={{ flex: 1, minWidth: "8px" }} />
