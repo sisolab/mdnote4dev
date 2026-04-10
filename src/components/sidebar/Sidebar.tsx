@@ -7,7 +7,8 @@ import { useAppStore } from "@/stores/appStore";
 import { FileTree } from "./FileTree";
 import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
 import { Tooltip } from "@/components/ui/Tooltip";
-import { Unlink, ChevronRight, Folder, Tag, Search, ChevronsDownUp, ChevronsUpDown, ArrowUpDown, FilePlus, FolderPlus, FileText, FolderOpen, ListCollapse } from "lucide-react";
+import { Unlink, ChevronRight, Folder, Tag, Search, ChevronsDownUp, ChevronsUpDown, ArrowUpDown, FilePlus, FolderPlus, FileText, FolderOpen, ListCollapse, icons } from "lucide-react";
+import { IconPicker } from "@/components/settings/IconPicker";
 
 function shortenPath(path: string): string {
   const userHome = path.match(/^([A-Z]:\\Users\\[^\\]+)/i);
@@ -18,7 +19,7 @@ function shortenPath(path: string): string {
 }
 
 export function Sidebar() {
-  const { favorites, sidebarCollapsed, removeFavorite, addFavorite, openTab, refreshFileTree, fileTreeVersion, setFavoriteAlias, updateFavoritePath, folderSort, fileSort, setFolderSort, setFileSort, favoriteFiles, addFavoriteFile, removeFavoriteFile, selectedPaths } = useAppStore();
+  const { favorites, sidebarCollapsed, removeFavorite, addFavorite, openTab, refreshFileTree, fileTreeVersion, setFavoriteAlias, updateFavoritePath, setFavoriteIcon, folderSort, fileSort, setFolderSort, setFileSort, favoriteFiles, addFavoriteFile, removeFavoriteFile, selectedPaths } = useAppStore();
   const [sidebarTab, setSidebarTab] = useState("files");
   const [searchQuery, setSearchQuery] = useState("");
   const [favoritesExpanded, setStandaloneExpanded] = useState(true);
@@ -32,6 +33,7 @@ export function Sidebar() {
   const [aliasValue, setAliasValue] = useState("");
   const [folderRenaming, setFolderRenaming] = useState<string | null>(null);
   const [folderRenameValue, setFolderRenameValue] = useState("");
+  const [iconPickerPath, setIconPickerPath] = useState<string | null>(null);
   const [sidebarWidth, setSidebarWidth] = useState(280);
   const isResizing = useRef(false);
 
@@ -326,6 +328,7 @@ export function Sidebar() {
       }},
       ...(hasAlias ? [{ label: "별칭 제거", onClick: () => setFavoriteAlias(path, undefined) }] : []),
       { divider: true, label: "", onClick: () => {} },
+      { label: "아이콘 변경", onClick: () => setIconPickerPath(path) },
       { label: "이름 바꾸기", onClick: () => {
         setFolderRenaming(path);
         setFolderRenameValue(path.split("\\").pop() ?? "");
@@ -564,7 +567,10 @@ export function Sidebar() {
                     )}
 
                     {/* 폴더 아이콘 */}
-                    <Folder size={14} className="shrink-0" style={{ color: isBroken ? "var(--color-text-muted)" : "var(--color-accent)" }} />
+                    {(() => {
+                      const IconComp = fav.icon ? icons[fav.icon as keyof typeof icons] : Folder;
+                      return IconComp ? <IconComp size={14} className="shrink-0" style={{ color: isBroken ? "var(--color-text-muted)" : "var(--color-accent)" }} /> : <Folder size={14} className="shrink-0" style={{ color: "var(--color-accent)" }} />;
+                    })()}
 
                     {/* 폴더 이름 */}
                     {folderRenaming === fav.path ? (
@@ -744,6 +750,15 @@ export function Sidebar() {
           <ArrowUpDown size={15} />
         </button>
       </div>
+
+      {/* 아이콘 피커 */}
+      {iconPickerPath && (
+        <IconPicker
+          currentIcon={favorites.find((f) => f.path === iconPickerPath)?.icon}
+          onSelect={(icon) => setFavoriteIcon(iconPickerPath, icon)}
+          onClose={() => setIconPickerPath(null)}
+        />
+      )}
 
       {/* 정렬 메뉴 */}
       {sortMenu && (

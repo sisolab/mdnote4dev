@@ -11,6 +11,7 @@ export interface FavoriteFolder {
   path: string;
   name: string;
   alias?: string;
+  icon?: string;
 }
 
 export type SortMode = "name" | "date-added" | "date-modified" | "custom";
@@ -32,6 +33,7 @@ interface AppState {
   removeFavorite: (path: string) => void;
   setFavoriteAlias: (path: string, alias: string | undefined) => void;
   updateFavoritePath: (oldPath: string, newPath: string, newName: string) => void;
+  setFavoriteIcon: (path: string, icon: string | undefined) => void;
 
   // 단일 파일 (특수 폴더)
   favoriteFiles: string[];
@@ -104,6 +106,13 @@ export const useAppStore = create<AppState>((set) => ({
     set((state) => ({
       favorites: state.favorites.map((f) =>
         f.path === oldPath ? { ...f, path: newPath, name: newName } : f
+      ),
+    })),
+
+  setFavoriteIcon: (path, icon) =>
+    set((state) => ({
+      favorites: state.favorites.map((f) =>
+        f.path === path ? { ...f, icon } : f
       ),
     })),
 
