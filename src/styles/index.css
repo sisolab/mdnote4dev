@@ -288,19 +288,17 @@ body {
   border-collapse: collapse;
   margin: 0.75rem 0;
   width: auto;
-  table-layout: fixed;
+  table-layout: auto;
 }
 
 .tiptap th, .tiptap td {
   border: 1px solid var(--color-border-medium);
   padding: 0.25rem 0.5rem;
   text-align: left;
-  min-width: 50px;
+  min-width: 100px;
   vertical-align: top;
   word-wrap: break-word;
   overflow-wrap: break-word;
-  word-break: break-all;
-  overflow: hidden;
   position: relative;
 }
 

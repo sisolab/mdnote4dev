@@ -73,8 +73,10 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
     const handler = async (e: ClipboardEvent) => {
       const items = e.clipboardData?.items;
       if (!items) return;
+      // HTML 데이터가 있으면 이미지 붙여넣기 건너뛰기 (엑셀 등 복합 클립보드)
+      const hasHtml = Array.from(items).some((item) => item.type === "text/html");
       for (const item of Array.from(items)) {
-        if (item.type.startsWith("image/")) {
+        if (item.type.startsWith("image/") && !hasHtml) {
           e.preventDefault();
           e.stopPropagation();
           const blob = item.getAsFile();
