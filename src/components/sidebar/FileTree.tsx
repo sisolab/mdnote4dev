@@ -390,7 +390,6 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
           dragMoveState.current = { startY: 0, active: false, paths: [] };
           return;
         }
-        }
       }
       cleanup();
     };
