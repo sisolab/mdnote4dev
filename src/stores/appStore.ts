@@ -69,6 +69,10 @@ interface AppState {
   setFolderSort: (mode: SortMode) => void;
   setFileSort: (mode: SortMode) => void;
 
+  // 커스텀 파일 순서 (폴더경로 → 파일/폴더명 배열)
+  customFileOrder: Record<string, string[]>;
+  setCustomFileOrder: (folderPath: string, order: string[]) => void;
+
   // 파일 트리
   expandedFolders: Set<string>;
   toggleFolder: (path: string) => void;
@@ -175,6 +179,12 @@ export const useAppStore = create<AppState>()(
       fileSort: "name" as SortMode,
       setFolderSort: (mode) => set({ folderSort: mode }),
       setFileSort: (mode) => set({ fileSort: mode }),
+
+      customFileOrder: {} as Record<string, string[]>,
+      setCustomFileOrder: (folderPath, order) =>
+        set((state) => ({
+          customFileOrder: { ...state.customFileOrder, [folderPath]: order },
+        })),
 
       expandedFolders: new Set<string>(),
       toggleFolder: (path) =>
@@ -340,6 +350,7 @@ export const useAppStore = create<AppState>()(
         sidebarCollapsed: state.sidebarCollapsed,
         folderSort: state.folderSort,
         fileSort: state.fileSort,
+        customFileOrder: state.customFileOrder,
         // Set → Array로 변환하여 저장
         expandedFolders: [...state.expandedFolders],
         // 탭: content 제외, filePath 있는 탭만 저장

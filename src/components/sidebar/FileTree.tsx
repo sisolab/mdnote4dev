@@ -12,7 +12,7 @@ import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
 
 async function loadDirectory(path: string): Promise<FileEntry[]> {
   try {
-    const { folderSort } = useAppStore.getState();
+    const { folderSort, customFileOrder } = useAppStore.getState();
     const entries = await readDir(path);
     const result: FileEntry[] = entries
       .map((entry) => ({
@@ -24,7 +24,18 @@ async function loadDirectory(path: string): Promise<FileEntry[]> {
       .sort((a, b) => {
         if (a.isDirectory !== b.isDirectory) return a.isDirectory ? -1 : 1;
         if (folderSort === "name") return a.name.localeCompare(b.name);
-        return 0; // date-added/custom = 파일시스템 순서
+        if (folderSort === "custom") {
+          const order = customFileOrder[path];
+          if (order) {
+            const ai = order.indexOf(a.name);
+            const bi = order.indexOf(b.name);
+            // 순서에 없는 항목은 뒤로
+            const aIdx = ai >= 0 ? ai : 9999;
+            const bIdx = bi >= 0 ? bi : 9999;
+            return aIdx - bIdx;
+          }
+        }
+        return 0;
       });
     return result;
   } catch {
@@ -49,6 +60,7 @@ function FileTreeItem({
   onDragOverFolder,
   dragPaths,
   dropTargetPath,
+  reorderTarget: reorderTargetProp,
 }: {
   entry: FileEntry;
   depth: number;
@@ -65,6 +77,7 @@ function FileTreeItem({
   onDragOverFolder?: (e: React.MouseEvent, folderPath: string) => void;
   dragPaths?: string[] | null;
   dropTargetPath?: string | null;
+  reorderTarget?: { path: string; pos: "above" | "below" } | null;
 }) {
   const { expandedFolders, toggleFolder, selectedFile, openTab, fileTreeVersion, selectedPaths, tabs, favoriteFiles } =
     useAppStore();
@@ -105,8 +118,12 @@ function FileTreeItem({
   };
 
   const isMarkdown = entry.name.endsWith(".md");
+  const showReorderAbove = reorderTargetProp?.path === entry.path && reorderTargetProp?.pos === "above";
+  const showReorderBelow = reorderTargetProp?.path === entry.path && reorderTargetProp?.pos === "below";
+
   return (
     <div>
+      {showReorderAbove && <div style={{ height: "3px", background: "var(--color-accent)", margin: "0 16px", borderRadius: "2px" }} />}
       <button
         data-path={entry.path}
         data-is-dir={String(!!entry.isDirectory)}
@@ -174,10 +191,11 @@ function FileTreeItem({
           transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
         }} />
       </button>
+      {showReorderBelow && <div style={{ height: "3px", background: "var(--color-accent)", margin: "0 16px", borderRadius: "2px" }} />}
 
       {(searchMode ? entry.isDirectory : isExpanded) &&
         (searchMode ? entry.children ?? [] : children).map((child) => (
-          <FileTreeItem key={child.path} entry={child} depth={depth + 1} onHover={onHover} onItemClick={onItemClick} onContextMenu={onContextMenu} renamingPath={renamingPath} renameValue={renameValue} setRenameValue={setRenameValue} onFinishRename={onFinishRename} searchMode={searchMode} compact={compact} onDragStart={onDragStart} onDragOverFolder={onDragOverFolder} dragPaths={dragPaths} dropTargetPath={dropTargetPath} />
+          <FileTreeItem key={child.path} entry={child} depth={depth + 1} onHover={onHover} onItemClick={onItemClick} onContextMenu={onContextMenu} renamingPath={renamingPath} renameValue={renameValue} setRenameValue={setRenameValue} onFinishRename={onFinishRename} searchMode={searchMode} compact={compact} onDragStart={onDragStart} onDragOverFolder={onDragOverFolder} dragPaths={dragPaths} dropTargetPath={dropTargetPath} reorderTarget={reorderTargetProp} />
         ))}
     </div>
   );
@@ -206,8 +224,9 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
   const containerRef = useRef<HTMLDivElement>(null);
   const [highlight, setHighlight] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
 
-  // ── 파일/폴더 드래그 이동 ──
+  // ── 파일/폴더 드래그 이동 + 리오더 ──
   const [dragMovePaths, setDragMovePaths] = useState<string[] | null>(null);
+  const [reorderTarget, setReorderTarget] = useState<{ path: string; pos: "above" | "below" } | null>(null);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
   const dragMoveState = useRef<{ startY: number; active: boolean; paths: string[] }>({ startY: 0, active: false, paths: [] });
   const dropTargetRef = useRef<string | null>(null);
@@ -304,9 +323,19 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
           }
         }
 
-        // 드래그 중인 파일의 현재 폴더와 같으면 스킵
+        // 드래그 중인 파일의 현재 폴더와 같으면 → 리오더 모드 (custom 정렬일 때만)
         const dragDir = dragMoveState.current.paths[0]?.substring(0, dragMoveState.current.paths[0].lastIndexOf("\\"));
-        if (target === dragDir) target = null;
+        const { folderSort } = useAppStore.getState();
+        if (target === dragDir && path && !isDir && folderSort === "custom") {
+          // 같은 폴더 내 파일 위 → 리오더
+          const rect = btn!.getBoundingClientRect();
+          const pos = me.clientY < rect.top + rect.height / 2 ? "above" : "below";
+          setReorderTarget({ path, pos });
+          target = null; // 폴더 이동은 아님
+        } else {
+          setReorderTarget(null);
+          if (target === dragDir) target = null;
+        }
 
         // 이전 하이라이트 제거
         document.querySelectorAll("[data-drop-active]").forEach((el) => {
@@ -339,6 +368,36 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
         // 드래그 안 됨 → 클릭 이벤트 발생시킴
         const btn = document.querySelector(`[data-path="${CSS.escape(entry.path)}"]`) as HTMLElement;
         if (btn) btn.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+        cleanup();
+        return;
+      }
+
+      // 같은 폴더 내 리오더
+      const rt = reorderTarget;
+      if (s.active && rt && s.paths.length === 1) {
+        const dragPath = s.paths[0];
+        const dragName = dragPath.split("\\").pop() ?? "";
+        const targetName = rt.path.split("\\").pop() ?? "";
+        const folderPath = dragPath.substring(0, dragPath.lastIndexOf("\\"));
+        const { customFileOrder, setCustomFileOrder } = useAppStore.getState();
+
+        // 현재 순서 가져오기 (없으면 현재 표시 순서로 초기화)
+        let order = customFileOrder[folderPath] ? [...customFileOrder[folderPath]] : entries.map((e) => e.name);
+        const fromIdx = order.indexOf(dragName);
+        if (fromIdx >= 0) order.splice(fromIdx, 1);
+        let toIdx = order.indexOf(targetName);
+        if (rt.pos === "below") toIdx++;
+        order.splice(toIdx, 0, dragName);
+
+        const oldOrder = customFileOrder[folderPath] ? [...customFileOrder[folderPath]] : entries.map((e) => e.name);
+        const newOrder = [...order];
+
+        executeUndoable({
+          type: "reorder-files",
+          description: `파일 순서 변경: ${dragName}`,
+          execute: async () => { setCustomFileOrder(folderPath, newOrder); refreshFileTree(); },
+          undo: async () => { setCustomFileOrder(folderPath, oldOrder); refreshFileTree(); },
+        });
         cleanup();
         return;
       }
@@ -395,6 +454,7 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
       dropTargetRef.current = null;
       setDragMovePaths(null);
       setDropTarget(null);
+      setReorderTarget(null);
       removeDragGhost();
       document.querySelectorAll("[data-drop-active]").forEach((el) => {
         (el as HTMLElement).removeAttribute("data-drop-active");
@@ -749,7 +809,7 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
           <p className="text-[11px] text-text-light px-3 py-2">빈 폴더</p>
         ) : (
           items.map((entry) => (
-            <FileTreeItem key={entry.path} entry={entry} depth={0} onHover={handleHover} onItemClick={handleItemClick} onContextMenu={handleContextMenu} renamingPath={renamingPath} renameValue={renameValue} setRenameValue={setRenameValue} onFinishRename={finishRename} searchMode={!!searchQuery} compact={compact} onDragStart={startItemDrag} onDragOverFolder={updateDropTarget} dragPaths={dragMovePaths} dropTargetPath={dropTarget} />
+            <FileTreeItem key={entry.path} entry={entry} depth={0} onHover={handleHover} onItemClick={handleItemClick} onContextMenu={handleContextMenu} renamingPath={renamingPath} renameValue={renameValue} setRenameValue={setRenameValue} onFinishRename={finishRename} searchMode={!!searchQuery} compact={compact} onDragStart={startItemDrag} onDragOverFolder={updateDropTarget} dragPaths={dragMovePaths} dropTargetPath={dropTarget} reorderTarget={reorderTarget} />
           ))
         );
       })()}
