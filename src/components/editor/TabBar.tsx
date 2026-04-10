@@ -230,7 +230,7 @@ export function TabBar() {
                   color: !tab.filePath ? "var(--color-text-light)" : isActive ? "var(--color-accent)" : "var(--color-text-secondary)",
                   fontWeight: tab.filePath ? 600 : 400,
                   fontStyle: tab.filePath ? "normal" : "italic",
-                  fontSize: "12px",
+                  fontSize: "13px",
                   transition: "color 0.1s",
                 }}
               >

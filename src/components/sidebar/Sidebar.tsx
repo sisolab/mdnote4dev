@@ -421,7 +421,7 @@ export function Sidebar() {
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto hide-scrollbar" style={{ padding: "0", fontSize: compactMode ? "12px" : "14px" }} onContextMenu={handleSidebarContextMenu}>
+      <div className="flex-1 overflow-y-auto hide-scrollbar" style={{ padding: "0", fontSize: compactMode ? "11px" : "13px" }} onContextMenu={handleSidebarContextMenu}>
 
         {/* ── 즐겨찾기 섹션 ── */}
         {(!searchQuery || favoriteFiles.some((f) => f.split("\\").pop()?.toLowerCase().includes(searchQuery.toLowerCase()))) && (
@@ -432,7 +432,7 @@ export function Sidebar() {
             onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setContextMenu({ x: e.clientX, y: e.clientY, path: "__favorites_section__" }); }}
             style={{
               display: "flex", alignItems: "center", justifyContent: "space-between",
-              padding: "0 16px", height: "40px", cursor: "pointer",
+              padding: "0 16px", height: "32px", cursor: "pointer",
               borderTop: "1px solid var(--color-border-light)",
               borderBottom: "1px solid var(--color-border-light)",
             }}
@@ -505,7 +505,7 @@ export function Sidebar() {
                     <FileText size={13} className="shrink-0 text-text-light" style={{ marginTop: "-2px" }} />
                   )}
                   <div style={{ overflow: "hidden", flex: 1, minWidth: 0 }}>
-                    <div className="truncate" style={{ fontSize: compactMode ? "12px" : "14px", fontWeight: isBrokenFile ? 400 : undefined }}>{name}</div>
+                    <div className="truncate" style={{ fontSize: compactMode ? "11px" : "13px", fontWeight: isBrokenFile ? 400 : undefined }}>{name}</div>
                     <div className="truncate" style={{ fontSize: "10px", color: "var(--color-text-light)", fontWeight: 400, marginTop: "-1px" }}>
                       {(() => { const dir = filePath.substring(0, filePath.lastIndexOf("\\")); const m = dir.match(/^([A-Z]:\\Users\\[^\\]+)/i); return m ? dir.replace(m[1], "~") : dir; })()}
                     </div>
@@ -544,7 +544,7 @@ export function Sidebar() {
           onClick={() => setFolderSectionExpanded(!folderSectionExpanded)}
           style={{
             display: "flex", alignItems: "center", justifyContent: "space-between",
-            padding: "0 16px", height: "40px", cursor: "pointer",
+            padding: "0 16px", height: "32px", cursor: "pointer",
             borderTop: "1px solid var(--color-border-light)",
             borderBottom: "1px solid var(--color-border-light)",
           }}
@@ -584,9 +584,9 @@ export function Sidebar() {
                   <button
                     onClick={() => toggleFav(fav.path)}
                     onContextMenu={(e) => handleContextMenu(e, fav.path)}
-                    className="group w-full flex items-center gap-2 text-[14px] font-semibold transition-all duration-[0.15s]"
+                    className="group w-full flex items-center gap-2 text-[13px] font-semibold transition-all duration-[0.15s]"
                     style={{
-                      height: "36px",
+                      height: "30px",
                       padding: "0 16px",
                       color: isBroken ? "var(--color-text-muted)" : "var(--color-text-secondary)",
                       cursor: isBroken ? "default" : "pointer",
