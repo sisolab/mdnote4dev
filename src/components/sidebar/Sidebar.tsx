@@ -133,18 +133,6 @@ export function Sidebar() {
           setTimeout(() => {
             htmlEl.style.transition = "";
             htmlEl.style.transform = "";
-            // 이동된 폴더 하이라이트
-            if (Math.abs(delta) > 1) {
-              const inner = htmlEl.querySelector("[data-path]") as HTMLElement;
-              if (inner) {
-                inner.style.transition = "none";
-                inner.style.background = "var(--color-accent-subtle)";
-                requestAnimationFrame(() => {
-                  inner.style.transition = "background 1.5s ease";
-                  inner.style.background = "";
-                });
-              }
-            }
           }, 260);
         });
       });
