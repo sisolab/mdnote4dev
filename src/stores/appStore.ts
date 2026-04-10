@@ -54,6 +54,10 @@ interface AppState {
   toggleSidebar: () => void;
   fileTreeVersion: number;
   refreshFileTree: () => void;
+  selectedPaths: Set<string>;
+  setSelectedPaths: (paths: Set<string>) => void;
+  toggleSelectedPath: (path: string) => void;
+  clearSelectedPaths: () => void;
 
   // 하위 호환
   selectedFile: string | null;
@@ -201,6 +205,15 @@ export const useAppStore = create<AppState>((set) => ({
   toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
   fileTreeVersion: 0,
   refreshFileTree: () => set((state) => ({ fileTreeVersion: state.fileTreeVersion + 1 })),
+  selectedPaths: new Set<string>(),
+  setSelectedPaths: (paths) => set({ selectedPaths: paths }),
+  toggleSelectedPath: (path) => set((state) => {
+    const next = new Set(state.selectedPaths);
+    if (next.has(path)) next.delete(path);
+    else next.add(path);
+    return { selectedPaths: next };
+  }),
+  clearSelectedPaths: () => set({ selectedPaths: new Set<string>() }),
 
   selectedFile: null,
   fileContent: "",

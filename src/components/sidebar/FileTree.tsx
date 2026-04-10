@@ -25,22 +25,38 @@ async function loadDirectory(path: string): Promise<FileEntry[]> {
   }
 }
 
+// 표시된 모든 항목의 flat path 리스트 수집
+function collectVisiblePaths(entries: FileEntry[], expandedFolders: Set<string>): string[] {
+  const result: string[] = [];
+  for (const entry of entries) {
+    result.push(entry.path);
+    if (entry.isDirectory && expandedFolders.has(entry.path) && entry.children) {
+      result.push(...collectVisiblePaths(entry.children, expandedFolders));
+    }
+  }
+  return result;
+}
+
 function FileTreeItem({
   entry,
   depth,
   onHover,
+  onItemClick,
   onContextMenu,
 }: {
   entry: FileEntry;
   depth: number;
   onHover: (el: HTMLButtonElement | null) => void;
+  onItemClick: (e: React.MouseEvent, entry: FileEntry) => void;
   onContextMenu: (e: React.MouseEvent, entry: FileEntry) => void;
 }) {
-  const { expandedFolders, toggleFolder, selectedFile, openTab, fileTreeVersion } =
+  const { expandedFolders, toggleFolder, selectedFile, openTab, fileTreeVersion, selectedPaths, clearSelectedPaths, setSelectedPaths, tabs } =
     useAppStore();
   const [children, setChildren] = useState<FileEntry[]>([]);
   const isExpanded = expandedFolders.has(entry.path);
-  const isSelected = selectedFile === entry.path;
+  const isFocused = selectedFile === entry.path;
+  const isOpened = tabs.some((t) => t.filePath === entry.path);
+  const isMultiSelected = selectedPaths.has(entry.path);
 
   useEffect(() => {
     if (isExpanded && entry.isDirectory) {
@@ -48,10 +64,21 @@ function FileTreeItem({
     }
   }, [isExpanded, entry.path, entry.isDirectory, fileTreeVersion]);
 
-  const handleClick = async () => {
+  const handleClick = (e: React.MouseEvent) => {
+    if (e.ctrlKey || e.shiftKey) {
+      onItemClick(e, entry);
+      return;
+    }
+
+    // 일반 클릭: 해당 항목만 선택
+    onItemClick(e, entry);
     if (entry.isDirectory) {
       toggleFolder(entry.path);
-    } else if (entry.name.endsWith(".md")) {
+    }
+  };
+
+  const handleDoubleClick = async () => {
+    if (entry.name.endsWith(".md")) {
       try {
         const content = await readTextFile(entry.path);
         openTab(entry.path, entry.name, content);
@@ -66,16 +93,19 @@ function FileTreeItem({
   return (
     <div>
       <button
+        data-path={entry.path}
         onClick={handleClick}
+        onDoubleClick={handleDoubleClick}
         onMouseEnter={(e) => onHover(e.currentTarget)}
         onContextMenu={(e) => onContextMenu(e, entry)}
         className={`w-full flex items-center gap-2 text-[14px] relative z-10 ${
-          isSelected
+          isOpened
             ? "text-accent font-semibold"
             : "text-text-primary"
         } ${!entry.isDirectory && !isMarkdown ? "opacity-30" : ""}`}
         style={{
           paddingLeft: `${depth * 16 + 32}px`, paddingRight: "16px", height: "36px",
+          background: isMultiSelected ? "var(--color-accent-subtle)" : "transparent",
         }}
       >
         {entry.isDirectory ? (
@@ -92,8 +122,8 @@ function FileTreeItem({
           left: "4px",
           top: "50%",
           transform: "translateY(-50%)",
-          width: "2px",
-          height: isSelected ? "14px" : "0px",
+          width: isFocused ? "12px" : "2px",
+          height: isFocused || isOpened ? "16px" : "0px",
           borderRadius: "1px",
           background: "var(--color-accent)",
           transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
@@ -102,7 +132,7 @@ function FileTreeItem({
 
       {isExpanded &&
         children.map((child) => (
-          <FileTreeItem key={child.path} entry={child} depth={depth + 1} onHover={onHover} onContextMenu={onContextMenu} />
+          <FileTreeItem key={child.path} entry={child} depth={depth + 1} onHover={onHover} onItemClick={onItemClick} onContextMenu={onContextMenu} />
         ))}
     </div>
   );
@@ -110,11 +140,12 @@ function FileTreeItem({
 
 export function FileTree({ rootPath }: { rootPath: string }) {
   const [entries, setEntries] = useState<FileEntry[]>([]);
-  const { fileTreeVersion, refreshFileTree, closeTab, tabs } = useAppStore();
+  const { fileTreeVersion, refreshFileTree, closeTab, tabs, selectedPaths, setSelectedPaths, toggleSelectedPath, clearSelectedPaths } = useAppStore();
   const containerRef = useRef<HTMLDivElement>(null);
   const [highlight, setHighlight] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; entry: FileEntry } | null>(null);
-  const [deleteConfirm, setDeleteConfirm] = useState<FileEntry | null>(null);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; entries: FileEntry[] } | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<FileEntry[] | null>(null);
+  const lastClickedPath = useRef<string | null>(null);
 
   const handleHover = useCallback((el: HTMLButtonElement | null) => {
     if (!el || !containerRef.current) {
@@ -126,18 +157,63 @@ export function FileTree({ rootPath }: { rootPath: string }) {
     setHighlight({ left: br.left - cr.left, top: br.top - cr.top, width: br.width, height: br.height });
   }, []);
 
+  // DOM에서 보이는 항목 path 순서 가져오기
+  const getVisiblePaths = useCallback((): string[] => {
+    if (!containerRef.current) return [];
+    const buttons = containerRef.current.querySelectorAll("button[data-path]");
+    return Array.from(buttons).map((b) => (b as HTMLElement).dataset.path!);
+  }, []);
+
+  const handleItemClick = useCallback((e: React.MouseEvent, entry: FileEntry) => {
+    if (e.ctrlKey) {
+      toggleSelectedPath(entry.path);
+      lastClickedPath.current = entry.path;
+    } else if (e.shiftKey && lastClickedPath.current) {
+      const paths = getVisiblePaths();
+      const startIdx = paths.indexOf(lastClickedPath.current);
+      const endIdx = paths.indexOf(entry.path);
+      if (startIdx !== -1 && endIdx !== -1) {
+        const from = Math.min(startIdx, endIdx);
+        const to = Math.max(startIdx, endIdx);
+        const rangePaths = new Set<string>();
+        for (let i = from; i <= to; i++) {
+          rangePaths.add(paths[i]);
+        }
+        setSelectedPaths(rangePaths);
+      }
+      lastClickedPath.current = entry.path;
+    } else {
+      // 일반 클릭
+      setSelectedPaths(new Set([entry.path]));
+      lastClickedPath.current = entry.path;
+    }
+  }, [toggleSelectedPath, setSelectedPaths, getVisiblePaths]);
+
   const handleContextMenu = useCallback((e: React.MouseEvent, entry: FileEntry) => {
     e.preventDefault();
     e.stopPropagation();
-    setContextMenu({ x: e.clientX, y: e.clientY, entry });
-  }, []);
+    // 우클릭한 항목이 선택 목록에 있으면 선택된 것들 모두, 아니면 그것만
+    if (selectedPaths.has(entry.path) && selectedPaths.size > 1) {
+      const selected = getVisiblePaths()
+        .filter((p) => selectedPaths.has(p))
+        .map((p) => {
+          const name = p.split("\\").pop() ?? "";
+          return { path: p, name, isDirectory: !name.includes(".") } as FileEntry;
+        });
+      setContextMenu({ x: e.clientX, y: e.clientY, entries: selected });
+    } else {
+      setContextMenu({ x: e.clientX, y: e.clientY, entries: [entry] });
+    }
+  }, [selectedPaths]);
 
-  const handleDelete = async (entry: FileEntry) => {
+  const handleDelete = async (items: FileEntry[]) => {
     try {
-      await invoke("move_to_trash", { path: entry.path });
-      // 열려있는 탭이면 닫기
-      const openTab = tabs.find((t) => t.filePath === entry.path);
-      if (openTab) closeTab(openTab.id);
+      for (const item of items) {
+        await invoke("move_to_trash", { path: item.path });
+        const openTab = tabs.find((t) => t.filePath === item.path);
+        if (openTab) closeTab(openTab.id);
+      }
+      clearSelectedPaths();
       refreshFileTree();
     } catch (err) {
       console.error("삭제 실패:", err);
@@ -145,9 +221,10 @@ export function FileTree({ rootPath }: { rootPath: string }) {
     setDeleteConfirm(null);
   };
 
-  const getContextMenuItems = (entry: FileEntry): ContextMenuItem[] => {
+  const getContextMenuItems = (items: FileEntry[]): ContextMenuItem[] => {
+    const label = items.length > 1 ? `${items.length}개 항목 삭제` : "삭제";
     return [
-      { label: "삭제", onClick: () => setDeleteConfirm(entry), danger: true },
+      { label, onClick: () => setDeleteConfirm(items), danger: true },
     ];
   };
 
@@ -161,6 +238,12 @@ export function FileTree({ rootPath }: { rootPath: string }) {
       className="py-0.5"
       style={{ position: "relative" }}
       onMouseLeave={() => setHighlight(null)}
+      onClick={(e) => {
+        // 빈 공간 클릭 시 선택 해제
+        if (!(e.target as HTMLElement).closest("button")) {
+          clearSelectedPaths();
+        }
+      }}
     >
       {/* 슬라이딩 하이라이트 */}
       <div style={{
@@ -181,7 +264,7 @@ export function FileTree({ rootPath }: { rootPath: string }) {
         <p className="text-[11px] text-text-light px-3 py-2">빈 폴더</p>
       ) : (
         entries.map((entry) => (
-          <FileTreeItem key={entry.path} entry={entry} depth={0} onHover={handleHover} onContextMenu={handleContextMenu} />
+          <FileTreeItem key={entry.path} entry={entry} depth={0} onHover={handleHover} onItemClick={handleItemClick} onContextMenu={handleContextMenu} />
         ))
       )}
 
@@ -190,7 +273,7 @@ export function FileTree({ rootPath }: { rootPath: string }) {
         <ContextMenu
           x={contextMenu.x}
           y={contextMenu.y}
-          items={getContextMenuItems(contextMenu.entry)}
+          items={getContextMenuItems(contextMenu.entries)}
           onClose={() => setContextMenu(null)}
         />
       )}
@@ -215,15 +298,21 @@ export function FileTree({ rootPath }: { rootPath: string }) {
             }}
           >
             <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--color-text-heading)", marginBottom: "8px" }}>
-              {deleteConfirm.isDirectory ? "폴더를 삭제하시겠습니까?" : "파일을 삭제하시겠습니까?"}
+              {deleteConfirm.length > 1
+                ? `${deleteConfirm.length}개 항목을 삭제하시겠습니까?`
+                : deleteConfirm[0].isDirectory ? "폴더를 삭제하시겠습니까?" : "파일을 삭제하시겠습니까?"}
             </div>
-            <div style={{ fontSize: "12px", color: "var(--color-text-secondary)", marginBottom: "4px", lineHeight: 1.5 }}>
-              <strong>{deleteConfirm.name}</strong>
+            <div style={{ fontSize: "12px", color: "var(--color-text-secondary)", marginBottom: "4px", lineHeight: 1.6 }}>
+              {deleteConfirm.length > 1
+                ? deleteConfirm.map((e) => e.name).join(", ")
+                : <strong>{deleteConfirm[0].name}</strong>}
             </div>
             <div style={{ fontSize: "11px", color: "var(--color-text-tertiary)", marginBottom: "20px", lineHeight: 1.5 }}>
-              {deleteConfirm.isDirectory
-                ? "폴더와 내부의 모든 파일이 휴지통으로 이동됩니다."
-                : "이 파일이 휴지통으로 이동됩니다."}
+              {deleteConfirm.length > 1
+                ? "선택한 항목들이 휴지통으로 이동됩니다."
+                : deleteConfirm[0].isDirectory
+                  ? "폴더와 내부의 모든 파일이 휴지통으로 이동됩니다."
+                  : "이 파일이 휴지통으로 이동됩니다."}
             </div>
             <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
               <button
