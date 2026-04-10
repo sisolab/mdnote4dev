@@ -9,8 +9,9 @@ import { Tooltip } from "@/components/ui/Tooltip";
 import { Unlink, ChevronRight, Folder, Tag, ChevronsDownUp, ChevronsUpDown, ArrowUpDown, FilePlus, FolderPlus, FileText, FolderOpen, ListCollapse, icons } from "lucide-react";
 import { IconPicker } from "@/components/settings/IconPicker";
 import { shortenPath } from "@/utils/pathUtils";
+import { executeUndoable } from "@/stores/undoStore";
 export function Sidebar() {
-  const { favorites, sidebarCollapsed, removeFavorite, addFavorite, openTab, refreshFileTree, fileTreeVersion, setFavoriteAlias, updateFavoritePath, setFavoriteIcon, folderSort, fileSort, setFolderSort, setFileSort, favoriteFiles, addFavoriteFile, removeFavoriteFile, selectedPaths } = useAppStore();
+  const { favorites, sidebarCollapsed, removeFavorite, addFavorite, openTab, refreshFileTree, fileTreeVersion, setFavoriteAlias, updateFavoritePath, setFavoriteIcon, folderSort, fileSort, setFolderSort, setFileSort, favoriteFiles, addFavoriteFile, removeFavoriteFile, selectedPaths, reorderFavorites } = useAppStore();
   const [searchQuery] = useState("");
   const [compactMode, setCompactMode] = useState(false);
   const [foldersWithResults, setFoldersWithResults] = useState<Set<string>>(new Set());
@@ -20,6 +21,8 @@ export function Sidebar() {
   const [aliasValue, setAliasValue] = useState("");
   const [folderRenaming, setFolderRenaming] = useState<string | null>(null);
   const [folderRenameValue, setFolderRenameValue] = useState("");
+  const [dragFavIndex, setDragFavIndex] = useState<number | null>(null);
+  const [dragFavOverIndex, setDragFavOverIndex] = useState<number | null>(null);
   const [iconPickerPath, setIconPickerPath] = useState<string | null>(null);
   const [sidebarWidth, setSidebarWidth] = useState(280);
   const isResizing = useRef(false);
@@ -331,10 +334,35 @@ export function Sidebar() {
           </div>
         ) : (
           <div>
-            {[...favorites].map((fav) => {
+            {[...favorites].map((fav, favIdx) => {
               const isBroken = brokenPaths.has(fav.path);
               return (
-                <div key={fav.path} data-fav-item style={{ display: searchQuery && !foldersWithResults.has(fav.path) ? "none" : undefined }}>
+                <div
+                  key={fav.path}
+                  data-fav-item
+                  draggable
+                  onDragStart={() => setDragFavIndex(favIdx)}
+                  onDragOver={(e) => { e.preventDefault(); setDragFavOverIndex(favIdx); }}
+                  onDragEnd={() => {
+                    if (dragFavIndex !== null && dragFavOverIndex !== null && dragFavIndex !== dragFavOverIndex) {
+                      const from = dragFavIndex;
+                      const to = dragFavOverIndex;
+                      executeUndoable({
+                        type: "reorder-favorites",
+                        description: "즐겨찾기 폴더 순서 변경",
+                        execute: async () => reorderFavorites(from, to),
+                        undo: async () => reorderFavorites(to, from),
+                      });
+                    }
+                    setDragFavIndex(null);
+                    setDragFavOverIndex(null);
+                  }}
+                  style={{
+                    display: searchQuery && !foldersWithResults.has(fav.path) ? "none" : undefined,
+                    borderTop: dragFavOverIndex === favIdx && dragFavIndex !== null && dragFavIndex !== favIdx ? "2px solid var(--color-accent)" : "2px solid transparent",
+                    opacity: dragFavIndex === favIdx ? 0.5 : 1,
+                  }}
+                >
                   {(
                   <Tooltip text={shortenPath(fav.path)}>
                   <button
