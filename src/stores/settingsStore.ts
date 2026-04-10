@@ -9,6 +9,7 @@ export interface EditorSettings {
   headingScale: number;
   codeFontSize: number;
   codeLineHeight: number;
+  codePadding: number;
   editorPaddingX: number;
   editorPaddingY: number;
   letterSpacing: number;
@@ -31,6 +32,7 @@ export const DEFAULT_SETTINGS: EditorSettings = {
   headingScale: 1.3,
   codeFontSize: 13,
   codeLineHeight: 1.6,
+  codePadding: 12,
   editorPaddingX: 48,
   editorPaddingY: 48,
   letterSpacing: 0,
@@ -51,6 +53,7 @@ export const PRESETS: Preset[] = [
       headingScale: 1.2,
       codeFontSize: 12,
       codeLineHeight: 1.4,
+      codePadding: 8,
       editorPaddingX: 32,
       editorPaddingY: 24,
       letterSpacing: 0,
@@ -75,6 +78,7 @@ export const PRESETS: Preset[] = [
       headingScale: 1.4,
       codeFontSize: 14,
       codeLineHeight: 1.8,
+      codePadding: 16,
       editorPaddingX: 64,
       editorPaddingY: 48,
       letterSpacing: 0.2,

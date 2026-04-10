@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { exists, writeTextFile, mkdir } from "@tauri-apps/plugin-fs";
+import { exists, writeTextFile, mkdir, create } from "@tauri-apps/plugin-fs";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { useAppStore } from "@/stores/appStore";
@@ -17,7 +17,7 @@ function shortenPath(path: string): string {
 }
 
 export function Sidebar() {
-  const { favorites, sidebarCollapsed, removeFavorite, addFavorite, workspace, setWorkspace, openTab } = useAppStore();
+  const { favorites, sidebarCollapsed, removeFavorite, addFavorite, workspace, setWorkspace, openTab, refreshFileTree } = useAppStore();
   const [sidebarWidth, setSidebarWidth] = useState(280);
   const isResizing = useRef(false);
 
@@ -119,29 +119,41 @@ export function Sidebar() {
   };
 
   const handleNewFile = async (folderPath: string) => {
-    let name = "제목 없음.md";
-    let i = 1;
-    while (await exists(`${folderPath}\\${name}`)) {
-      name = `제목 없음 ${i}.md`;
-      i++;
+    try {
+      let name = "제목 없음.md";
+      let i = 1;
+      while (await exists(`${folderPath}\\${name}`)) {
+        name = `제목 없음 ${i}.md`;
+        i++;
+      }
+      const filePath = `${folderPath}\\${name}`;
+      const content = "# " + name.replace(/\.md$/, "") + "\n";
+      await mkdir(folderPath, { recursive: true }).catch(() => {});
+      const file = await create(filePath);
+      await file.write(new TextEncoder().encode(content));
+      await file.close();
+      setExpandedFavs((prev) => new Set([...prev, folderPath]));
+      refreshFileTree();
+      openTab(filePath, name, content);
+    } catch (err) {
+      console.error("새 문서 생성 실패:", err);
     }
-    const filePath = `${folderPath}\\${name}`;
-    await writeTextFile(filePath, "");
-    openTab(filePath, name, "");
-    // 폴더 펼치기
-    setExpandedFavs((prev) => new Set([...prev, folderPath]));
   };
 
   const handleNewFolder = async (folderPath: string) => {
-    let name = "새 폴더";
-    let i = 1;
-    while (await exists(`${folderPath}\\${name}`)) {
-      name = `새 폴더 ${i}`;
-      i++;
+    try {
+      let name = "새 폴더";
+      let i = 1;
+      while (await exists(`${folderPath}\\${name}`)) {
+        name = `새 폴더 ${i}`;
+        i++;
+      }
+      await mkdir(`${folderPath}\\${name}`);
+      setExpandedFavs((prev) => new Set([...prev, folderPath]));
+      refreshFileTree();
+    } catch (err) {
+      console.error("새 폴더 생성 실패:", err);
     }
-    await mkdir(`${folderPath}\\${name}`);
-    // 폴더 펼치기
-    setExpandedFavs((prev) => new Set([...prev, folderPath]));
   };
 
   const handleAddFolder = async () => {

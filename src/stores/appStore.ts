@@ -52,6 +52,8 @@ interface AppState {
   // 사이드바
   sidebarCollapsed: boolean;
   toggleSidebar: () => void;
+  fileTreeVersion: number;
+  refreshFileTree: () => void;
 
   // 하위 호환
   selectedFile: string | null;
@@ -197,6 +199,8 @@ export const useAppStore = create<AppState>((set) => ({
 
   sidebarCollapsed: false,
   toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
+  fileTreeVersion: 0,
+  refreshFileTree: () => set((state) => ({ fileTreeVersion: state.fileTreeVersion + 1 })),
 
   selectedFile: null,
   fileContent: "",

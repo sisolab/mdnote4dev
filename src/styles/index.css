@@ -154,7 +154,7 @@ body {
   background: #1e1e2e;
   color: #cdd6f4;
   border-radius: 3px;
-  padding: 0.6rem 0.8rem;
+  padding: var(--editor-code-padding, 12px);
   margin: 0.75rem 0;
   overflow-x: auto;
   font-family: "Cascadia Code", "Fira Code", "Consolas", monospace;

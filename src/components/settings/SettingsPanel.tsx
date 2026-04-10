@@ -363,6 +363,7 @@ export function SettingsPanel() {
           <SectionTitle>코드 블록</SectionTitle>
           <ChipSetting label="글자 크기" value={settings.codeFontSize} options={[11, 12, 13, 14, 15, 16]} unit="" defaultValue={DEFAULT_SETTINGS.codeFontSize} onChange={(v) => updateSetting("codeFontSize", v)} />
           <ChipSetting label="줄 간격" value={settings.codeLineHeight} options={[1.2, 1.4, 1.6, 1.8, 2.0, 2.2]} unit="" decimals={1} defaultValue={DEFAULT_SETTINGS.codeLineHeight} onChange={(v) => updateSetting("codeLineHeight", v)} />
+          <ChipSetting label="패딩" value={settings.codePadding} options={[4, 8, 12, 16, 20, 24]} unit="" defaultValue={DEFAULT_SETTINGS.codePadding} onChange={(v) => updateSetting("codePadding", v)} />
 
           {/* 에디터 영역 (프리셋 포함) */}
           <div style={{ marginTop: "16px" }} />

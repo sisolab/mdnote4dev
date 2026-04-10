@@ -110,6 +110,7 @@ export function TiptapEditor({ content, onSave }: TiptapEditorProps) {
     "--editor-letter-spacing": `${s.letterSpacing}px`,
     "--editor-code-font-size": `${s.codeFontSize}px`,
     "--editor-code-line-height": `${s.codeLineHeight}`,
+    "--editor-code-padding": `${s.codePadding}px`,
     "--editor-h1-size": `${s.fontSize * scale * scale * scale}px`,
     "--editor-h2-size": `${s.fontSize * scale * scale}px`,
     "--editor-h3-size": `${s.fontSize * scale}px`,

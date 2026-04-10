@@ -32,7 +32,7 @@ function FileTreeItem({
   depth: number;
   onHover: (el: HTMLButtonElement | null) => void;
 }) {
-  const { expandedFolders, toggleFolder, selectedFile, openTab } =
+  const { expandedFolders, toggleFolder, selectedFile, openTab, fileTreeVersion } =
     useAppStore();
   const [children, setChildren] = useState<FileEntry[]>([]);
   const isExpanded = expandedFolders.has(entry.path);
@@ -42,7 +42,7 @@ function FileTreeItem({
     if (isExpanded && entry.isDirectory) {
       loadDirectory(entry.path).then(setChildren);
     }
-  }, [isExpanded, entry.path, entry.isDirectory]);
+  }, [isExpanded, entry.path, entry.isDirectory, fileTreeVersion]);
 
   const handleClick = async () => {
     if (entry.isDirectory) {
@@ -106,7 +106,7 @@ function FileTreeItem({
 
 export function FileTree({ rootPath }: { rootPath: string }) {
   const [entries, setEntries] = useState<FileEntry[]>([]);
-  const { expandedFolders } = useAppStore();
+  const { expandedFolders, fileTreeVersion } = useAppStore();
   const containerRef = useRef<HTMLDivElement>(null);
   const [highlight, setHighlight] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
 
@@ -127,13 +127,7 @@ export function FileTree({ rootPath }: { rootPath: string }) {
 
   useEffect(() => {
     loadDirectory(rootPath).then(setEntries);
-  }, [rootPath]);
-
-  useEffect(() => {
-    if (expandedFolders.has(rootPath)) {
-      loadDirectory(rootPath).then(setEntries);
-    }
-  }, [expandedFolders, rootPath]);
+  }, [rootPath, fileTreeVersion]);
 
   return (
     <div
