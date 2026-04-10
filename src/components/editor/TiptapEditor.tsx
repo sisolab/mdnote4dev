@@ -10,17 +10,19 @@ import { TableHeader } from "@tiptap/extension-table-header";
 import { Image } from "@tiptap/extension-image";
 import { Underline } from "@tiptap/extension-underline";
 import { Typography } from "@tiptap/extension-typography";
-import { useEffect, useCallback, useRef } from "react";
+import { useEffect, useCallback, useRef, useState } from "react";
 import { htmlToMarkdown, markdownToHtml } from "./markdown";
 import { Toolbar } from "./Toolbar";
+import { useSettingsStore, getFontFamily } from "@/stores/settingsStore";
 
 interface TiptapEditorProps {
-  content: string; // 마크다운 문자열
+  content: string;
   onSave: (markdown: string) => void;
 }
 
 export function TiptapEditor({ content, onSave }: TiptapEditorProps) {
   const lastMarkdown = useRef(content);
+  const { settings } = useSettingsStore();
 
   const editor = useEditor({
     extensions: [
@@ -47,9 +49,12 @@ export function TiptapEditor({ content, onSave }: TiptapEditorProps) {
         class: "outline-none prose prose-sm max-w-none",
       },
     },
+    onTransaction: () => setTick((t) => t + 1),
   });
 
-  // 외부에서 content가 바뀌면 에디터 갱신
+  // 툴바 active 상태 즉시 반영용
+  const [, setTick] = useState(0);
+
   useEffect(() => {
     if (!editor) return;
     if (content !== lastMarkdown.current) {
@@ -58,7 +63,6 @@ export function TiptapEditor({ content, onSave }: TiptapEditorProps) {
     }
   }, [content, editor]);
 
-  // Ctrl+S 저장
   const handleSave = useCallback(() => {
     if (!editor) return;
     const md = htmlToMarkdown(editor.getHTML());
@@ -66,6 +70,22 @@ export function TiptapEditor({ content, onSave }: TiptapEditorProps) {
     onSave(md);
   }, [editor, onSave]);
 
+  // 실시간 자동 저장 (타이핑 멈추고 500ms 후)
+  const saveTimer = useRef<ReturnType<typeof setTimeout>>();
+  useEffect(() => {
+    if (!editor) return;
+    const handler = () => {
+      clearTimeout(saveTimer.current);
+      saveTimer.current = setTimeout(handleSave, 500);
+    };
+    editor.on("update", handler);
+    return () => {
+      editor.off("update", handler);
+      clearTimeout(saveTimer.current);
+    };
+  }, [editor, handleSave]);
+
+  // Ctrl+S 즉시 저장도 유지
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.ctrlKey && e.key === "s") {
@@ -79,11 +99,36 @@ export function TiptapEditor({ content, onSave }: TiptapEditorProps) {
 
   if (!editor) return null;
 
+  const s = settings;
+  const scale = s.headingScale;
+
+  const editorStyle = {
+    "--editor-font-size": `${s.fontSize}px`,
+    "--editor-line-height": `${s.lineHeight}`,
+    "--editor-paragraph-spacing": `${s.paragraphSpacing}rem`,
+    "--editor-font-family": getFontFamily(s.fontFamily),
+    "--editor-letter-spacing": `${s.letterSpacing}px`,
+    "--editor-code-font-size": `${s.codeFontSize}px`,
+    "--editor-code-line-height": `${s.codeLineHeight}`,
+    "--editor-h1-size": `${s.fontSize * scale * scale * scale}px`,
+    "--editor-h2-size": `${s.fontSize * scale * scale}px`,
+    "--editor-h3-size": `${s.fontSize * scale}px`,
+    "--editor-h4-size": `${s.fontSize * 1.05}px`,
+  } as React.CSSProperties;
+
   return (
     <div className="flex flex-col h-full">
       <Toolbar editor={editor} />
-      <div className="flex-1 overflow-auto px-12 py-8">
-        <EditorContent editor={editor} />
+      <div
+        className="flex-1 overflow-auto"
+        style={{ padding: `${s.editorPaddingY}px ${s.editorPaddingX}px` }}
+      >
+        <div style={{
+          ...(s.widthMode === "fixed" ? { width: `${s.editorMaxWidth}px` } : { maxWidth: `${s.editorMaxWidth}px`, width: "100%" }),
+          ...editorStyle,
+        }}>
+          <EditorContent editor={editor} />
+        </div>
       </div>
     </div>
   );
