@@ -56,6 +56,10 @@ interface AppState {
   filePreviews: Record<string, string>;
   setFilePreviews: (previews: Record<string, string>) => void;
 
+  // 파일 본문 캐시 (검색용, 파일경로 → frontmatter 제외 본문)
+  fileContents: Record<string, string>;
+  setFileContents: (contents: Record<string, string>) => void;
+
   // 정렬
   folderSort: SortMode;
   fileSort: SortMode;
@@ -152,6 +156,9 @@ export const useAppStore = create<AppState>()(
 
       filePreviews: {} as Record<string, string>,
       setFilePreviews: (previews) => set({ filePreviews: previews }),
+
+      fileContents: {} as Record<string, string>,
+      setFileContents: (contents) => set({ fileContents: contents }),
 
       folderSort: "name" as SortMode,
       fileSort: "name" as SortMode,

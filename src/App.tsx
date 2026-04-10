@@ -111,10 +111,11 @@ function App() {
   // persist hydration 완료 후 실행
   useEffect(() => {
     async function scanFiles() {
-      const { favorites, favoriteFiles, setAllTags, setRecentFiles, setFilePreviews } = useAppStore.getState();
+      const { favorites, favoriteFiles, setAllTags, setRecentFiles, setFilePreviews, setFileContents } = useAppStore.getState();
       const tagMap: Record<string, string[]> = {};
       const fileTimes: { path: string; mtime: number }[] = [];
       const previews: Record<string, string> = {};
+      const contents: Record<string, string> = {};
 
       async function collectMdFiles(dirPath: string): Promise<string[]> {
         const paths: string[] = [];
@@ -160,12 +161,14 @@ function App() {
           // 미리보기: frontmatter 제외 본문 첫 부분
           const bodyLines = fm.body.split("\n").filter((l) => l.trim() && !l.startsWith("#")).slice(0, 2);
           previews[filePath] = bodyLines.join(" ").substring(0, 100);
+          contents[filePath] = fm.body;
         } catch {}
       }
 
       setAllTags(tagMap);
       assignTagColors(Object.keys(tagMap).sort());
       setFilePreviews(previews);
+      setFileContents(contents);
       fileTimes.sort((a, b) => b.mtime - a.mtime);
       setRecentFiles(fileTimes.slice(0, 50).map((f) => f.path));
 

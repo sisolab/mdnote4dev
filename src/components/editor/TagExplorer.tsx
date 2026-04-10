@@ -5,12 +5,43 @@ import { readTextFile } from "@tauri-apps/plugin-fs";
 import { FileText, Search, X } from "lucide-react";
 
 export function TagExplorer() {
-  const { allTags, openTab, tabs, activeTabId, recentFiles, filePreviews } = useAppStore();
+  const { allTags, openTab, tabs, activeTabId, recentFiles, filePreviews, fileContents } = useAppStore();
   const activeTab = tabs.find((t) => t.id === activeTabId);
   const selectedTags = activeTab?.tagFilters ?? [];
   const [searchQuery, setSearchQuery] = useState("");
 
   const tagNames = Object.keys(allTags).sort();
+
+  // 검색어 하이라이트 헬퍼
+  const highlightText = (text: string, query: string) => {
+    if (!query) return <>{text}</>;
+    const lowerText = text.toLowerCase();
+    const lowerQuery = query.toLowerCase();
+    const idx = lowerText.indexOf(lowerQuery);
+    if (idx === -1) return <>{text}</>;
+    return (
+      <>
+        {text.substring(0, idx)}
+        <span style={{ color: "var(--color-accent)", fontWeight: 600 }}>{text.substring(idx, idx + query.length)}</span>
+        {text.substring(idx + query.length)}
+      </>
+    );
+  };
+
+  // 내용 검색 스니펫 생성
+  const getContentSnippet = (filePath: string, query: string): string | null => {
+    if (!query) return null;
+    const body = fileContents[filePath] ?? "";
+    const lowerBody = body.toLowerCase();
+    const idx = lowerBody.indexOf(query.toLowerCase());
+    if (idx === -1) return null;
+    const start = Math.max(0, idx - 30);
+    const end = Math.min(body.length, idx + query.length + 50);
+    let snippet = body.substring(start, end).replace(/\n/g, " ");
+    if (start > 0) snippet = "..." + snippet;
+    if (end < body.length) snippet = snippet + "...";
+    return snippet;
+  };
 
   const toggleTag = (tag: string) => {
     const state = useAppStore.getState();
@@ -31,21 +62,24 @@ export function TagExplorer() {
   // 필터링: 태그 AND 검색어
   let matchingFiles: string[];
   if (selectedTags.length > 0) {
-    // 선택된 모든 태그를 가진 파일 (교집합)
     matchingFiles = allFiles.filter((fp) =>
       selectedTags.every((tag) => allTags[tag]?.includes(fp))
     );
+  } else if (searchQuery) {
+    // 검색 시 전체 파일 대상
+    matchingFiles = recentFiles.length > 0 ? recentFiles : allFiles;
   } else {
-    // 태그 미선택 시 최근 수정 파일 순서
     matchingFiles = recentFiles.length > 0 ? recentFiles : allFiles;
   }
 
-  // 검색어 필터
+  // 검색어 필터 (제목 + 내용)
   if (searchQuery) {
     const q = searchQuery.toLowerCase();
-    matchingFiles = matchingFiles.filter((fp) =>
-      (fp.split("\\").pop() ?? "").toLowerCase().includes(q)
-    );
+    matchingFiles = matchingFiles.filter((fp) => {
+      const name = (fp.split("\\").pop() ?? "").toLowerCase();
+      const body = (fileContents[fp] ?? "").toLowerCase();
+      return name.includes(q) || body.includes(q);
+    });
   }
 
   // 최대 표시 제한
@@ -174,6 +208,7 @@ export function TagExplorer() {
             const path = shortenPath(filePath.substring(0, filePath.lastIndexOf("\\")));
             const fileTags = Object.keys(allTags).filter((t) => allTags[t]?.includes(filePath));
             const preview = filePreviews[filePath] ?? "";
+            const contentSnippet = searchQuery ? getContentSnippet(filePath, searchQuery) : null;
             return (
               <button
                 key={filePath}
@@ -189,12 +224,14 @@ export function TagExplorer() {
                 <FileText size={14} style={{ color: "var(--color-text-light)", flexShrink: 0, marginTop: "2px" }} />
                 <div style={{ overflow: "hidden", minWidth: 0, flex: 1 }}>
                   <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
-                    <span className="truncate" style={{ fontSize: "13px", color: "var(--color-text-primary)", fontWeight: 500 }}>{name}</span>
+                    <span className="truncate" style={{ fontSize: "13px", color: "var(--color-text-primary)", fontWeight: 500 }}>{searchQuery ? highlightText(name, searchQuery) : name}</span>
                     <span className="truncate" style={{ fontSize: "10px", color: "var(--color-text-light)", flexShrink: 1, minWidth: 0 }}>{path}</span>
                   </div>
-                  {preview && (
+                  {searchQuery && contentSnippet ? (
+                    <div className="truncate" style={{ fontSize: "11px", color: "var(--color-text-secondary)", marginTop: "3px" }}>{highlightText(contentSnippet, searchQuery)}</div>
+                  ) : !searchQuery && preview ? (
                     <div className="truncate" style={{ fontSize: "11px", color: "var(--color-text-secondary)", marginTop: "3px" }}>{preview}</div>
-                  )}
+                  ) : null}
                   {fileTags.length > 0 && (
                     <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", marginTop: "5px" }}>
                       {fileTags.map((t) => {
