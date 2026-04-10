@@ -63,11 +63,9 @@ export function TabBar() {
 
         return (
           <div key={tab.id} style={{ display: "flex", alignItems: "center" }}>
-            {/* 구분선 */}
-            {index > 0 && !isActive && !prevIsActive && (
-              <div style={{ width: "1px", height: "14px", background: "#ddd", flexShrink: 0 }} />
+            {index > 0 && (
+              <div style={{ width: "1px", height: "14px", background: "#ddd", flexShrink: 0, margin: "0 2px" }} />
             )}
-
             <div
               onMouseEnter={(e) => handleHover(e.currentTarget)}
               onClick={() => setActiveTab(tab.id)}
@@ -83,7 +81,7 @@ export function TabBar() {
                 position: "relative",
                 zIndex: 1,
                 color: isActive ? "#1a73e8" : "#555",
-                fontWeight: isActive ? 600 : 400,
+                fontWeight: 600,
                 fontSize: "12px",
                 transition: "color 0.1s",
               }}
@@ -94,7 +92,7 @@ export function TabBar() {
                 bottom: "0",
                 left: "50%",
                 transform: "translateX(-50%)",
-                width: isActive ? "14px" : "0px",
+                width: isActive ? "80%" : "0%",
                 height: "2px",
                 borderRadius: "1px",
                 background: "#1a73e8",
@@ -123,9 +121,9 @@ export function TabBar() {
                   }}
                   onClick={(e) => e.stopPropagation()}
                   style={{
-                    fontSize: "12px", fontWeight: 600, color: "#333",
-                    background: "#fff", border: "1px solid #1a73e8",
-                    borderRadius: "3px", padding: "1px 4px", outline: "none", width: "100px",
+                    fontSize: "12px", fontWeight: 600, color: "#1a73e8",
+                    background: "transparent", border: "none",
+                    borderRadius: "0", padding: "0", outline: "none", width: "100px",
                   }}
                 />
               ) : (
@@ -137,7 +135,7 @@ export function TabBar() {
                   className="truncate"
                   style={{ maxWidth: "120px" }}
                 >
-                  {tab.title}
+                  {tab.title.replace(/\.(md|markdown)$/i, "")}
                 </span>
               )}
 
