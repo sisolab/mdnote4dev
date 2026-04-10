@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from "react";
-import { readDir, readTextFile } from "@tauri-apps/plugin-fs";
+import { readDir, readTextFile, rename, mkdir, create } from "@tauri-apps/plugin-fs";
 import { invoke } from "@tauri-apps/api/core";
 import { useAppStore, type FileEntry } from "@/stores/appStore";
 import { ChevronRight, FileText } from "lucide-react";
@@ -25,17 +25,6 @@ async function loadDirectory(path: string): Promise<FileEntry[]> {
   }
 }
 
-// 표시된 모든 항목의 flat path 리스트 수집
-function collectVisiblePaths(entries: FileEntry[], expandedFolders: Set<string>): string[] {
-  const result: string[] = [];
-  for (const entry of entries) {
-    result.push(entry.path);
-    if (entry.isDirectory && expandedFolders.has(entry.path) && entry.children) {
-      result.push(...collectVisiblePaths(entry.children, expandedFolders));
-    }
-  }
-  return result;
-}
 
 function FileTreeItem({
   entry,
@@ -43,14 +32,22 @@ function FileTreeItem({
   onHover,
   onItemClick,
   onContextMenu,
+  renamingPath,
+  renameValue,
+  setRenameValue,
+  onFinishRename,
 }: {
   entry: FileEntry;
   depth: number;
   onHover: (el: HTMLButtonElement | null) => void;
   onItemClick: (e: React.MouseEvent, entry: FileEntry) => void;
   onContextMenu: (e: React.MouseEvent, entry: FileEntry) => void;
+  renamingPath: string | null;
+  renameValue: string;
+  setRenameValue: (v: string) => void;
+  onFinishRename: (entry: FileEntry) => void;
 }) {
-  const { expandedFolders, toggleFolder, selectedFile, openTab, fileTreeVersion, selectedPaths, clearSelectedPaths, setSelectedPaths, tabs } =
+  const { expandedFolders, toggleFolder, selectedFile, openTab, fileTreeVersion, selectedPaths, tabs } =
     useAppStore();
   const [children, setChildren] = useState<FileEntry[]>([]);
   const isExpanded = expandedFolders.has(entry.path);
@@ -116,7 +113,26 @@ function FileTreeItem({
         ) : (
           <FileText size={13} className="shrink-0 text-text-light" />
         )}
-        <span className="truncate">{entry.name}</span>
+        {renamingPath === entry.path ? (
+          <input
+            autoFocus
+            value={renameValue}
+            onChange={(e) => setRenameValue(e.target.value)}
+            onBlur={() => onFinishRename(entry)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") onFinishRename(entry);
+              if (e.key === "Escape") { setRenameValue(""); onFinishRename(entry); }
+            }}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              fontSize: "14px", fontWeight: 500, color: "var(--color-accent)",
+              background: "transparent", border: "none", borderBottom: "1px solid var(--color-accent)",
+              borderRadius: "0", padding: "0", outline: "none", width: "100%",
+            }}
+          />
+        ) : (
+          <span className="truncate">{entry.name}</span>
+        )}
         <div style={{
           position: "absolute",
           left: "4px",
@@ -132,7 +148,7 @@ function FileTreeItem({
 
       {isExpanded &&
         children.map((child) => (
-          <FileTreeItem key={child.path} entry={child} depth={depth + 1} onHover={onHover} onItemClick={onItemClick} onContextMenu={onContextMenu} />
+          <FileTreeItem key={child.path} entry={child} depth={depth + 1} onHover={onHover} onItemClick={onItemClick} onContextMenu={onContextMenu} renamingPath={renamingPath} renameValue={renameValue} setRenameValue={setRenameValue} onFinishRename={onFinishRename} />
         ))}
     </div>
   );
@@ -140,12 +156,50 @@ function FileTreeItem({
 
 export function FileTree({ rootPath }: { rootPath: string }) {
   const [entries, setEntries] = useState<FileEntry[]>([]);
-  const { fileTreeVersion, refreshFileTree, closeTab, tabs, selectedPaths, setSelectedPaths, toggleSelectedPath, clearSelectedPaths } = useAppStore();
+  const { fileTreeVersion, refreshFileTree, closeTab, tabs, selectedPaths, setSelectedPaths, toggleSelectedPath, clearSelectedPaths, openTab, expandedFolders, toggleFolder } = useAppStore();
   const containerRef = useRef<HTMLDivElement>(null);
   const [highlight, setHighlight] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; entries: FileEntry[] } | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<FileEntry[] | null>(null);
+  const [renamingPath, setRenamingPath] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
   const lastClickedPath = useRef<string | null>(null);
+
+  const startRename = (entry: FileEntry) => {
+    setRenamingPath(entry.path);
+    const nameWithoutExt = entry.isDirectory ? entry.name : entry.name.replace(/\.[^.]+$/, "");
+    setRenameValue(nameWithoutExt);
+  };
+
+  const finishRename = async (entry: FileEntry) => {
+    if (!renameValue.trim() || !renamingPath) {
+      setRenamingPath(null);
+      return;
+    }
+    const ext = entry.isDirectory ? "" : (entry.name.match(/\.[^.]+$/) ?? [""])[0];
+    const newName = renameValue.trim() + ext;
+    const parentPath = entry.path.substring(0, entry.path.lastIndexOf("\\"));
+    const newPath = `${parentPath}\\${newName}`;
+
+    if (newPath === entry.path) {
+      setRenamingPath(null);
+      return;
+    }
+
+    try {
+      await rename(entry.path, newPath);
+      // 열려있는 탭 경로 업데이트
+      const openTab = tabs.find((t) => t.filePath === entry.path);
+      if (openTab) {
+        const { updateTabFilePath } = useAppStore.getState();
+        updateTabFilePath(openTab.id, newPath, newName);
+      }
+      refreshFileTree();
+    } catch (err) {
+      console.error("이름 변경 실패:", err);
+    }
+    setRenamingPath(null);
+  };
 
   const handleHover = useCallback((el: HTMLButtonElement | null) => {
     if (!el || !containerRef.current) {
@@ -221,10 +275,64 @@ export function FileTree({ rootPath }: { rootPath: string }) {
     setDeleteConfirm(null);
   };
 
+  const handleNewFile = async (folderPath: string) => {
+    try {
+      let name = "제목 없음.md";
+      let i = 1;
+      while (await readDir(folderPath).then((entries) => entries.some((e) => e.name === name)).catch(() => false)) {
+        name = `제목 없음 ${i}.md`;
+        i++;
+      }
+      const filePath = `${folderPath}\\${name}`;
+      const content = "# " + name.replace(/\.md$/, "") + "\n";
+      const file = await create(filePath);
+      await file.write(new TextEncoder().encode(content));
+      await file.close();
+      if (!expandedFolders.has(folderPath)) toggleFolder(folderPath);
+      refreshFileTree();
+      openTab(filePath, name, content);
+    } catch (err) {
+      console.error("새 문서 생성 실패:", err);
+    }
+  };
+
+  const handleNewFolder = async (folderPath: string) => {
+    try {
+      let name = "새 폴더";
+      let i = 1;
+      while (await readDir(folderPath).then((entries) => entries.some((e) => e.name === name)).catch(() => false)) {
+        name = `새 폴더 ${i}`;
+        i++;
+      }
+      await mkdir(`${folderPath}\\${name}`);
+      if (!expandedFolders.has(folderPath)) toggleFolder(folderPath);
+      refreshFileTree();
+    } catch (err) {
+      console.error("새 폴더 생성 실패:", err);
+    }
+  };
+
   const getContextMenuItems = (items: FileEntry[]): ContextMenuItem[] => {
-    const label = items.length > 1 ? `${items.length}개 항목 삭제` : "삭제";
+    if (items.length > 1) {
+      return [
+        { label: `${items.length}개 항목 삭제`, onClick: () => setDeleteConfirm(items), danger: true },
+      ];
+    }
+    const entry = items[0];
+    if (entry.isDirectory) {
+      return [
+        { label: "새 문서", onClick: () => handleNewFile(entry.path) },
+        { label: "새 폴더", onClick: () => handleNewFolder(entry.path) },
+        { divider: true, label: "", onClick: () => {} },
+        { label: "이름 바꾸기", onClick: () => startRename(entry) },
+        { divider: true, label: "", onClick: () => {} },
+        { label: "삭제", onClick: () => setDeleteConfirm(items), danger: true },
+      ];
+    }
     return [
-      { label, onClick: () => setDeleteConfirm(items), danger: true },
+      { label: "이름 바꾸기", onClick: () => startRename(entry) },
+      { divider: true, label: "", onClick: () => {} },
+      { label: "삭제", onClick: () => setDeleteConfirm(items), danger: true },
     ];
   };
 
@@ -264,7 +372,7 @@ export function FileTree({ rootPath }: { rootPath: string }) {
         <p className="text-[11px] text-text-light px-3 py-2">빈 폴더</p>
       ) : (
         entries.map((entry) => (
-          <FileTreeItem key={entry.path} entry={entry} depth={0} onHover={handleHover} onItemClick={handleItemClick} onContextMenu={handleContextMenu} />
+          <FileTreeItem key={entry.path} entry={entry} depth={0} onHover={handleHover} onItemClick={handleItemClick} onContextMenu={handleContextMenu} renamingPath={renamingPath} renameValue={renameValue} setRenameValue={setRenameValue} onFinishRename={finishRename} />
         ))
       )}
 
