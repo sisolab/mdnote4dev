@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { readDir, readTextFile, rename, mkdir, create } from "@tauri-apps/plugin-fs";
 import { deleteDocImages, renameDocImages } from "@/utils/imageUtils";
 import { invoke } from "@tauri-apps/api/core";
@@ -711,7 +712,7 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
       )}
 
       {/* 삭제 확인 */}
-      {deleteConfirm && (
+      {deleteConfirm && createPortal(
         <div
           onClick={() => setDeleteConfirm(null)}
           style={{
@@ -769,11 +770,12 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* 멀티 파일 이동 확인창 */}
-      {moveConfirm && (
+      {moveConfirm && createPortal(
         <div onClick={() => setMoveConfirm(null)} style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", alignItems: "start", justifyContent: "center", paddingTop: "120px", background: "rgba(0,0,0,0.35)" }}>
           <div onClick={(e) => e.stopPropagation()} style={{ width: "360px", background: "var(--color-bg-elevated)", borderRadius: "12px", border: "1px solid var(--color-border-medium)", boxShadow: "0 8px 32px rgba(0,0,0,0.18)", padding: "24px" }}>
             <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--color-text-heading)", marginBottom: "8px" }}>파일 이동</div>
@@ -785,7 +787,8 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
               <button onClick={async () => { await doMove(moveConfirm.paths, moveConfirm.target); setMoveConfirm(null); }} style={{ padding: "6px 16px", fontSize: "12px", fontWeight: 600, background: "var(--color-accent)", color: "#fff", border: "none", borderRadius: "6px", cursor: "pointer" }}>이동</button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
