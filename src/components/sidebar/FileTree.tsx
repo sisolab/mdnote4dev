@@ -230,6 +230,8 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
   const [dragMovePaths, setDragMovePaths] = useState<string[] | null>(null);
   const [reorderTarget, setReorderTarget] = useState<{ path: string; pos: "above" | "below" } | null>(null);
   const reorderTargetRef = useRef<{ path: string; pos: "above" | "below" } | null>(null);
+  const fileFlipPositions = useRef<Record<string, number>>({});
+  const [fileFlipPending, setFileFlipPending] = useState(false);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
   const dragMoveState = useRef<{ startY: number; active: boolean; paths: string[] }>({ startY: 0, active: false, paths: [] });
   const dropTargetRef = useRef<string | null>(null);
@@ -405,42 +407,18 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
         const newOrder = [...order];
 
         // FLIP: 위치 캡처
-        const flipPositions: Record<string, number> = {};
         if (containerRef.current) {
+          const positions: Record<string, number> = {};
           containerRef.current.querySelectorAll("[data-path]").forEach((el) => {
-            const p = (el as HTMLElement).dataset.path!;
-            flipPositions[p] = el.getBoundingClientRect().top;
+            positions[(el as HTMLElement).dataset.path!] = el.getBoundingClientRect().top;
           });
+          fileFlipPositions.current = positions;
         }
 
         executeUndoable({
           type: "reorder-files",
           description: `파일 순서 변경: ${dragName}`,
-          execute: async () => {
-            setCustomFileOrder(folderPath, newOrder);
-            refreshFileTree();
-            // FLIP 애니메이션
-            requestAnimationFrame(() => requestAnimationFrame(() => {
-              if (!containerRef.current) return;
-              containerRef.current.querySelectorAll("[data-path]").forEach((el) => {
-                const p = (el as HTMLElement).dataset.path!;
-                const oldTop = flipPositions[p];
-                if (oldTop === undefined) return;
-                const newTop = el.getBoundingClientRect().top;
-                const delta = oldTop - newTop;
-                if (Math.abs(delta) < 1) return;
-                const htmlEl = el as HTMLElement;
-                htmlEl.style.transform = `translateY(${delta}px)`;
-                htmlEl.style.transition = "none";
-                requestAnimationFrame(() => {
-                  const dur = Math.min(0.8, Math.max(0.3, Math.abs(delta) * 0.004));
-                  htmlEl.style.transition = `transform ${dur}s cubic-bezier(0.25, 0.1, 0.25, 1)`;
-                  htmlEl.style.transform = "translateY(0)";
-                  setTimeout(() => { htmlEl.style.transition = ""; htmlEl.style.transform = ""; }, dur * 1000 + 20);
-                });
-              });
-            }));
-          },
+          execute: async () => { setCustomFileOrder(folderPath, newOrder); refreshFileTree(); setFileFlipPending(true); },
           undo: async () => { setCustomFileOrder(folderPath, oldOrder); refreshFileTree(); },
         });
         cleanup();
@@ -809,6 +787,38 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
   useEffect(() => {
     loadDirectory(rootPath).then(setEntries);
   }, [rootPath, fileTreeVersion]);
+
+  // FLIP 애니메이션: entries 갱신 후 실행
+  useEffect(() => {
+    if (!fileFlipPending) return;
+    const oldPositions = fileFlipPositions.current;
+    if (!containerRef.current || Object.keys(oldPositions).length === 0) {
+      setFileFlipPending(false);
+      return;
+    }
+    const els = containerRef.current.querySelectorAll("[data-path]");
+    els.forEach((el) => {
+      const path = (el as HTMLElement).dataset.path!;
+      const oldTop = oldPositions[path];
+      if (oldTop === undefined) return;
+      const newTop = el.getBoundingClientRect().top;
+      const delta = oldTop - newTop;
+      if (Math.abs(delta) < 1) return;
+      const htmlEl = el as HTMLElement;
+      htmlEl.style.transform = `translateY(${delta}px)`;
+      htmlEl.style.transition = "none";
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const dur = Math.min(1.5, Math.max(0.5, Math.abs(delta) * 0.01));
+          htmlEl.style.transition = `transform ${dur}s cubic-bezier(0.25, 0.1, 0.25, 1)`;
+          htmlEl.style.transform = "translateY(0)";
+          setTimeout(() => { htmlEl.style.transition = ""; htmlEl.style.transform = ""; }, dur * 1000 + 20);
+        });
+      });
+    });
+    setFileFlipPending(false);
+    fileFlipPositions.current = {};
+  }, [fileFlipPending, entries]);
 
   useEffect(() => {
     const q = searchQuery.toLowerCase();
