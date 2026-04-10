@@ -347,7 +347,13 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
       if (target) {
         const itemPaths = s.paths;
         if (!itemPaths.includes(target)) {
-          // 정리
+          // 고스트 부드럽게 사라짐
+          const ghost = dragGhostRef.current;
+          if (ghost) {
+            ghost.style.transition = "opacity 0.3s ease";
+            ghost.style.opacity = "0";
+            await new Promise((r) => setTimeout(r, 300));
+          }
           removeDragGhost();
           document.querySelectorAll("[data-drop-active]").forEach((el) => {
             (el as HTMLElement).removeAttribute("data-drop-active");
@@ -370,7 +376,7 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
                   el.style.transition = "none";
                   el.style.background = "var(--color-accent-subtle)";
                   requestAnimationFrame(() => {
-                    el.style.transition = "background 1s ease";
+                    el.style.transition = "background 1.5s ease";
                     el.style.background = "";
                   });
                 }
