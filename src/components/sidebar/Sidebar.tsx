@@ -72,7 +72,14 @@ export function Sidebar() {
       window.removeEventListener("mouseup", onUp);
       document.body.style.userSelect = "";
       document.body.style.cursor = "";
-      if (favGhostRef.current) { favGhostRef.current.remove(); favGhostRef.current = null; }
+      // 고스트 페이드아웃
+      if (favGhostRef.current) {
+        const g = favGhostRef.current;
+        g.style.transition = "opacity 0.3s ease";
+        g.style.opacity = "0";
+        setTimeout(() => { g.remove(); }, 300);
+        favGhostRef.current = null;
+      }
       const s = dragFavState.current;
       if (s.active && s.to >= 0 && s.from !== s.to) {
         const rawInsert = s.pos === "above" ? s.to : s.to + 1;
@@ -126,6 +133,18 @@ export function Sidebar() {
           setTimeout(() => {
             htmlEl.style.transition = "";
             htmlEl.style.transform = "";
+            // 이동된 폴더 하이라이트
+            if (Math.abs(delta) > 1) {
+              const inner = htmlEl.querySelector("[data-path]") as HTMLElement;
+              if (inner) {
+                inner.style.transition = "none";
+                inner.style.background = "var(--color-accent-subtle)";
+                requestAnimationFrame(() => {
+                  inner.style.transition = "background 1.5s ease";
+                  inner.style.background = "";
+                });
+              }
+            }
           }, 260);
         });
       });
