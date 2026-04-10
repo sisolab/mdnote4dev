@@ -162,10 +162,11 @@ export function TagExplorer() {
       {/* 태그 버튼들 */}
       {tagNames.length > 0 && (
       <div style={{
-        display: "flex", flexWrap: "wrap", gap: "6px",
+        display: "flex", flexWrap: "wrap", gap: "6px", alignItems: "center",
         padding: "12px 16px", borderBottom: "1px solid var(--color-border-light)",
         flexShrink: 0,
       }}>
+        <span style={{ fontSize: "11px", fontWeight: 600, color: "var(--color-text-tertiary)", marginRight: "2px" }}>Tags:</span>
         {tagNames.map((tag) => {
           const color = getTagColor(tag);
           const isSelected = selectedTags.includes(tag);

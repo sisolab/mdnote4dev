@@ -149,7 +149,7 @@ export function EditorArea() {
   }, [activeTab, updateTabFilePath, markTabClean]);
 
   return (
-    <main className="flex-1 flex flex-col min-w-0 bg-bg-primary">
+    <main className="flex-1 flex flex-col min-w-0 bg-bg-primary" style={{ position: "relative" }}>
       <TabBar />
 
       {activeTab?.type === "tag-explorer" ? (

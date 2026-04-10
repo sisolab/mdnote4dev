@@ -108,7 +108,7 @@ function FileTreeItem({
             : "text-text-primary"
         } ${!entry.isDirectory && !isMarkdown ? "opacity-30" : ""}`}
         style={{
-          paddingLeft: `${depth * 16 + 32}px`, paddingRight: "16px", height: compact ? "26px" : "30px",
+          paddingLeft: `${depth * 16 + 32}px`, paddingRight: "16px", height: compact ? "22px" : "30px",
           fontSize: compact ? "11px" : "13px",
           background: isMultiSelected ? "var(--color-accent-subtle)" : "transparent",
         }}

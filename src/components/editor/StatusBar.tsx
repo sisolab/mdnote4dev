@@ -87,21 +87,19 @@ export function StatusBar({ filePath, fileSize, lineCount, charCount, tags: prop
 
   if (collapsed) {
     return (
-      <div style={{
-        display: "flex", alignItems: "center", justifyContent: "flex-end",
-        height: "34px", padding: "0 16px",
-        flexShrink: 0,
-      }}>
-        <button
-          onClick={() => setCollapsed(false)}
-          style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--color-accent)", padding: 0, display: "flex" }}
-          onMouseEnter={(e) => { e.currentTarget.style.color = "var(--color-accent-hover)"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.color = "var(--color-accent)"; }}
-          title="상태바 표시"
-        >
-          <ChevronUp size={13} strokeWidth={3} />
-        </button>
-      </div>
+      <button
+        onClick={() => setCollapsed(false)}
+        style={{
+          position: "absolute", right: "16px", bottom: "8px",
+          border: "none", background: "transparent", cursor: "pointer",
+          color: "var(--color-accent)", padding: 0, display: "flex", zIndex: 10,
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.color = "var(--color-accent-hover)"; }}
+        onMouseLeave={(e) => { e.currentTarget.style.color = "var(--color-accent)"; }}
+        title="상태바 표시"
+      >
+        <ChevronUp size={13} strokeWidth={3} />
+      </button>
     );
   }
 

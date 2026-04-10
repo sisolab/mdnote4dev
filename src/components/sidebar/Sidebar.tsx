@@ -430,7 +430,7 @@ export function Sidebar() {
                     isBrokenFile ? "" : isOpened ? "text-accent" : "text-text-primary"
                   }`}
                   style={{
-                    paddingLeft: "32px", paddingRight: "16px", height: showFavPaths ? (compactMode ? "36px" : "44px") : (compactMode ? "26px" : "30px"),
+                    paddingLeft: "32px", paddingRight: "16px", height: showFavPaths ? (compactMode ? "30px" : "44px") : (compactMode ? "22px" : "30px"),
                     background: isMultiSelected ? "var(--color-accent-subtle)" : "transparent",
                     color: isBrokenFile ? "var(--color-text-muted)" : undefined,
                     cursor: isBrokenFile ? "default" : "pointer",
@@ -532,7 +532,7 @@ export function Sidebar() {
                     className={`group w-full flex items-center gap-2 font-semibold transition-all duration-[0.15s]`}
                     style={{
                       fontSize: compactMode ? "11px" : "13px",
-                      height: compactMode ? "26px" : "30px",
+                      height: compactMode ? "22px" : "30px",
                       padding: "0 16px",
                       color: isBroken ? "var(--color-text-muted)" : "var(--color-text-secondary)",
                       cursor: isBroken ? "default" : "pointer",

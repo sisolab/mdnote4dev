@@ -11,6 +11,13 @@ const turndown = new TurndownService({
 });
 
 // 체크박스 변환 규칙
+turndown.addRule("taskList", {
+  filter: (node) => {
+    return node.nodeName === "UL" && node.getAttribute("data-type") === "taskList";
+  },
+  replacement: (content) => content,
+});
+
 turndown.addRule("taskListItem", {
   filter: (node) => {
     return (
