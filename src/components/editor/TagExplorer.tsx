@@ -5,7 +5,7 @@ import { readTextFile } from "@tauri-apps/plugin-fs";
 import { FileText, Search, X } from "lucide-react";
 
 export function TagExplorer() {
-  const { allTags, openTab, tabs, activeTabId } = useAppStore();
+  const { allTags, openTab, tabs, activeTabId, recentFiles } = useAppStore();
   const activeTab = tabs.find((t) => t.id === activeTabId);
   const selectedTags = activeTab?.tagFilters ?? [];
   const [searchQuery, setSearchQuery] = useState("");
@@ -36,8 +36,8 @@ export function TagExplorer() {
       selectedTags.every((tag) => allTags[tag]?.includes(fp))
     );
   } else {
-    // 태그 미선택 시 전체 파일 (최근 편집 순으로 보여주고 싶지만 stat 없이는 이름순)
-    matchingFiles = allFiles;
+    // 태그 미선택 시 최근 수정 파일 순서
+    matchingFiles = recentFiles.length > 0 ? recentFiles : allFiles;
   }
 
   // 검색어 필터

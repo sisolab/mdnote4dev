@@ -15,7 +15,6 @@ import { htmlToMarkdown, markdownToHtml } from "./markdown";
 import { parseFrontmatter } from "@/utils/frontmatter";
 import { Toolbar } from "./Toolbar";
 import { useSettingsStore, getFontFamily } from "@/stores/settingsStore";
-import { useAppStore } from "@/stores/appStore";
 
 interface TiptapEditorProps {
   content: string;
@@ -70,14 +69,9 @@ export function TiptapEditor({ content, onSave }: TiptapEditorProps) {
   const handleSave = useCallback(() => {
     if (!editor) return;
     const body = htmlToMarkdown(editor.getHTML());
-    // frontmatter: store의 allTags에서 현재 파일의 태그를 가져와서 구성
-    const state = useAppStore.getState();
-    const filePath = state.selectedFile;
-    const liveTags = filePath
-      ? Object.keys(state.allTags).filter((tag) => state.allTags[tag]?.includes(filePath))
-      : parseFrontmatter(contentRef.current).tags;
-    const tagsStr = liveTags.length > 0 ? `tags: [${liveTags.join(", ")}]` : "";
-    const md = tagsStr ? `---\n${tagsStr}\n---\n${body}` : body;
+    // frontmatter 보존: 현재 탭 content에서 frontmatter를 그대로 유지
+    const fm = parseFrontmatter(contentRef.current);
+    const md = fm.raw ? `---\n${fm.raw}\n---\n${body}` : body;
     lastMarkdown.current = md;
     onSave(md);
   }, [editor, onSave, content]);

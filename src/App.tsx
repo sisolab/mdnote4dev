@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { readTextFile } from "@tauri-apps/plugin-fs";
+import { readDir, readTextFile, stat } from "@tauri-apps/plugin-fs";
+import { parseFrontmatter } from "./utils/frontmatter";
 import { Sidebar } from "./components/sidebar/Sidebar";
 import { EditorArea } from "./components/editor/EditorArea";
 import { SettingsPanel } from "./components/settings/SettingsPanel";
@@ -105,6 +106,74 @@ function App() {
       root.style.setProperty(key, value);
     });
   }, [themeMode, accentColor]);
+
+  // 앱 시작 시 즐겨찾기 폴더의 .md 파일 태그 + 최근 문서 스캔
+  // persist hydration 완료 후 실행
+  useEffect(() => {
+    async function scanFiles() {
+      const { favorites, favoriteFiles, setAllTags, setRecentFiles } = useAppStore.getState();
+      const tagMap: Record<string, string[]> = {};
+      const fileTimes: { path: string; mtime: number }[] = [];
+
+      async function collectMdFiles(dirPath: string): Promise<string[]> {
+        const paths: string[] = [];
+        try {
+          const entries = await readDir(dirPath);
+          for (const entry of entries) {
+            const fullPath = `${dirPath}\\${entry.name}`;
+            if (entry.isDirectory) {
+              paths.push(...await collectMdFiles(fullPath));
+            } else if (/\.(md|markdown)$/i.test(entry.name ?? "")) {
+              paths.push(fullPath);
+            }
+          }
+        } catch {}
+        return paths;
+      }
+
+      const allPaths: string[] = [];
+      for (const fav of favorites) {
+        allPaths.push(...await collectMdFiles(fav.path));
+      }
+      for (const fp of favoriteFiles) {
+        if (/\.(md|markdown)$/i.test(fp) && !allPaths.includes(fp)) {
+          allPaths.push(fp);
+        }
+      }
+
+      console.log(`[Marknote] 스캔 대상: ${allPaths.length}개 파일, 즐겨찾기 폴더: ${favorites.length}개`);
+
+      for (const filePath of allPaths) {
+        try {
+          const [content, fileStat] = await Promise.all([
+            readTextFile(filePath),
+            stat(filePath).catch(() => null),
+          ]);
+          const fm = parseFrontmatter(content);
+          for (const tag of fm.tags) {
+            if (!tagMap[tag]) tagMap[tag] = [];
+            if (!tagMap[tag].includes(filePath)) tagMap[tag].push(filePath);
+          }
+          const mtime = fileStat?.mtime?.getTime?.() ?? fileStat?.mtime ?? 0;
+          fileTimes.push({ path: filePath, mtime: typeof mtime === "number" ? mtime : 0 });
+        } catch {}
+      }
+
+      setAllTags(tagMap);
+      fileTimes.sort((a, b) => b.mtime - a.mtime);
+      setRecentFiles(fileTimes.slice(0, 50).map((f) => f.path));
+
+      console.log(`[Marknote] 태그 ${Object.keys(tagMap).length}개, 최근 파일 ${fileTimes.length}개 로드 완료`);
+    }
+
+    const unsub = useAppStore.persist.onFinishHydration(() => {
+      scanFiles();
+    });
+    if (useAppStore.persist.hasHydrated()) {
+      scanFiles();
+    }
+    return unsub;
+  }, []);
 
   // 앱 종료 시 임시 문서 확인
   useEffect(() => {

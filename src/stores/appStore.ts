@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
 export interface FileEntry {
   name: string;
@@ -46,6 +47,10 @@ interface AppState {
   allTags: Record<string, string[]>;
   setAllTags: (tags: Record<string, string[]>) => void;
 
+  // 최근 파일 (mtime 내림차순)
+  recentFiles: string[];
+  setRecentFiles: (files: string[]) => void;
+
   // 정렬
   folderSort: SortMode;
   fileSort: SortMode;
@@ -87,216 +92,226 @@ interface AppState {
   setFileContent: (content: string) => void;
 }
 
-export const useAppStore = create<AppState>((set) => ({
-  favorites: [
-    { path: "C:\\Users\\siu\\Desktop\\Notes", name: "Notes" },
-    { path: "C:\\Users\\siu\\OneDrive\\문서\\마크다운 노트\\영어 공부", name: "영어 공부" },
-    { path: "C:\\Users\\siu\\OneDrive\\문서\\마크다운 노트\\클로드 이전 계획", name: "클로드 이전 계획" },
-  ],
-  addFavorite: (folder) =>
-    set((state) => ({
-      favorites: [...state.favorites, folder],
-    })),
-  removeFavorite: (path) =>
-    set((state) => ({
-      favorites: state.favorites.filter((f) => f.path !== path),
-    })),
+export const useAppStore = create<AppState>()(
+  persist(
+    (set) => ({
+      favorites: [],
+      addFavorite: (folder) =>
+        set((state) => ({
+          favorites: [...state.favorites, folder],
+        })),
+      removeFavorite: (path) =>
+        set((state) => ({
+          favorites: state.favorites.filter((f) => f.path !== path),
+        })),
 
-  setFavoriteAlias: (path, alias) =>
-    set((state) => ({
-      favorites: state.favorites.map((f) =>
-        f.path === path ? { ...f, alias } : f
-      ),
-    })),
+      setFavoriteAlias: (path, alias) =>
+        set((state) => ({
+          favorites: state.favorites.map((f) =>
+            f.path === path ? { ...f, alias } : f
+          ),
+        })),
 
-  updateFavoritePath: (oldPath, newPath, newName) =>
-    set((state) => ({
-      favorites: state.favorites.map((f) =>
-        f.path === oldPath ? { ...f, path: newPath, name: newName } : f
-      ),
-    })),
+      updateFavoritePath: (oldPath, newPath, newName) =>
+        set((state) => ({
+          favorites: state.favorites.map((f) =>
+            f.path === oldPath ? { ...f, path: newPath, name: newName } : f
+          ),
+        })),
 
-  setFavoriteIcon: (path, icon) =>
-    set((state) => ({
-      favorites: state.favorites.map((f) =>
-        f.path === path ? { ...f, icon } : f
-      ),
-    })),
+      setFavoriteIcon: (path, icon) =>
+        set((state) => ({
+          favorites: state.favorites.map((f) =>
+            f.path === path ? { ...f, icon } : f
+          ),
+        })),
 
-  favoriteFiles: [] as string[],
-  addFavoriteFile: (path) =>
-    set((state) => ({
-      favoriteFiles: state.favoriteFiles.includes(path) ? state.favoriteFiles : [...state.favoriteFiles, path],
-    })),
-  removeFavoriteFile: (path) =>
-    set((state) => ({
-      favoriteFiles: state.favoriteFiles.filter((p) => p !== path),
-    })),
+      favoriteFiles: [] as string[],
+      addFavoriteFile: (path) =>
+        set((state) => ({
+          favoriteFiles: state.favoriteFiles.includes(path) ? state.favoriteFiles : [...state.favoriteFiles, path],
+        })),
+      removeFavoriteFile: (path) =>
+        set((state) => ({
+          favoriteFiles: state.favoriteFiles.filter((p) => p !== path),
+        })),
 
-  allTags: {} as Record<string, string[]>,
-  setAllTags: (tags) => set({ allTags: tags }),
+      allTags: {} as Record<string, string[]>,
+      setAllTags: (tags) => set({ allTags: tags }),
 
-  folderSort: "name" as SortMode,
-  fileSort: "name" as SortMode,
-  setFolderSort: (mode) => set({ folderSort: mode }),
-  setFileSort: (mode) => set({ fileSort: mode }),
+      recentFiles: [] as string[],
+      setRecentFiles: (files) => set({ recentFiles: files }),
 
-  expandedFolders: new Set<string>(),
-  toggleFolder: (path) =>
-    set((state) => {
-      const next = new Set(state.expandedFolders);
-      if (next.has(path)) next.delete(path);
-      else next.add(path);
-      return { expandedFolders: next };
+      folderSort: "name" as SortMode,
+      fileSort: "name" as SortMode,
+      setFolderSort: (mode) => set({ folderSort: mode }),
+      setFileSort: (mode) => set({ fileSort: mode }),
+
+      expandedFolders: new Set<string>(),
+      toggleFolder: (path) =>
+        set((state) => {
+          const next = new Set(state.expandedFolders);
+          if (next.has(path)) next.delete(path);
+          else next.add(path);
+          return { expandedFolders: next };
+        }),
+
+      tabs: [{ id: "tag-explorer", title: "태그", filePath: null, content: "", isDirty: false, type: "tag-explorer" as const, tagFilters: [] }],
+      activeTabId: "tag-explorer",
+
+      openTab: (filePath, title, content) =>
+        set((state) => {
+          const existing = state.tabs.find((t) => t.filePath === filePath);
+          if (existing) {
+            return { activeTabId: existing.id, selectedFile: filePath, fileContent: content };
+          }
+          const id = `tab-${++tabCounter}`;
+          const tab: Tab = { id, title, filePath, content, isDirty: false };
+          return {
+            tabs: [...state.tabs, tab],
+            activeTabId: id,
+            selectedFile: filePath,
+            fileContent: content,
+          };
+        }),
+
+      newTab: () =>
+        set((state) => {
+          const id = `tab-${++tabCounter}`;
+          const tab: Tab = {
+            id,
+            title: "제목 없음",
+            filePath: null,
+            content: "",
+            isDirty: false,
+          };
+          return {
+            tabs: [...state.tabs, tab],
+            activeTabId: id,
+            selectedFile: null,
+            fileContent: "",
+          };
+        }),
+
+      closeTab: (id) =>
+        set((state) => {
+          const idx = state.tabs.findIndex((t) => t.id === id);
+          const newTabs = state.tabs.filter((t) => t.id !== id);
+          let newActiveId = state.activeTabId;
+          if (state.activeTabId === id) {
+            if (newTabs.length === 0) {
+              newActiveId = null;
+            } else if (idx >= newTabs.length) {
+              newActiveId = newTabs[newTabs.length - 1].id;
+            } else {
+              newActiveId = newTabs[idx].id;
+            }
+          }
+          const activeTab = newTabs.find((t) => t.id === newActiveId);
+          return {
+            tabs: newTabs,
+            activeTabId: newActiveId,
+            selectedFile: activeTab?.filePath ?? null,
+            fileContent: activeTab?.content ?? "",
+          };
+        }),
+
+      setActiveTab: (id) =>
+        set((state) => {
+          const tab = state.tabs.find((t) => t.id === id);
+          if (!tab) return {};
+          return {
+            activeTabId: id,
+            selectedFile: tab.filePath,
+            fileContent: tab.content,
+          };
+        }),
+
+      updateTabContent: (id, content) =>
+        set((state) => ({
+          tabs: state.tabs.map((t) =>
+            t.id === id ? { ...t, content, isDirty: true } : t
+          ),
+          fileContent: state.activeTabId === id ? content : state.fileContent,
+        })),
+
+      updateTabTitle: (id, title) =>
+        set((state) => ({
+          tabs: state.tabs.map((t) =>
+            t.id === id ? { ...t, title } : t
+          ),
+        })),
+
+      updateTabFilePath: (id, filePath, title) =>
+        set((state) => ({
+          tabs: state.tabs.map((t) =>
+            t.id === id ? { ...t, filePath, title } : t
+          ),
+          selectedFile: state.activeTabId === id ? filePath : state.selectedFile,
+        })),
+
+      markTabClean: (id) =>
+        set((state) => ({
+          tabs: state.tabs.map((t) =>
+            t.id === id ? { ...t, isDirty: false } : t
+          ),
+        })),
+
+      reorderTabs: (fromIndex, toIndex) =>
+        set((state) => {
+          const newTabs = [...state.tabs];
+          const [moved] = newTabs.splice(fromIndex, 1);
+          newTabs.splice(toIndex, 0, moved);
+          return { tabs: newTabs };
+        }),
+
+      openTagExplorer: (tag) =>
+        set((state) => {
+          const existing = state.tabs.find((t) => t.type === "tag-explorer");
+          if (existing) {
+            const current = existing.tagFilters ?? [];
+            const newFilters = tag ? (current.includes(tag) ? current : [...current, tag]) : current;
+            return {
+              tabs: state.tabs.map((t) => t.id === existing.id ? { ...t, tagFilters: newFilters } : t),
+              activeTabId: existing.id,
+            };
+          }
+          const id = `tab-${++tabCounter}`;
+          const tab: Tab = { id, title: "태그 탐색", filePath: null, content: "", isDirty: false, type: "tag-explorer", tagFilters: tag ? [tag] : [] };
+          return {
+            tabs: [tab, ...state.tabs],
+            activeTabId: id,
+          };
+        }),
+
+      sidebarCollapsed: false,
+      toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
+      fileTreeVersion: 0,
+      refreshFileTree: () => set((state) => ({ fileTreeVersion: state.fileTreeVersion + 1 })),
+      selectedPaths: new Set<string>(),
+      setSelectedPaths: (paths) => set({ selectedPaths: paths }),
+      toggleSelectedPath: (path) => set((state) => {
+        const next = new Set(state.selectedPaths);
+        if (next.has(path)) next.delete(path);
+        else next.add(path);
+        return { selectedPaths: next };
+      }),
+      clearSelectedPaths: () => set({ selectedPaths: new Set<string>() }),
+
+      selectedFile: null,
+      fileContent: "",
+      setSelectedFile: (path) => set({ selectedFile: path }),
+      setFileContent: (content) => set({ fileContent: content }),
     }),
-
-  tabs: [{ id: "tag-explorer", title: "태그", filePath: null, content: "", isDirty: false, type: "tag-explorer" as const, tagFilters: [] }],
-  activeTabId: null,
-
-  openTab: (filePath, title, content) =>
-    set((state) => {
-      // 이미 열려있으면 활성화
-      const existing = state.tabs.find((t) => t.filePath === filePath);
-      if (existing) {
-        return { activeTabId: existing.id, selectedFile: filePath, fileContent: content };
-      }
-      const id = `tab-${++tabCounter}`;
-      const tab: Tab = { id, title, filePath, content, isDirty: false };
-      return {
-        tabs: [...state.tabs, tab],
-        activeTabId: id,
-        selectedFile: filePath,
-        fileContent: content,
-      };
-    }),
-
-  newTab: () =>
-    set((state) => {
-      const id = `tab-${++tabCounter}`;
-      const tab: Tab = {
-        id,
-        title: "제목 없음",
-        filePath: null,
-        content: "",
-        isDirty: false,
-      };
-      return {
-        tabs: [...state.tabs, tab],
-        activeTabId: id,
-        selectedFile: null,
-        fileContent: "",
-      };
-    }),
-
-  closeTab: (id) =>
-    set((state) => {
-      const idx = state.tabs.findIndex((t) => t.id === id);
-      const newTabs = state.tabs.filter((t) => t.id !== id);
-      let newActiveId = state.activeTabId;
-      if (state.activeTabId === id) {
-        if (newTabs.length === 0) {
-          newActiveId = null;
-        } else if (idx >= newTabs.length) {
-          newActiveId = newTabs[newTabs.length - 1].id;
-        } else {
-          newActiveId = newTabs[idx].id;
-        }
-      }
-      const activeTab = newTabs.find((t) => t.id === newActiveId);
-      return {
-        tabs: newTabs,
-        activeTabId: newActiveId,
-        selectedFile: activeTab?.filePath ?? null,
-        fileContent: activeTab?.content ?? "",
-      };
-    }),
-
-  setActiveTab: (id) =>
-    set((state) => {
-      const tab = state.tabs.find((t) => t.id === id);
-      if (!tab) return {};
-      return {
-        activeTabId: id,
-        selectedFile: tab.filePath,
-        fileContent: tab.content,
-      };
-    }),
-
-  updateTabContent: (id, content) =>
-    set((state) => ({
-      tabs: state.tabs.map((t) =>
-        t.id === id ? { ...t, content, isDirty: true } : t
-      ),
-      fileContent: state.activeTabId === id ? content : state.fileContent,
-    })),
-
-  updateTabTitle: (id, title) =>
-    set((state) => ({
-      tabs: state.tabs.map((t) =>
-        t.id === id ? { ...t, title } : t
-      ),
-    })),
-
-  updateTabFilePath: (id, filePath, title) =>
-    set((state) => ({
-      tabs: state.tabs.map((t) =>
-        t.id === id ? { ...t, filePath, title } : t
-      ),
-      selectedFile: state.activeTabId === id ? filePath : state.selectedFile,
-    })),
-
-  markTabClean: (id) =>
-    set((state) => ({
-      tabs: state.tabs.map((t) =>
-        t.id === id ? { ...t, isDirty: false } : t
-      ),
-    })),
-
-  reorderTabs: (fromIndex, toIndex) =>
-    set((state) => {
-      const newTabs = [...state.tabs];
-      const [moved] = newTabs.splice(fromIndex, 1);
-      newTabs.splice(toIndex, 0, moved);
-      return { tabs: newTabs };
-    }),
-
-  openTagExplorer: (tag) =>
-    set((state) => {
-      // 이미 열린 태그 탐색 탭이 있으면 그걸 활성화
-      const existing = state.tabs.find((t) => t.type === "tag-explorer");
-      if (existing) {
-        const current = existing.tagFilters ?? [];
-        const newFilters = tag ? (current.includes(tag) ? current : [...current, tag]) : current;
-        return {
-          tabs: state.tabs.map((t) => t.id === existing.id ? { ...t, tagFilters: newFilters } : t),
-          activeTabId: existing.id,
-        };
-      }
-      // 없으면 첫 번째 위치에 생성
-      const id = `tab-${++tabCounter}`;
-      const tab: Tab = { id, title: "태그 탐색", filePath: null, content: "", isDirty: false, type: "tag-explorer", tagFilters: tag ? [tag] : [] };
-      return {
-        tabs: [tab, ...state.tabs],
-        activeTabId: id,
-      };
-    }),
-
-  sidebarCollapsed: false,
-  toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
-  fileTreeVersion: 0,
-  refreshFileTree: () => set((state) => ({ fileTreeVersion: state.fileTreeVersion + 1 })),
-  selectedPaths: new Set<string>(),
-  setSelectedPaths: (paths) => set({ selectedPaths: paths }),
-  toggleSelectedPath: (path) => set((state) => {
-    const next = new Set(state.selectedPaths);
-    if (next.has(path)) next.delete(path);
-    else next.add(path);
-    return { selectedPaths: next };
-  }),
-  clearSelectedPaths: () => set({ selectedPaths: new Set<string>() }),
-
-  selectedFile: null,
-  fileContent: "",
-  setSelectedFile: (path) => set({ selectedFile: path }),
-  setFileContent: (content) => set({ fileContent: content }),
-}));
+    {
+      name: "marknote-app",
+      partialize: (state) => ({
+        favorites: state.favorites,
+        favoriteFiles: state.favoriteFiles,
+        sidebarCollapsed: state.sidebarCollapsed,
+        folderSort: state.folderSort,
+        fileSort: state.fileSort,
+      }),
+    }
+  )
+);

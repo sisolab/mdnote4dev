@@ -66,16 +66,21 @@ export function EditorArea() {
 
     const newTags = [...fm.tags, tag];
     const newContent = updateFrontmatterTags(content, newTags);
+    console.log("[Marknote] 태그 추가:", tag, "filePath:", activeTab.filePath);
+    console.log("[Marknote] newContent 앞 100자:", newContent.substring(0, 100));
     updateTabContent(activeTab.id, newContent);
     setCurrentTags(newTags);
 
     if (activeTab.filePath) {
       try {
         await writeTextFile(activeTab.filePath, newContent);
+        console.log("[Marknote] 파일 저장 성공:", activeTab.filePath);
         markTabClean(activeTab.id);
       } catch (err) {
-        console.error("태그 저장 실패:", err);
+        console.error("[Marknote] 태그 저장 실패:", err);
       }
+    } else {
+      console.log("[Marknote] filePath 없음 - 파일 저장 스킵");
     }
 
     // 전역 태그 갱신
