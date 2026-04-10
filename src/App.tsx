@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { readDir, readTextFile, stat, exists } from "@tauri-apps/plugin-fs";
 import { parseFrontmatter, assignTagColors } from "./utils/frontmatter";
+import { cleanupOrphanedImages } from "./utils/imageUtils";
 import { Sidebar } from "./components/sidebar/Sidebar";
 import { EditorArea } from "./components/editor/EditorArea";
 import { SettingsPanel } from "./components/settings/SettingsPanel";
@@ -231,6 +232,13 @@ function App() {
     const appWindow = getCurrentWindow();
     const unlisten = appWindow.onCloseRequested(async (event) => {
       const { tabs } = useAppStore.getState();
+      // 열린 탭의 고아 이미지 정리
+      for (const tab of tabs) {
+        if (tab.filePath && tab.content) {
+          await cleanupOrphanedImages(tab.filePath, tab.content).catch(() => {});
+        }
+      }
+
       const unsaved = tabs.filter((t) => t.type !== "tag-explorer" && !t.filePath && t.content);
       if (unsaved.length > 0) {
         event.preventDefault();

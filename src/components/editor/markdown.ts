@@ -1,4 +1,5 @@
 import TurndownService from "turndown";
+import { convertFileSrc } from "@tauri-apps/api/core";
 
 const turndown = new TurndownService({
   headingStyle: "atx",
@@ -20,7 +21,24 @@ turndown.addRule("taskListItem", {
   replacement: (content, node) => {
     const checked = (node as HTMLElement).getAttribute("data-checked") === "true";
     const checkbox = checked ? "[x]" : "[ ]";
-    return `${checkbox} ${content.trim()}\n`;
+    return `- ${checkbox} ${content.trim()}\n`;
+  },
+});
+
+// 이미지 변환 규칙: asset URL → 상대경로 복원
+turndown.addRule("image", {
+  filter: "img",
+  replacement: (_content, node) => {
+    const el = node as HTMLElement;
+    const originalSrc = el.getAttribute("data-original-src");
+    let src = originalSrc || el.getAttribute("src") || "";
+    const alt = el.getAttribute("alt") || "";
+    // asset:// URL에서 .assets 경로 추출하여 상대경로로 변환
+    const assetsMatch = src.match(/[/\\]\.assets[/\\](.+?)(?:\?.*)?$/);
+    if (assetsMatch && !src.startsWith("./")) {
+      src = `./.assets/${assetsMatch[1]}`;
+    }
+    return `![${alt}](${src})`;
   },
 });
 
@@ -70,7 +88,7 @@ export function htmlToMarkdown(html: string): string {
   return turndown.turndown(html);
 }
 
-export function markdownToHtml(md: string): string {
+export function markdownToHtml(md: string, docFilePath?: string | null): string {
   // frontmatter 제거
   let html = md.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, "");
 
@@ -135,7 +153,15 @@ export function markdownToHtml(md: string): string {
   html = html.replace(/~~(.+?)~~/g, "<s>$1</s>");
 
   // 이미지
-  html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1">');
+  html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_m, alt, src) => {
+    let resolvedSrc = src;
+    if (docFilePath && src.startsWith("./")) {
+      const docDir = docFilePath.substring(0, docFilePath.lastIndexOf("\\"));
+      const absPath = `${docDir}\\${src.substring(2).replace(/\//g, "\\")}`;
+      resolvedSrc = convertFileSrc(absPath);
+    }
+    return `<img src="${resolvedSrc}" alt="${alt}" data-original-src="${src}">`;
+  });
 
   // 링크
   html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');

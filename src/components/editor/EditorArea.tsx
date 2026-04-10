@@ -162,6 +162,7 @@ export function EditorArea() {
           <TiptapEditor
             key={activeTab.id}
             content={activeTab.content}
+            filePath={activeTab.filePath}
             onSave={handleSave}
           />
         </div>

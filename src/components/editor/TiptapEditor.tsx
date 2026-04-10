@@ -13,15 +13,18 @@ import { Typography } from "@tiptap/extension-typography";
 import { useEffect, useCallback, useRef, useState } from "react";
 import { htmlToMarkdown, markdownToHtml } from "./markdown";
 import { parseFrontmatter } from "@/utils/frontmatter";
+import { saveImageToAssets } from "@/utils/imageUtils";
+import { convertFileSrc } from "@tauri-apps/api/core";
 import { Toolbar } from "./Toolbar";
 import { useSettingsStore, getFontFamily } from "@/stores/settingsStore";
 
 interface TiptapEditorProps {
   content: string;
+  filePath: string | null;
   onSave: (markdown: string) => void;
 }
 
-export function TiptapEditor({ content, onSave }: TiptapEditorProps) {
+export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
   const lastMarkdown = useRef(content);
   const contentRef = useRef(content);
   contentRef.current = content;
@@ -46,10 +49,39 @@ export function TiptapEditor({ content, onSave }: TiptapEditorProps) {
       Underline,
       Typography,
     ],
-    content: markdownToHtml(content),
+    content: markdownToHtml(content, filePath),
     editorProps: {
       attributes: {
         class: "outline-none prose prose-sm max-w-none",
+      },
+      handlePaste: (view, event) => {
+        const items = event.clipboardData?.items;
+        if (!items) return false;
+
+        for (const item of Array.from(items)) {
+          if (item.type.startsWith("image/")) {
+            event.preventDefault();
+            const blob = item.getAsFile();
+            if (!blob) return true;
+            if (!filePath) {
+              console.warn("[Marknote] 이미지 붙여넣기: 먼저 문서를 저장하세요");
+              return true;
+            }
+            saveImageToAssets(filePath, blob).then((relativePath) => {
+              // 렌더링용 asset URL 생성
+              const docDir = filePath.substring(0, filePath.lastIndexOf("\\"));
+              const absPath = `${docDir}\\${relativePath.substring(2).replace(/\//g, "\\")}`;
+              const assetUrl = convertFileSrc(absPath);
+              view.dispatch(view.state.tr.replaceSelectionWith(
+                view.state.schema.nodes.image.create({ src: assetUrl })
+              ));
+            }).catch((err) => {
+              console.error("[Marknote] 이미지 저장 실패:", err);
+            });
+            return true;
+          }
+        }
+        return false;
       },
     },
     onTransaction: (_props) => setTick((t) => t + 1),
@@ -62,7 +94,7 @@ export function TiptapEditor({ content, onSave }: TiptapEditorProps) {
     if (!editor) return;
     if (content !== lastMarkdown.current) {
       lastMarkdown.current = content;
-      editor.commands.setContent(markdownToHtml(content));
+      editor.commands.setContent(markdownToHtml(content, filePath));
     }
   }, [content, editor]);
 

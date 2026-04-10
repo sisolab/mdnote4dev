@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { readDir, readTextFile, rename, mkdir, create } from "@tauri-apps/plugin-fs";
+import { deleteDocImages } from "@/utils/imageUtils";
 import { invoke } from "@tauri-apps/api/core";
 import { useAppStore, type FileEntry } from "@/stores/appStore";
 import { ChevronRight, FileText, Star, Folder } from "lucide-react";
@@ -299,6 +300,10 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
     try {
       const { removeFavoriteFile } = useAppStore.getState();
       for (const item of items) {
+        // 마크다운 파일이면 관련 이미지도 삭제
+        if (!item.isDirectory && /\.(md|markdown)$/i.test(item.name)) {
+          await deleteDocImages(item.path);
+        }
         await invoke("move_to_trash", { path: item.path });
         const openTab = tabs.find((t) => t.filePath === item.path);
         if (openTab) closeTab(openTab.id);
