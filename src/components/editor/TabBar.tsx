@@ -140,8 +140,6 @@ export function TabBar() {
     return () => window.removeEventListener("keydown", handler);
   }, [dragIndex]);
 
-  if (tabs.length === 0) return null;
-
   return (
     <div
       ref={containerRef}
@@ -350,7 +348,7 @@ export function TabBar() {
                     width: "16px", height: "16px",
                     display: "flex", alignItems: "center", justifyContent: "center",
                     borderRadius: "3px", border: "none", background: "transparent",
-                    color: "var(--color-text-muted)", cursor: "pointer", flexShrink: 0,
+                    color: "var(--color-text-tertiary)", cursor: "pointer", flexShrink: 0,
                     fontSize: "14px", lineHeight: 1, transition: "all 0.1s",
                   }}
                   onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-active)"; e.currentTarget.style.color = "var(--color-text-secondary)"; }}
@@ -391,7 +389,7 @@ export function TabBar() {
               width: "24px", height: "40px",
               display: "flex", alignItems: "center", justifyContent: "center",
               border: "none", background: "transparent", cursor: canScrollLeft ? "pointer" : "default",
-              color: canScrollLeft ? "var(--color-text-secondary)" : "var(--color-text-muted)",
+              color: canScrollLeft ? "var(--color-text-tertiary)" : "var(--color-text-muted)",
               flexShrink: 0, transition: "color 0.1s",
             }}
           >
@@ -404,7 +402,7 @@ export function TabBar() {
               width: "24px", height: "40px",
               display: "flex", alignItems: "center", justifyContent: "center",
               border: "none", background: "transparent", cursor: canScrollRight ? "pointer" : "default",
-              color: canScrollRight ? "var(--color-text-secondary)" : "var(--color-text-muted)",
+              color: canScrollRight ? "var(--color-text-tertiary)" : "var(--color-text-muted)",
               flexShrink: 0, transition: "color 0.1s",
             }}
           >
@@ -421,7 +419,7 @@ export function TabBar() {
           width: "30px", height: "40px",
           display: "flex", alignItems: "center", justifyContent: "center",
           border: "none", background: "transparent",
-          color: "var(--color-text-muted)", cursor: "pointer", fontSize: "16px",
+          color: "var(--color-text-tertiary)", cursor: "pointer", fontSize: "16px",
           position: "relative", zIndex: 1, transition: "color 0.1s",
         }}
         title="새 탭"
@@ -444,7 +442,7 @@ export function TabBar() {
           width: "30px", height: "40px",
           display: "flex", alignItems: "center", justifyContent: "center",
           border: "none", background: "transparent",
-          color: "var(--color-text-muted)", cursor: "pointer",
+          color: "var(--color-text-tertiary)", cursor: "pointer",
           position: "relative", zIndex: 1, transition: "color 0.1s",
         }}
         title="문서 열기"

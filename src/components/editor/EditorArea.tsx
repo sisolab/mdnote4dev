@@ -74,10 +74,10 @@ export function EditorArea() {
       ) : (
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
-            <div style={{ width: "64px", height: "64px", margin: "0 auto 16px", borderRadius: "16px", background: "#f7f8fa", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <FileText size={32} color="#aaa" strokeWidth={1.5} />
+            <div style={{ width: "64px", height: "64px", margin: "0 auto 16px", borderRadius: "16px", background: "var(--color-bg-secondary)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <FileText size={32} style={{ color: "var(--color-text-muted)" }} strokeWidth={1.5} />
             </div>
-            <p style={{ fontSize: "13px", color: "#999" }}>
+            <p style={{ fontSize: "13px", color: "var(--color-text-light)" }}>
               사이드바에서 문서를 선택하거나 새 문서를 만드세요
             </p>
           </div>
