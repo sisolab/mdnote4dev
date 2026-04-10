@@ -10,6 +10,7 @@ export interface FileEntry {
 export interface FavoriteFolder {
   path: string;
   name: string;
+  alias?: string;
 }
 
 export interface Tab {
@@ -31,6 +32,7 @@ interface AppState {
   favorites: FavoriteFolder[];
   addFavorite: (folder: FavoriteFolder) => void;
   removeFavorite: (path: string) => void;
+  setFavoriteAlias: (path: string, alias: string | undefined) => void;
 
   // 파일 트리
   expandedFolders: Set<string>;
@@ -80,6 +82,13 @@ export const useAppStore = create<AppState>((set) => ({
   removeFavorite: (path) =>
     set((state) => ({
       favorites: state.favorites.filter((f) => f.path !== path),
+    })),
+
+  setFavoriteAlias: (path, alias) =>
+    set((state) => ({
+      favorites: state.favorites.map((f) =>
+        f.path === path ? { ...f, alias } : f
+      ),
     })),
 
   expandedFolders: new Set<string>(),

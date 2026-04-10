@@ -6,7 +6,7 @@ import { useAppStore } from "@/stores/appStore";
 import { FileTree } from "./FileTree";
 import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
 import { Tooltip } from "@/components/ui/Tooltip";
-import { Unlink, ChevronRight, Folder, Pin } from "lucide-react";
+import { Unlink, ChevronRight, Folder, Pin, Tag } from "lucide-react";
 
 function shortenPath(path: string): string {
   const userHome = path.match(/^([A-Z]:\\Users\\[^\\]+)/i);
@@ -17,7 +17,9 @@ function shortenPath(path: string): string {
 }
 
 export function Sidebar() {
-  const { favorites, sidebarCollapsed, removeFavorite, addFavorite, workspace, setWorkspace, openTab, refreshFileTree } = useAppStore();
+  const { favorites, sidebarCollapsed, removeFavorite, addFavorite, workspace, setWorkspace, openTab, refreshFileTree, setFavoriteAlias } = useAppStore();
+  const [aliasEditing, setAliasEditing] = useState<string | null>(null);
+  const [aliasValue, setAliasValue] = useState("");
   const [sidebarWidth, setSidebarWidth] = useState(280);
   const isResizing = useRef(false);
 
@@ -188,9 +190,17 @@ export function Sidebar() {
       ];
     }
     const isCurrentWorkspace = path === workspace;
+    const fav = favorites.find((f) => f.path === path);
+    const hasAlias = !!fav?.alias;
     return [
       { label: "새 문서", onClick: () => handleNewFile(path) },
       { label: "새 폴더", onClick: () => handleNewFolder(path) },
+      { divider: true, label: "", onClick: () => {} },
+      { label: hasAlias ? "별칭 변경" : "별칭 만들기", onClick: () => {
+        setAliasEditing(path);
+        setAliasValue(fav?.alias ?? fav?.name ?? "");
+      }},
+      ...(hasAlias ? [{ label: "별칭 제거", onClick: () => setFavoriteAlias(path, undefined) }] : []),
       { divider: true, label: "", onClick: () => {} },
       ...(isCurrentWorkspace
         ? [{ label: "기본 폴더 해제", onClick: () => setWorkspace(null) }]
@@ -261,7 +271,40 @@ export function Sidebar() {
                     <Folder size={14} className="shrink-0" style={{ color: isBroken ? "var(--color-text-muted)" : "var(--color-accent)" }} />
 
                     {/* 폴더 이름 */}
-                    <span className="truncate">{fav.name}</span>
+                    {aliasEditing === fav.path ? (
+                      <input
+                        autoFocus
+                        value={aliasValue}
+                        onChange={(e) => setAliasValue(e.target.value)}
+                        onBlur={() => {
+                          if (aliasValue.trim() && aliasValue.trim() !== fav.name) {
+                            setFavoriteAlias(fav.path, aliasValue.trim());
+                          }
+                          setAliasEditing(null);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            if (aliasValue.trim() && aliasValue.trim() !== fav.name) {
+                              setFavoriteAlias(fav.path, aliasValue.trim());
+                            }
+                            setAliasEditing(null);
+                          }
+                          if (e.key === "Escape") setAliasEditing(null);
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        style={{
+                          fontSize: "14px", fontWeight: 600, color: "var(--color-accent)",
+                          background: "transparent", border: "none",
+                          borderRadius: "0", padding: "0", outline: "none", width: "100%",
+                        }}
+                      />
+                    ) : (
+                      <span className="truncate">{fav.alias ?? fav.name}</span>
+                    )}
+                    {/* 별칭 아이콘 */}
+                    {fav.alias && aliasEditing !== fav.path && (
+                      <Tag size={11} className="shrink-0" style={{ color: "var(--color-text-muted)" }} />
+                    )}
 
                     {/* 기본 폴더 고정 아이콘 */}
                     {isWorkspace && (
