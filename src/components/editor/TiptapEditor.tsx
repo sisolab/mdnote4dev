@@ -46,7 +46,7 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
       }),
       TaskList,
       TaskItem.configure({ nested: true }),
-      Table.configure({ resizable: true }),
+      Table.configure({ resizable: false }),
       TableRow,
       TableCell,
       TableHeader,
