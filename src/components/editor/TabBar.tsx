@@ -2,10 +2,12 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { rename, readTextFile } from "@tauri-apps/plugin-fs";
 import { open } from "@tauri-apps/plugin-dialog";
 import { useAppStore } from "@/stores/appStore";
-import { Save, FolderOpen } from "lucide-react";
+import { Save, FolderOpen, PanelLeft, Settings } from "lucide-react";
+import { useSettingsStore } from "@/stores/settingsStore";
 
 export function TabBar() {
-  const { tabs, activeTabId, setActiveTab, closeTab, updateTabTitle, newTab, reorderTabs } = useAppStore();
+  const { tabs, activeTabId, setActiveTab, closeTab, updateTabTitle, newTab, reorderTabs, toggleSidebar } = useAppStore();
+  const { setShowSettings } = useSettingsStore();
   const containerRef = useRef<HTMLDivElement>(null);
   const [highlight, setHighlight] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -116,6 +118,25 @@ export function TabBar() {
       style={{ position: "relative", padding: "0 8px" }}
       className="flex items-center border-b border-border-light bg-bg-primary shrink-0 overflow-x-auto"
     >
+      {/* 사이드바 토글 */}
+      <button
+        onClick={toggleSidebar}
+        title="사이드바 토글"
+        style={{
+          width: "30px", height: "40px",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          border: "none", background: "transparent", cursor: "pointer",
+          color: "var(--color-text-tertiary)", transition: "all 0.1s",
+          position: "relative", zIndex: 1, flexShrink: 0,
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.color = "var(--color-text-secondary)"; }}
+        onMouseLeave={(e) => { e.currentTarget.style.color = "var(--color-text-tertiary)"; }}
+      >
+        <PanelLeft size={15} />
+      </button>
+
+      <div style={{ width: "1px", height: "14px", background: "var(--color-border-light)", flexShrink: 0, alignSelf: "center" }} />
+
       {/* 슬라이딩 호버 하이라이트 */}
       <div style={{
         position: "absolute",
@@ -355,6 +376,24 @@ export function TabBar() {
         title="문서 열기"
       >
         <FolderOpen size={14} />
+      </button>
+
+      {/* 오른쪽: 설정 */}
+      <div style={{ flex: 1 }} />
+      <button
+        onClick={() => setShowSettings(true)}
+        title="설정"
+        style={{
+          width: "30px", height: "40px",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          border: "none", background: "transparent", cursor: "pointer",
+          color: "var(--color-text-tertiary)", transition: "all 0.1s",
+          position: "relative", zIndex: 1, flexShrink: 0,
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.color = "var(--color-text-secondary)"; }}
+        onMouseLeave={(e) => { e.currentTarget.style.color = "var(--color-text-tertiary)"; }}
+      >
+        <Settings size={15} />
       </button>
 
       {/* 임시 문서 닫기 확인 */}

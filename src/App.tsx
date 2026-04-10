@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Sidebar } from "./components/sidebar/Sidebar";
 import { EditorArea } from "./components/editor/EditorArea";
-import { Titlebar } from "./components/titlebar/Titlebar";
 import { SettingsPanel } from "./components/settings/SettingsPanel";
 import { useSettingsStore, getAccentColors } from "./stores/settingsStore";
 import { useAppStore } from "./stores/appStore";
@@ -126,7 +125,6 @@ function App() {
 
   return (
     <div className="flex flex-col h-screen bg-bg-primary">
-      <Titlebar />
       <div className="flex flex-1 min-h-0">
         <Sidebar />
         <EditorArea />

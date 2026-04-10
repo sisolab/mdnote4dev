@@ -303,7 +303,7 @@ export function Sidebar() {
   return (
     <div className="flex shrink-0" style={{
       width: sidebarCollapsed ? "0px" : `${sidebarWidth}px`,
-      transition: sidebarCollapsed ? "width 0.25s cubic-bezier(0.4, 0, 0.2, 1)" : "none",
+      transition: "width 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
     }}>
     <aside
       className="bg-bg-primary flex flex-col overflow-hidden flex-1"
