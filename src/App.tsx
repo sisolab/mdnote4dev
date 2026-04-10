@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { readDir, readTextFile, stat, exists } from "@tauri-apps/plugin-fs";
-import { parseFrontmatter } from "./utils/frontmatter";
+import { parseFrontmatter, assignTagColors } from "./utils/frontmatter";
 import { Sidebar } from "./components/sidebar/Sidebar";
 import { EditorArea } from "./components/editor/EditorArea";
 import { SettingsPanel } from "./components/settings/SettingsPanel";
@@ -111,9 +111,10 @@ function App() {
   // persist hydration 완료 후 실행
   useEffect(() => {
     async function scanFiles() {
-      const { favorites, favoriteFiles, setAllTags, setRecentFiles } = useAppStore.getState();
+      const { favorites, favoriteFiles, setAllTags, setRecentFiles, setFilePreviews } = useAppStore.getState();
       const tagMap: Record<string, string[]> = {};
       const fileTimes: { path: string; mtime: number }[] = [];
+      const previews: Record<string, string> = {};
 
       async function collectMdFiles(dirPath: string): Promise<string[]> {
         const paths: string[] = [];
@@ -156,10 +157,15 @@ function App() {
           }
           const mtime = fileStat?.mtime?.getTime?.() ?? fileStat?.mtime ?? 0;
           fileTimes.push({ path: filePath, mtime: typeof mtime === "number" ? mtime : 0 });
+          // 미리보기: frontmatter 제외 본문 첫 부분
+          const bodyLines = fm.body.split("\n").filter((l) => l.trim() && !l.startsWith("#")).slice(0, 2);
+          previews[filePath] = bodyLines.join(" ").substring(0, 100);
         } catch {}
       }
 
       setAllTags(tagMap);
+      assignTagColors(Object.keys(tagMap).sort());
+      setFilePreviews(previews);
       fileTimes.sort((a, b) => b.mtime - a.mtime);
       setRecentFiles(fileTimes.slice(0, 50).map((f) => f.path));
 

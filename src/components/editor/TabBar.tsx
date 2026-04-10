@@ -3,12 +3,11 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { rename, readTextFile } from "@tauri-apps/plugin-fs";
 import { open } from "@tauri-apps/plugin-dialog";
 import { useAppStore } from "@/stores/appStore";
-import { Save, FolderOpen, PanelLeft, Settings, Tag } from "lucide-react";
+import { Save, FolderOpen, Maximize2, Minimize2, Settings, Tag } from "lucide-react";
 import { useSettingsStore } from "@/stores/settingsStore";
-import { Tooltip } from "@/components/ui/Tooltip";
 
 export function TabBar() {
-  const { tabs, activeTabId, setActiveTab, closeTab, updateTabTitle, newTab, reorderTabs, toggleSidebar } = useAppStore();
+  const { tabs, activeTabId, setActiveTab, closeTab, updateTabTitle, newTab, reorderTabs, toggleSidebar, sidebarCollapsed } = useAppStore();
   const { setShowSettings } = useSettingsStore();
   const containerRef = useRef<HTMLDivElement>(null);
   const [highlight, setHighlight] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
@@ -148,25 +147,6 @@ export function TabBar() {
       style={{ position: "relative", padding: "0 8px" }}
       className="flex items-center border-b border-border-light bg-bg-primary shrink-0 overflow-hidden"
     >
-      {/* 사이드바 토글 */}
-      <button
-        onClick={toggleSidebar}
-        title="사이드바 토글"
-        style={{
-          width: "30px", height: "40px",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          border: "none", background: "transparent", cursor: "pointer",
-          color: "var(--color-text-tertiary)", transition: "all 0.1s",
-          position: "relative", zIndex: 1, flexShrink: 0,
-        }}
-        onMouseEnter={(e) => { e.currentTarget.style.color = "var(--color-text-secondary)"; }}
-        onMouseLeave={(e) => { e.currentTarget.style.color = "var(--color-text-tertiary)"; }}
-      >
-        <PanelLeft size={15} />
-      </button>
-
-      <div style={{ width: "1px", height: "14px", background: "var(--color-border-light)", flexShrink: 0, alignSelf: "center" }} />
-
       {/* 스크롤 가능한 탭 영역 */}
       <div
         ref={scrollRef}
@@ -296,7 +276,6 @@ export function TabBar() {
                       }}
                     />
                   ) : (
-                    <Tooltip text={tab.filePath ?? "임시 문서 (저장되지 않음)"} position="bottom">
                     <span
                       onDoubleClick={(e) => {
                         e.stopPropagation();
@@ -307,7 +286,6 @@ export function TabBar() {
                     >
                       {tab.type === "tag-explorer" ? <Tag size={13} /> : tab.title.replace(/\.(md|markdown)$/i, "")}
                     </span>
-                    </Tooltip>
                   )}
                 </div>
 
@@ -450,7 +428,7 @@ export function TabBar() {
         <FolderOpen size={14} />
       </button>
 
-      {/* 오른쪽: 설정 */}
+      {/* 오른쪽: 설정 + 사이드바 토글 */}
       <button
         onClick={() => setShowSettings(true)}
         title="설정"
@@ -465,6 +443,21 @@ export function TabBar() {
         onMouseLeave={(e) => { e.currentTarget.style.color = "var(--color-text-tertiary)"; }}
       >
         <Settings size={15} />
+      </button>
+      <button
+        onClick={toggleSidebar}
+        title={sidebarCollapsed ? "사이드바 펼치기" : "사이드바 좁히기"}
+        style={{
+          width: "30px", height: "40px",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          border: "none", background: "transparent", cursor: "pointer",
+          color: "var(--color-text-tertiary)", transition: "all 0.1s",
+          position: "relative", zIndex: 1, flexShrink: 0,
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.color = "var(--color-text-secondary)"; }}
+        onMouseLeave={(e) => { e.currentTarget.style.color = "var(--color-text-tertiary)"; }}
+      >
+        {sidebarCollapsed ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
       </button>
 
       {/* 임시 문서 닫기 확인 */}

@@ -5,7 +5,7 @@ import { readTextFile } from "@tauri-apps/plugin-fs";
 import { FileText, Search, X } from "lucide-react";
 
 export function TagExplorer() {
-  const { allTags, openTab, tabs, activeTabId, recentFiles } = useAppStore();
+  const { allTags, openTab, tabs, activeTabId, recentFiles, filePreviews } = useAppStore();
   const activeTab = tabs.find((t) => t.id === activeTabId);
   const selectedTags = activeTab?.tagFilters ?? [];
   const [searchQuery, setSearchQuery] = useState("");
@@ -128,8 +128,8 @@ export function TagExplorer() {
       {/* 태그 버튼들 */}
       {tagNames.length > 0 && (
       <div style={{
-        display: "flex", flexWrap: "wrap", gap: "5px",
-        padding: "10px 16px", borderBottom: "1px solid var(--color-border-light)",
+        display: "flex", flexWrap: "wrap", gap: "6px",
+        padding: "12px 16px", borderBottom: "1px solid var(--color-border-light)",
         flexShrink: 0,
       }}>
         {tagNames.map((tag) => {
@@ -139,21 +139,21 @@ export function TagExplorer() {
             <span
               key={tag}
               style={{
-                display: "inline-flex", alignItems: "center", gap: "3px",
-                padding: "2px 8px", borderRadius: "3px", fontSize: "11px", fontWeight: 500,
+                display: "inline-flex", alignItems: "center", gap: "4px",
+                padding: "4px 10px", borderRadius: "4px", fontSize: "13px", fontWeight: 500,
                 background: isSelected ? color.text : color.bg,
                 color: isSelected ? "#fff" : color.text,
                 cursor: "pointer", transition: "all 0.1s",
               }}
             >
               <span onClick={() => toggleTag(tag)}>
-                {tag} <span style={{ opacity: 0.7, fontSize: "10px" }}>({allTags[tag]?.length ?? 0})</span>
+                {tag} <span style={{ opacity: 0.7, fontSize: "11px" }}>({allTags[tag]?.length ?? 0})</span>
               </span>
               <button
                 onClick={(e) => { e.stopPropagation(); setDeleteConfirmTag(tag); }}
                 style={{ border: "none", background: "transparent", cursor: "pointer", color: isSelected ? "#fff" : color.text, padding: 0, display: "flex", opacity: 0.5 }}
               >
-                <X size={10} />
+                <X size={12} />
               </button>
             </span>
           );
@@ -173,31 +173,37 @@ export function TagExplorer() {
             const name = filePath.split("\\").pop() ?? "";
             const path = shortenPath(filePath.substring(0, filePath.lastIndexOf("\\")));
             const fileTags = Object.keys(allTags).filter((t) => allTags[t]?.includes(filePath));
+            const preview = filePreviews[filePath] ?? "";
             return (
               <button
                 key={filePath}
                 onClick={() => handleOpenFile(filePath)}
                 style={{
-                  display: "flex", alignItems: "center", gap: "8px", width: "100%",
-                  padding: "6px 16px", border: "none", background: "transparent",
+                  display: "flex", alignItems: "flex-start", gap: "10px", width: "100%",
+                  padding: "10px 16px", border: "none", background: "transparent",
                   cursor: "pointer", textAlign: "left", transition: "background 0.1s",
                 }}
                 onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-hover)"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
               >
-                <FileText size={13} style={{ color: "var(--color-text-light)", flexShrink: 0 }} />
+                <FileText size={14} style={{ color: "var(--color-text-light)", flexShrink: 0, marginTop: "2px" }} />
                 <div style={{ overflow: "hidden", minWidth: 0, flex: 1 }}>
-                  <div className="truncate" style={{ fontSize: "13px", color: "var(--color-text-primary)", fontWeight: 500 }}>{name}</div>
-                  <div className="truncate" style={{ fontSize: "10px", color: "var(--color-text-light)" }}>{path}</div>
+                  <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
+                    <span className="truncate" style={{ fontSize: "13px", color: "var(--color-text-primary)", fontWeight: 500 }}>{name}</span>
+                    <span className="truncate" style={{ fontSize: "10px", color: "var(--color-text-light)", flexShrink: 1, minWidth: 0 }}>{path}</span>
+                  </div>
+                  {preview && (
+                    <div className="truncate" style={{ fontSize: "11px", color: "var(--color-text-secondary)", marginTop: "3px" }}>{preview}</div>
+                  )}
+                  {fileTags.length > 0 && (
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", marginTop: "5px" }}>
+                      {fileTags.map((t) => {
+                        const c = getTagColor(t);
+                        return <span key={t} style={{ fontSize: "11px", padding: "2px 8px", borderRadius: "3px", background: c.bg, color: c.text, fontWeight: 500 }}>{t}</span>;
+                      })}
+                    </div>
+                  )}
                 </div>
-                {fileTags.length > 0 && (
-                <div style={{ display: "flex", gap: "3px", flexShrink: 0 }}>
-                  {fileTags.map((t) => {
-                    const c = getTagColor(t);
-                    return <span key={t} style={{ fontSize: "9px", padding: "1px 4px", borderRadius: "2px", background: c.bg, color: c.text }}>{t}</span>;
-                  })}
-                </div>
-                )}
               </button>
             );
           })

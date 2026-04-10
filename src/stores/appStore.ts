@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { assignTagColors } from "@/utils/frontmatter";
 
 export interface FileEntry {
   name: string;
@@ -50,6 +51,10 @@ interface AppState {
   // 최근 파일 (mtime 내림차순)
   recentFiles: string[];
   setRecentFiles: (files: string[]) => void;
+
+  // 파일 미리보기 (파일경로 → 첫 줄 내용)
+  filePreviews: Record<string, string>;
+  setFilePreviews: (previews: Record<string, string>) => void;
 
   // 정렬
   folderSort: SortMode;
@@ -137,10 +142,16 @@ export const useAppStore = create<AppState>()(
         })),
 
       allTags: {} as Record<string, string[]>,
-      setAllTags: (tags) => set({ allTags: tags }),
+      setAllTags: (tags) => {
+        assignTagColors(Object.keys(tags).sort());
+        set({ allTags: tags });
+      },
 
       recentFiles: [] as string[],
       setRecentFiles: (files) => set({ recentFiles: files }),
+
+      filePreviews: {} as Record<string, string>,
+      setFilePreviews: (previews) => set({ filePreviews: previews }),
 
       folderSort: "name" as SortMode,
       fileSort: "name" as SortMode,
