@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { SidebarTabs } from "./SidebarTabs";
 import { exists, mkdir, create, readDir as tauriReadDir, readTextFile, rename } from "@tauri-apps/plugin-fs";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
@@ -352,15 +351,13 @@ export function Sidebar() {
         transition: "opacity 0.2s",
       }}
     >
-      <SidebarTabs activeTab={sidebarTab} onTabChange={setSidebarTab} />
-
-      {sidebarTab === "files" ? (
       <>
       {/* 검색창 */}
       <div style={{
         display: "flex", alignItems: "center", gap: "8px",
         padding: "0 16px", height: "40px",
         borderBottom: "1px solid var(--color-border-light)",
+        flexShrink: 0,
       }}>
         <Search size={13} style={{ color: "var(--color-text-light)", flexShrink: 0 }} />
         <input
@@ -381,6 +378,76 @@ export function Sidebar() {
           </button>
         )}
       </div>
+
+      {/* 액션 바 */}
+      <div style={{
+        display: "flex", alignItems: "center", gap: "0",
+        padding: "0 16px", height: "40px",
+        borderBottom: "1px solid var(--color-border-light)",
+        flexShrink: 0,
+      }}>
+        <button
+          onClick={() => {
+            const allExpanded = favorites.every((f) => expandedFavs.has(f.path));
+            if (allExpanded) {
+              setExpandedFavs(new Set());
+            } else {
+              setExpandedFavs(new Set(favorites.map((f) => f.path)));
+            }
+          }}
+          title={favorites.every((f) => expandedFavs.has(f.path)) ? "모두 접기" : "모두 펼치기"}
+          style={{
+            width: "34px", height: "34px",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            border: "none", background: "transparent", cursor: "pointer",
+            color: "var(--color-text-tertiary)", borderRadius: "3px",
+            transition: "all 0.1s",
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-hover)"; e.currentTarget.style.color = "var(--color-text-secondary)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--color-text-tertiary)"; }}
+        >
+          {favorites.every((f) => expandedFavs.has(f.path))
+            ? <ChevronsDownUp size={15} />
+            : <ChevronsUpDown size={15} />
+          }
+        </button>
+
+        <button
+          onClick={() => setCompactMode(!compactMode)}
+          title={compactMode ? "일반 보기" : "컴팩트 보기"}
+          style={{
+            width: "34px", height: "34px",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            border: "none", background: "transparent", cursor: "pointer",
+            color: compactMode ? "var(--color-accent)" : "var(--color-text-tertiary)", borderRadius: "3px",
+            transition: "all 0.1s",
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-hover)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+        >
+          <ListCollapse size={15} />
+        </button>
+
+        <button
+          onClick={(e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            setSortMenu({ x: rect.left, y: rect.bottom + 4 });
+          }}
+          title="정렬"
+          style={{
+            width: "34px", height: "34px",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            border: "none", background: "transparent", cursor: "pointer",
+            color: "var(--color-text-tertiary)", borderRadius: "3px",
+            transition: "all 0.1s",
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-hover)"; e.currentTarget.style.color = "var(--color-text-secondary)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--color-text-tertiary)"; }}
+        >
+          <ArrowUpDown size={15} />
+        </button>
+      </div>
+
       <div className="flex-1 overflow-y-auto hide-scrollbar" style={{ padding: "0", fontSize: compactMode ? "12px" : "14px" }} onContextMenu={handleSidebarContextMenu}>
 
         {/* ── 즐겨찾기 섹션 ── */}
@@ -682,74 +749,33 @@ export function Sidebar() {
 
       </div>
 
-      {/* 하단 액션 바 */}
-      <div style={{
-        display: "flex", alignItems: "center", gap: "0",
-        padding: "0 16px", height: "40px",
-        borderTop: "1px solid var(--color-border-light)",
-        flexShrink: 0,
-      }}>
-        <button
-          onClick={() => {
-            const allExpanded = favorites.every((f) => expandedFavs.has(f.path));
-            if (allExpanded) {
-              setExpandedFavs(new Set());
-            } else {
-              setExpandedFavs(new Set(favorites.map((f) => f.path)));
-            }
-          }}
-          title={favorites.every((f) => expandedFavs.has(f.path)) ? "모두 접기" : "모두 펼치기"}
+      {/* 태그 섹션 (하단 접이식) */}
+      <div style={{ flexShrink: 0 }}>
+        <div
+          onClick={() => setSidebarTab(sidebarTab === "tags" ? "files" : "tags")}
           style={{
-            width: "34px", height: "34px",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            border: "none", background: "transparent", cursor: "pointer",
-            color: "var(--color-text-tertiary)", borderRadius: "3px",
-            transition: "all 0.1s",
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-hover)"; e.currentTarget.style.color = "var(--color-text-secondary)"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--color-text-tertiary)"; }}
-        >
-          {favorites.every((f) => expandedFavs.has(f.path))
-            ? <ChevronsDownUp size={15} />
-            : <ChevronsUpDown size={15} />
-          }
-        </button>
-
-        <button
-          onClick={() => setCompactMode(!compactMode)}
-          title={compactMode ? "일반 보기" : "컴팩트 보기"}
-          style={{
-            width: "34px", height: "34px",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            border: "none", background: "transparent", cursor: "pointer",
-            color: compactMode ? "var(--color-accent)" : "var(--color-text-tertiary)", borderRadius: "3px",
-            transition: "all 0.1s",
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            padding: "0 16px", height: "28px", cursor: "pointer",
+            borderTop: "1px solid var(--color-border-light)",
+            borderBottom: sidebarTab === "tags" ? "1px solid var(--color-border-light)" : "none",
           }}
           onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-hover)"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = ""; }}
         >
-          <ListCollapse size={15} />
-        </button>
-
-        <button
-          onClick={(e) => {
-            const rect = e.currentTarget.getBoundingClientRect();
-            setSortMenu({ x: rect.left, y: rect.top });
-          }}
-          title="정렬"
-          style={{
-            width: "34px", height: "34px",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            border: "none", background: "transparent", cursor: "pointer",
-            color: "var(--color-text-tertiary)", borderRadius: "3px",
-            transition: "all 0.1s",
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-hover)"; e.currentTarget.style.color = "var(--color-text-secondary)"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--color-text-tertiary)"; }}
-        >
-          <ArrowUpDown size={15} />
-        </button>
+          <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+            <ChevronRight size={10} className={`shrink-0 text-text-light transition-transform duration-[0.15s] ${sidebarTab === "tags" ? "rotate-90" : ""}`} />
+            <span style={{ fontSize: "11px", fontWeight: 600, color: "var(--color-text-tertiary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+              태그
+            </span>
+          </div>
+        </div>
+        {sidebarTab === "tags" && (
+          <div style={{ height: "120px", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--color-text-light)", fontSize: "12px" }}>
+            태그 기능 준비 중
+          </div>
+        )}
       </div>
+
 
       {/* 아이콘 피커 */}
       {iconPickerPath && (
@@ -765,7 +791,6 @@ export function Sidebar() {
         <ContextMenu
           x={sortMenu.x}
           y={sortMenu.y}
-          anchorBottom
           items={[
             { label: "폴더 내 정렬", header: true, onClick: () => {} },
             { label: `${folderSort === "name" ? "✓  " : "    "}이름순`, onClick: () => { setFolderSort("name"); refreshFileTree(); } },
@@ -781,11 +806,6 @@ export function Sidebar() {
         />
       )}
       </>
-      ) : (
-      <div className="flex-1 flex items-center justify-center" style={{ color: "var(--color-text-light)", fontSize: "12px" }}>
-        태그 기능 준비 중
-      </div>
-      )}
 
       {/* 컨텍스트 메뉴 */}
       {contextMenu && (
