@@ -2,7 +2,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { readDir, readTextFile, rename, mkdir, create } from "@tauri-apps/plugin-fs";
 import { invoke } from "@tauri-apps/api/core";
 import { useAppStore, type FileEntry } from "@/stores/appStore";
-import { ChevronRight, FileText, Star } from "lucide-react";
+import { ChevronRight, FileText, Star, Folder } from "lucide-react";
 import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
 
 async function loadDirectory(path: string): Promise<FileEntry[]> {
@@ -113,10 +113,13 @@ function FileTreeItem({
         }}
       >
         {entry.isDirectory ? (
+          <>
           <ChevronRight
             size={12}
             className={`shrink-0 transition-transform duration-[0.15s] text-text-light ${(searchMode || isExpanded) ? "rotate-90" : ""}`}
           />
+          <Folder size={13} className="shrink-0" style={{ color: "var(--color-text-light)" }} />
+          </>
         ) : (
           <FileText size={13} className="shrink-0 text-text-light" />
         )}
