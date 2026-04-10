@@ -22,6 +22,7 @@ export function Sidebar() {
   const [sidebarTab, setSidebarTab] = useState("files");
   const [searchQuery, setSearchQuery] = useState("");
   const [standaloneExpanded, setStandaloneExpanded] = useState(true);
+  const [brokenStandaloneFiles, setBrokenStandaloneFiles] = useState<Set<string>>(new Set());
   const [foldersWithResults, setFoldersWithResults] = useState<Set<string>>(new Set());
   const [sortMenu, setSortMenu] = useState<{ x: number; y: number } | null>(null);
   const [docCounts, setDocCounts] = useState<Record<string, number>>({});
@@ -253,6 +254,21 @@ export function Sidebar() {
             addStandaloneFile(p);
           }
         }},
+      ];
+    }
+    if (path.startsWith("__standalone_broken__")) {
+      const filePath = path.replace("__standalone_broken__", "");
+      return [
+        { label: "경로 다시 지정...", onClick: async () => {
+          const p = await open({ filters: [{ name: "Markdown", extensions: ["md"] }], multiple: false });
+          if (p && typeof p === "string") {
+            removeStandaloneFile(filePath);
+            addStandaloneFile(p);
+            setBrokenStandaloneFiles((prev) => { const n = new Set(prev); n.delete(filePath); return n; });
+          }
+        }},
+        { divider: true, label: "", onClick: () => {} },
+        { label: "목록에서 제거", onClick: () => { removeStandaloneFile(filePath); setBrokenStandaloneFiles((prev) => { const n = new Set(prev); n.delete(filePath); return n; }); }, danger: true },
       ];
     }
     if (path.startsWith("__standalone__")) {
@@ -488,40 +504,67 @@ export function Sidebar() {
                     const isFocused = selectedFile === filePath;
                     const isOpened = tabs.some((t) => t.filePath === filePath);
                     const isMultiSelected = selectedPaths.has(filePath);
+                    const isBrokenFile = brokenStandaloneFiles.has(filePath);
                     return (
                       <button
                         key={filePath}
                         data-path={filePath}
                         onClick={async () => {
+                          if (isBrokenFile) return;
                           try {
+                            const valid = await exists(filePath);
+                            if (!valid) {
+                              setBrokenStandaloneFiles((prev) => new Set([...prev, filePath]));
+                              return;
+                            }
+                            setBrokenStandaloneFiles((prev) => { const n = new Set(prev); n.delete(filePath); return n; });
                             const content = await readTextFile(filePath);
                             openTab(filePath, name, content);
-                          } catch {}
+                          } catch {
+                            setBrokenStandaloneFiles((prev) => new Set([...prev, filePath]));
+                          }
                         }}
-                        className={`w-full flex items-center gap-2 text-[14px] relative z-10 ${
-                          isOpened ? "text-accent font-semibold" : "text-text-primary"
+                        className={`w-full flex items-center gap-2 text-[14px] text-left relative z-10 ${
+                          isBrokenFile ? "" : isOpened ? "text-accent font-semibold" : "text-text-primary"
                         }`}
                         style={{
-                          paddingLeft: "32px", paddingRight: "16px", height: "36px",
+                          paddingLeft: "32px", paddingRight: "16px", height: "54px",
                           background: isMultiSelected ? "var(--color-accent-subtle)" : "transparent",
+                          color: isBrokenFile ? "var(--color-text-muted)" : undefined,
+                          cursor: isBrokenFile ? "default" : "pointer",
                         }}
-                        onMouseEnter={(e) => { if (!isMultiSelected) e.currentTarget.style.background = "var(--color-bg-hover)"; }}
+                        onMouseEnter={(e) => { if (!isMultiSelected && !isBrokenFile) e.currentTarget.style.background = "var(--color-bg-hover)"; }}
                         onMouseLeave={(e) => { if (!isMultiSelected) e.currentTarget.style.background = isMultiSelected ? "var(--color-accent-subtle)" : "transparent"; }}
                         onContextMenu={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          setContextMenu({ x: e.clientX, y: e.clientY, path: `__standalone__${filePath}` });
+                          setContextMenu({ x: e.clientX, y: e.clientY, path: isBrokenFile ? `__standalone_broken__${filePath}` : `__standalone__${filePath}` });
                         }}
                       >
-                        <FileText size={13} className="shrink-0 text-text-light" />
-                        <span className="truncate">{name}</span>
+                        {isBrokenFile ? (
+                          <Unlink size={13} className="shrink-0" style={{ color: "var(--color-text-muted)", marginTop: "-2px" }} />
+                        ) : (
+                          <FileText size={13} className="shrink-0 text-text-light" style={{ marginTop: "-2px" }} />
+                        )}
+                        <div style={{ overflow: "hidden", flex: 1, minWidth: 0 }}>
+                          <div className="truncate" style={{ fontSize: "14px", fontWeight: isBrokenFile ? 400 : undefined }}>{name}</div>
+                          <div style={{ fontSize: "10px", color: "var(--color-text-light)", fontWeight: 400, marginTop: "-1px", lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", wordBreak: "break-all" }}>
+                            {(() => {
+                              const dir = filePath.substring(0, filePath.lastIndexOf("\\"));
+                              const userHome = dir.match(/^([A-Z]:\\Users\\[^\\]+)/i);
+                              return userHome ? dir.replace(userHome[1], "~") : dir;
+                            })()}
+                          </div>
+                        </div>
                         {/* 포커스 인디케이터 */}
+                        {!isBrokenFile && (
                         <div style={{
                           position: "absolute", left: "4px", top: "50%", transform: "translateY(-50%)",
                           width: "2px", height: isFocused ? "16px" : "0px",
                           borderRadius: "1px", background: "var(--color-accent)",
                           transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
                         }} />
+                        )}
                       </button>
                     );
                   })}
