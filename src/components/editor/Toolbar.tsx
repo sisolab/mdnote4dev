@@ -1,8 +1,10 @@
 import type { Editor } from "@tiptap/react";
 import { useRef, useState, useCallback } from "react";
+import { useSettingsStore } from "@/stores/settingsStore";
 import {
   Bold, Italic, Strikethrough, Code,
   List, ListOrdered, ListChecks,
+  AlignLeft, AlignCenter, Columns2, Square,
   Quote, SquareCode, Minus, Table,
 } from "lucide-react";
 
@@ -73,6 +75,7 @@ function Divider() {
 export function Toolbar({ editor }: ToolbarProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [highlight, setHighlight] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
+  const { settings, updateSetting } = useSettingsStore();
 
   const handleHover = useCallback((el: HTMLButtonElement | null) => {
     if (!el || !containerRef.current) {
@@ -158,6 +161,27 @@ export function Toolbar({ editor }: ToolbarProps) {
 
       <ToolbarButton onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} title="표 삽입" onHover={handleHover}>
         <Table size={15} />
+      </ToolbarButton>
+
+      {/* 오른쪽: 레이아웃 토글 */}
+      <div style={{ flex: 1 }} />
+
+      <ToolbarButton
+        onClick={() => updateSetting("widthMode", settings.widthMode === "fluid" ? "fixed" : "fluid")}
+        active={settings.widthMode === "fixed"}
+        title={settings.widthMode === "fluid" ? "고정폭으로 전환" : "가변폭으로 전환"}
+        onHover={handleHover}
+      >
+        {settings.widthMode === "fluid" ? <Columns2 size={15} /> : <Square size={15} />}
+      </ToolbarButton>
+
+      <ToolbarButton
+        onClick={() => updateSetting("pageAlign", settings.pageAlign === "left" ? "center" : "left")}
+        active={settings.pageAlign === "center"}
+        title={settings.pageAlign === "left" ? "가운데 정렬" : "왼쪽 정렬"}
+        onHover={handleHover}
+      >
+        {settings.pageAlign === "left" ? <AlignLeft size={15} /> : <AlignCenter size={15} />}
       </ToolbarButton>
     </div>
   );

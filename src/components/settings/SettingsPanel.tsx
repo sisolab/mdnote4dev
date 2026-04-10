@@ -8,7 +8,7 @@ import {
   getFontFamily,
   type EditorSettings,
 } from "@/stores/settingsStore";
-import { Sun, Moon, Minimize2, AlignCenter, Maximize2, SlidersHorizontal, RotateCcw, Type } from "lucide-react";
+import { Sun, Moon, Minimize2, AlignCenter, Maximize2, SlidersHorizontal, RotateCcw, Type, X } from "lucide-react";
 import { FontPreview } from "./FontPreview";
 
 function ResetButton({ onClick, visible }: { onClick: () => void; visible: boolean }) {
@@ -222,8 +222,16 @@ export function SettingsPanel() {
         }}
       >
         {/* 헤더 */}
-        <div onMouseDown={handleDragStart} style={{ display: "flex", alignItems: "center", padding: "16px 24px", borderBottom: "1px solid var(--color-border-light)", cursor: "grab" }}>
+        <div onMouseDown={handleDragStart} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px", borderBottom: "1px solid var(--color-border-light)", cursor: "grab" }}>
           <span style={{ fontSize: "15px", fontWeight: 600, color: "var(--color-text-heading)" }}>설정</span>
+          <button
+            onClick={() => setShowSettings(false)}
+            style={{ width: "28px", height: "28px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "6px", border: "none", background: "transparent", cursor: "pointer", color: "var(--color-text-tertiary)", transition: "all 0.1s" }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-hover)"; e.currentTarget.style.color = "var(--color-text-secondary)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--color-text-tertiary)"; }}
+          >
+            <X size={16} />
+          </button>
         </div>
 
         {/* 본문 */}
@@ -289,31 +297,6 @@ export function SettingsPanel() {
 
           <div style={{ height: "1px", background: "var(--color-border-light)", margin: "16px 0" }} />
 
-          {/* 페이지 정렬 */}
-          <SectionTitle>페이지 정렬</SectionTitle>
-          <SettingRow label="에디터 폭 모드" onReset={() => updateSetting("widthMode", "fluid")} changed={settings.widthMode !== "fluid"}>
-            <ToggleButtons
-              options={[
-                { value: "fluid", label: "가변폭" },
-                { value: "fixed", label: "고정폭" },
-              ]}
-              value={settings.widthMode}
-              onChange={(v) => updateSetting("widthMode", v as "fixed" | "fluid")}
-            />
-          </SettingRow>
-          <SettingRow label="정렬" onReset={() => updateSetting("pageAlign", "left")} changed={settings.pageAlign !== "left"}>
-            <ToggleButtons
-              options={[
-                { value: "left", label: "왼쪽" },
-                { value: "center", label: "가운데" },
-              ]}
-              value={settings.pageAlign}
-              onChange={(v) => updateSetting("pageAlign", v as "left" | "center")}
-            />
-          </SettingRow>
-
-          <div style={{ height: "1px", background: "var(--color-border-light)", margin: "16px 0" }} />
-
           {/* 프리셋 + 프리셋 항목들 */}
           <SectionTitle>에디터 프리셋</SectionTitle>
           <div style={{ display: "flex", gap: "10px", marginBottom: "12px" }}>
@@ -369,29 +352,18 @@ export function SettingsPanel() {
           <div style={{ marginTop: "16px" }} />
           <SectionTitle>에디터 영역</SectionTitle>
           <ChipSetting label="최대 폭" value={settings.editorMaxWidth} options={[640, 720, 780, 860, 960, 1080]} unit="" defaultValue={DEFAULT_SETTINGS.editorMaxWidth} onChange={(v) => updateSetting("editorMaxWidth", v)} />
-          <ChipSetting label="여백" value={settings.editorPaddingX} options={[24, 32, 40, 48, 56, 64]} unit="" defaultValue={DEFAULT_SETTINGS.editorPaddingX} onChange={(v) => updateSetting("editorPaddingX", v)} />
 
         </div>
 
         {/* 푸터 */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 24px", borderTop: "1px solid var(--color-border-light)", background: "var(--color-bg-secondary)" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-start", padding: "12px 24px", borderTop: "1px solid var(--color-border-light)", background: "var(--color-bg-secondary)" }}>
           <button
             onClick={resetToDefault}
-            style={{ fontSize: "12px", color: "#999", background: "transparent", border: "none", cursor: "pointer", transition: "color 0.15s" }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = "#555"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = "#999"; }}
+            style={{ fontSize: "12px", color: "var(--color-text-tertiary)", background: "transparent", border: "none", cursor: "pointer", transition: "color 0.15s" }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = "var(--color-text-secondary)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = "var(--color-text-tertiary)"; }}
           >
             기본값으로 초기화
-          </button>
-          <button
-            onClick={() => setShowSettings(false)}
-            style={{
-              padding: "6px 16px", fontSize: "12px", fontWeight: 600,
-              background: "var(--color-accent)", color: "#fff", border: "none",
-              borderRadius: "6px", cursor: "pointer", transition: "all 0.15s",
-            }}
-          >
-            닫기
           </button>
         </div>
       </div>

@@ -122,10 +122,10 @@ export function TiptapEditor({ content, onSave }: TiptapEditorProps) {
       <Toolbar editor={editor} />
       <div
         className={`flex-1 overflow-auto ${s.pageAlign === "center" ? "flex justify-center" : ""}`}
-        style={{ padding: `${s.editorPaddingY}px ${s.editorPaddingX}px` }}
+        style={{ padding: "48px" }}
       >
         <div style={{
-          ...(s.widthMode === "fixed" ? { width: `${s.editorMaxWidth}px` } : { maxWidth: `${s.editorMaxWidth}px`, width: "100%" }),
+          ...(s.widthMode === "fixed" ? { maxWidth: `${s.editorMaxWidth}px`, width: "100%" } : { width: "100%" }),
           ...editorStyle,
         }}>
           <EditorContent editor={editor} />

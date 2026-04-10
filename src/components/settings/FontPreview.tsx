@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { RotateCcw } from "lucide-react";
+import { RotateCcw, X } from "lucide-react";
 
 interface FontItem {
   value: string;
@@ -243,6 +243,14 @@ export function FontPreview({
         {/* 헤더 */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 20px", borderBottom: "1px solid var(--color-border-light)" }}>
           <span style={{ fontSize: "14px", fontWeight: 600, color: "var(--color-text-heading)" }}>글꼴 미리보기</span>
+          <button
+            onClick={onClose}
+            style={{ width: "28px", height: "28px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "6px", border: "none", background: "transparent", cursor: "pointer", color: "var(--color-text-tertiary)", transition: "all 0.1s" }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-hover)"; e.currentTarget.style.color = "var(--color-text-secondary)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--color-text-tertiary)"; }}
+          >
+            <X size={16} />
+          </button>
         </div>
 
         {/* 본문 — 3컬럼 */}
@@ -387,16 +395,6 @@ export function FontPreview({
             <RotateCcw size={11} /> 시스템 기본으로
           </button>
           <div style={{ display: "flex", gap: "8px" }}>
-            <button
-              onClick={onClose}
-              style={{
-                padding: "6px 16px", fontSize: "12px", fontWeight: 500,
-                background: "var(--color-bg-hover)", color: "var(--color-text-primary)",
-                border: "none", borderRadius: "6px", cursor: "pointer",
-              }}
-            >
-              취소
-            </button>
             <button
               onClick={() => { if (selectedFont) { onApply(selectedFont.value); onClose(); } }}
               disabled={!selectedFont}
