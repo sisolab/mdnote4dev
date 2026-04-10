@@ -36,6 +36,7 @@ function FileTreeItem({
   renameValue,
   setRenameValue,
   onFinishRename,
+  searchMode,
 }: {
   entry: FileEntry;
   depth: number;
@@ -46,6 +47,7 @@ function FileTreeItem({
   renameValue: string;
   setRenameValue: (v: string) => void;
   onFinishRename: (entry: FileEntry) => void;
+  searchMode?: boolean;
 }) {
   const { expandedFolders, toggleFolder, selectedFile, openTab, fileTreeVersion, selectedPaths, tabs } =
     useAppStore();
@@ -108,7 +110,7 @@ function FileTreeItem({
         {entry.isDirectory ? (
           <ChevronRight
             size={12}
-            className={`shrink-0 transition-transform duration-[0.15s] text-text-light ${isExpanded ? "rotate-90" : ""}`}
+            className={`shrink-0 transition-transform duration-[0.15s] text-text-light ${(searchMode || isExpanded) ? "rotate-90" : ""}`}
           />
         ) : (
           <FileText size={13} className="shrink-0 text-text-light" />
@@ -144,16 +146,33 @@ function FileTreeItem({
         }} />
       </button>
 
-      {isExpanded &&
-        children.map((child) => (
-          <FileTreeItem key={child.path} entry={child} depth={depth + 1} onHover={onHover} onItemClick={onItemClick} onContextMenu={onContextMenu} renamingPath={renamingPath} renameValue={renameValue} setRenameValue={setRenameValue} onFinishRename={onFinishRename} />
+      {(searchMode ? entry.isDirectory : isExpanded) &&
+        (searchMode ? entry.children ?? [] : children).map((child) => (
+          <FileTreeItem key={child.path} entry={child} depth={depth + 1} onHover={onHover} onItemClick={onItemClick} onContextMenu={onContextMenu} renamingPath={renamingPath} renameValue={renameValue} setRenameValue={setRenameValue} onFinishRename={onFinishRename} searchMode={searchMode} />
         ))}
     </div>
   );
 }
 
-export function FileTree({ rootPath }: { rootPath: string }) {
+async function filterTree(path: string, query: string): Promise<FileEntry[]> {
+  const entries = await loadDirectory(path);
+  const results: FileEntry[] = [];
+  for (const entry of entries) {
+    if (entry.isDirectory) {
+      const children = await filterTree(entry.path, query);
+      if (children.length > 0) {
+        results.push({ ...entry, children });
+      }
+    } else if (entry.name.toLowerCase().includes(query)) {
+      results.push(entry);
+    }
+  }
+  return results;
+}
+
+export function FileTree({ rootPath, searchQuery = "" }: { rootPath: string; searchQuery?: string }) {
   const [entries, setEntries] = useState<FileEntry[]>([]);
+  const [searchResults, setSearchResults] = useState<FileEntry[]>([]);
   const { fileTreeVersion, refreshFileTree, closeTab, tabs, selectedPaths, setSelectedPaths, toggleSelectedPath, clearSelectedPaths, openTab, expandedFolders, toggleFolder } = useAppStore();
   const containerRef = useRef<HTMLDivElement>(null);
   const [highlight, setHighlight] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
@@ -338,6 +357,15 @@ export function FileTree({ rootPath }: { rootPath: string }) {
     loadDirectory(rootPath).then(setEntries);
   }, [rootPath, fileTreeVersion]);
 
+  useEffect(() => {
+    const q = searchQuery.toLowerCase();
+    if (q) {
+      filterTree(rootPath, q).then(setSearchResults);
+    } else {
+      setSearchResults([]);
+    }
+  }, [searchQuery, rootPath, fileTreeVersion]);
+
   return (
     <div
       ref={containerRef}
@@ -366,13 +394,17 @@ export function FileTree({ rootPath }: { rootPath: string }) {
         zIndex: 0,
       }} />
 
-      {entries.length === 0 ? (
-        <p className="text-[11px] text-text-light px-3 py-2">빈 폴더</p>
-      ) : (
-        entries.map((entry) => (
-          <FileTreeItem key={entry.path} entry={entry} depth={0} onHover={handleHover} onItemClick={handleItemClick} onContextMenu={handleContextMenu} renamingPath={renamingPath} renameValue={renameValue} setRenameValue={setRenameValue} onFinishRename={finishRename} />
-        ))
-      )}
+      {(() => {
+        const items = searchQuery ? searchResults : entries;
+        if (searchQuery && items.length === 0) return null;
+        return items.length === 0 ? (
+          <p className="text-[11px] text-text-light px-3 py-2">빈 폴더</p>
+        ) : (
+          items.map((entry) => (
+            <FileTreeItem key={entry.path} entry={entry} depth={0} onHover={handleHover} onItemClick={handleItemClick} onContextMenu={handleContextMenu} renamingPath={renamingPath} renameValue={renameValue} setRenameValue={setRenameValue} onFinishRename={finishRename} searchMode={!!searchQuery} />
+          ))
+        );
+      })()}
 
       {/* 컨텍스트 메뉴 */}
       {contextMenu && (

@@ -134,7 +134,7 @@ function PresetCard({ name, icon, color, settings, isActive, onApply }: {
     <button
       onClick={() => onApply(settings)}
       style={{
-        flex: 1, padding: "12px 16px", borderRadius: "8px", textAlign: "center" as const,
+        flex: 1, padding: "8px 16px", borderRadius: "8px", textAlign: "center" as const,
         border: isActive ? `1.5px solid ${color}` : "1px solid var(--color-border-light)",
         background: isActive ? `${color}15` : "var(--color-bg-elevated)",
         cursor: "pointer", transition: "all 0.15s",
@@ -270,7 +270,7 @@ export function SettingsPanel() {
               onClick={() => setShowFontPreview(true)}
               style={{
                 display: "flex", alignItems: "center", gap: "8px",
-                padding: "10px 16px", fontSize: "13px", fontWeight: 500,
+                padding: "8px 16px", fontSize: "13px", fontWeight: 500,
                 fontFamily: getFontFamily(settings.fontFamily),
                 borderRadius: "6px", cursor: "pointer",
                 border: "1px solid var(--color-border-light)",
@@ -334,7 +334,7 @@ export function SettingsPanel() {
               return (
                 <div
                   style={{
-                    flex: 1, padding: "12px 16px", borderRadius: "8px", textAlign: "center",
+                    flex: 1, padding: "8px 16px", borderRadius: "8px", textAlign: "center",
                     border: isCustom ? "1.5px solid #7c3aed" : "1px solid var(--color-border-light)",
                     background: isCustom ? "#7c3aed15" : "var(--color-bg-elevated)",
                     opacity: isCustom ? 1 : 0.5,

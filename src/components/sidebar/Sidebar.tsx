@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { exists, mkdir, create } from "@tauri-apps/plugin-fs";
+import { SidebarTabs } from "./SidebarTabs";
+import { exists, mkdir, create, readDir } from "@tauri-apps/plugin-fs";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { useAppStore } from "@/stores/appStore";
 import { FileTree } from "./FileTree";
 import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
 import { Tooltip } from "@/components/ui/Tooltip";
-import { Unlink, ChevronRight, Folder, Pin, Tag } from "lucide-react";
+import { Unlink, ChevronRight, Folder, Pin, Tag, Search } from "lucide-react";
 
 function shortenPath(path: string): string {
   const userHome = path.match(/^([A-Z]:\\Users\\[^\\]+)/i);
@@ -18,6 +19,9 @@ function shortenPath(path: string): string {
 
 export function Sidebar() {
   const { favorites, sidebarCollapsed, removeFavorite, addFavorite, workspace, setWorkspace, openTab, refreshFileTree, setFavoriteAlias } = useAppStore();
+  const [sidebarTab, setSidebarTab] = useState("files");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [foldersWithResults, setFoldersWithResults] = useState<Set<string>>(new Set());
   const [aliasEditing, setAliasEditing] = useState<string | null>(null);
   const [aliasValue, setAliasValue] = useState("");
   const [sidebarWidth, setSidebarWidth] = useState(280);
@@ -67,6 +71,34 @@ export function Sidebar() {
     }
     setBrokenPaths(broken);
   }, [favorites]);
+
+  // 검색 시 결과 있는 폴더 체크
+  useEffect(() => {
+    if (!searchQuery) { setFoldersWithResults(new Set()); return; }
+    const q = searchQuery.toLowerCase();
+    const check = async () => {
+      const result = new Set<string>();
+      const searchRecursive = async (path: string): Promise<boolean> => {
+        try {
+          const entries = await readDir(path);
+          for (const entry of entries) {
+            if (!entry.isDirectory && entry.name && entry.name.toLowerCase().includes(q)) return true;
+            if (entry.isDirectory && entry.name && !entry.name.startsWith(".")) {
+              if (await searchRecursive(`${path}\\${entry.name}`)) return true;
+            }
+          }
+        } catch {}
+        return false;
+      };
+      for (const fav of favorites) {
+        if (!brokenPaths.has(fav.path) && await searchRecursive(fav.path)) {
+          result.add(fav.path);
+        }
+      }
+      setFoldersWithResults(result);
+    };
+    check();
+  }, [searchQuery, favorites, brokenPaths]);
 
   // 앱 시작 시 폴더 유효성 체크
   useEffect(() => {
@@ -225,6 +257,39 @@ export function Sidebar() {
         transition: "opacity 0.2s",
       }}
     >
+      <SidebarTabs activeTab={sidebarTab} onTabChange={setSidebarTab} />
+
+      {sidebarTab === "files" ? (
+      <>
+      {/* 검색창 */}
+      <div style={{ padding: "8px 12px" }}>
+        <div style={{
+          display: "flex", alignItems: "center", gap: "8px",
+          padding: "6px 10px", borderRadius: "6px",
+          border: "1px solid var(--color-border-input)",
+          background: "var(--color-bg-primary)",
+          transition: "border-color 0.15s",
+        }}>
+          <Search size={13} style={{ color: "var(--color-text-light)", flexShrink: 0 }} />
+          <input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="파일 검색..."
+            style={{
+              flex: 1, border: "none", outline: "none", background: "transparent",
+              fontSize: "12px", color: "var(--color-text-primary)",
+            }}
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--color-text-muted)", fontSize: "14px", lineHeight: 1 }}
+            >
+              ×
+            </button>
+          )}
+        </div>
+      </div>
       <div className="flex-1 overflow-y-auto" style={{ padding: "0" }} onContextMenu={handleSidebarContextMenu}>
         {favorites.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-text-tertiary">
@@ -240,7 +305,8 @@ export function Sidebar() {
               const isBroken = brokenPaths.has(fav.path);
               const isWorkspace = fav.path === workspace;
               return (
-                <div key={fav.path} data-fav-item>
+                <div key={fav.path} data-fav-item style={{ display: searchQuery && !foldersWithResults.has(fav.path) ? "none" : undefined }}>
+                  {(
                   <Tooltip text={shortenPath(fav.path)}>
                   <button
                     onClick={() => toggleFav(fav.path)}
@@ -317,15 +383,22 @@ export function Sidebar() {
                     )}
                   </button>
                   </Tooltip>
+                  )}
 
                   {/* 파일 트리 */}
-                  {!isBroken && expandedFavs.has(fav.path) && <FileTree rootPath={fav.path} />}
+                  {!isBroken && (searchQuery || expandedFavs.has(fav.path)) && <FileTree rootPath={fav.path} searchQuery={searchQuery} />}
                 </div>
               );
             })}
           </div>
         )}
       </div>
+      </>
+      ) : (
+      <div className="flex-1 flex items-center justify-center" style={{ color: "var(--color-text-light)", fontSize: "12px" }}>
+        태그 기능 준비 중
+      </div>
+      )}
 
       {/* 컨텍스트 메뉴 */}
       {contextMenu && (
@@ -347,8 +420,7 @@ export function Sidebar() {
           cursor: "col-resize",
           background: "var(--color-border-light)",
           flexShrink: 0,
-          transition: "width 0.1s",
-          transition: "background 0.15s",
+          transition: "width 0.1s, background 0.15s",
         }}
         onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-accent)"; e.currentTarget.style.width = "3px"; }}
         onMouseLeave={(e) => { e.currentTarget.style.background = "var(--color-border-light)"; e.currentTarget.style.width = "1px"; }}
