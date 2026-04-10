@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { readTextFile } from "@tauri-apps/plugin-fs";
 import { Sidebar } from "./components/sidebar/Sidebar";
 import { EditorArea } from "./components/editor/EditorArea";
 import { SettingsPanel } from "./components/settings/SettingsPanel";
@@ -40,24 +41,24 @@ function App() {
         "--color-border-medium": "#e0e0e0",
         "--color-border-input": "#dddddd",
       },
-      warm: {
-        "--color-bg-primary": "#faf8f5",
-        "--color-bg-secondary": "#f3f0eb",
-        "--color-bg-sidebar": "#f3f0eb",
-        "--color-bg-hover": "#ece8e1",
-        "--color-bg-hover-blue": "#eae6df",
-        "--color-bg-active": "#e2ddd5",
-        "--color-bg-elevated": "#faf8f5",
-        "--color-bg-frosted": "rgba(250, 248, 245, 0.95)",
-        "--color-text-heading": "#2c2520",
-        "--color-text-primary": "#3d3530",
-        "--color-text-secondary": "#6b5f55",
-        "--color-text-tertiary": "#9a8e82",
-        "--color-text-light": "#b0a498",
-        "--color-text-muted": "#c5b9ad",
-        "--color-border-light": "#e8e2da",
-        "--color-border-medium": "#d8d0c6",
-        "--color-border-input": "#cec5ba",
+      newspaper: {
+        "--color-bg-primary": "#f5f0e8",
+        "--color-bg-secondary": "#ede7dd",
+        "--color-bg-sidebar": "#ede7dd",
+        "--color-bg-hover": "#e5ded3",
+        "--color-bg-hover-blue": "#e2dbd0",
+        "--color-bg-active": "#d9d1c5",
+        "--color-bg-elevated": "#f5f0e8",
+        "--color-bg-frosted": "rgba(245, 240, 232, 0.95)",
+        "--color-text-heading": "#1a1611",
+        "--color-text-primary": "#2d2821",
+        "--color-text-secondary": "#5c5347",
+        "--color-text-tertiary": "#8a7e70",
+        "--color-text-light": "#a69888",
+        "--color-text-muted": "#bfb1a0",
+        "--color-border-light": "#ddd5c9",
+        "--color-border-medium": "#ccc3b5",
+        "--color-border-input": "#c2b8a9",
       },
       charcoal: {
         "--color-bg-primary": "#363839",
@@ -119,6 +120,28 @@ function App() {
     return () => { unlisten.then((fn) => fn()); };
   }, []);
 
+  // 파일 드래그앤드롭으로 탭 열기
+  useEffect(() => {
+    const appWindow = getCurrentWindow();
+    const unlisten = appWindow.onDragDropEvent(async (event) => {
+      if (event.payload.type === "drop") {
+        const paths = event.payload.paths;
+        for (const path of paths) {
+          if (/\.(md|markdown)$/i.test(path)) {
+            try {
+              const content = await readTextFile(path);
+              const name = path.split("\\").pop() ?? "문서";
+              useAppStore.getState().openTab(path, name, content);
+            } catch (err) {
+              console.error("파일 열기 실패:", err);
+            }
+          }
+        }
+      }
+    });
+    return () => { unlisten.then((fn) => fn()); };
+  }, []);
+
   const handleForceClose = () => {
     getCurrentWindow().destroy();
   };
@@ -130,6 +153,7 @@ function App() {
         <EditorArea />
       </div>
       {showSettings && <SettingsPanel />}
+
 
       {/* 종료 확인 */}
       {showExitConfirm && (

@@ -88,7 +88,7 @@ export const PRESETS: Preset[] = [
   },
 ];
 
-export type ThemeMode = "light" | "warm" | "charcoal" | "dark";
+export type ThemeMode = "light" | "newspaper" | "charcoal" | "dark";
 export type AccentColor = "blue" | "emerald" | "orange" | "yellow" | "purple";
 
 export interface ThemeColors {

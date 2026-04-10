@@ -243,12 +243,12 @@ export function SettingsPanel() {
             <ToggleButtons
               options={[
                 { value: "light", label: "라이트", icon: <Sun size={12} /> },
-                { value: "warm", label: "웜" },
+                { value: "newspaper", label: "뉴스페이퍼" },
                 { value: "charcoal", label: "차콜" },
                 { value: "dark", label: "다크", icon: <Moon size={12} /> },
               ]}
               value={themeMode}
-              onChange={(v) => setThemeMode(v as "light" | "warm" | "charcoal" | "dark")}
+              onChange={(v) => setThemeMode(v as "light" | "newspaper" | "charcoal" | "dark")}
             />
           </SettingRow>
           <SettingRow label="강조 색상" onReset={() => setAccentColor("blue")} changed={accentColor !== "blue"}>
