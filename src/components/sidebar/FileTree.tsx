@@ -104,9 +104,14 @@ function FileTreeItem({
   };
 
   const isMarkdown = entry.name.endsWith(".md");
+  const isFolderDropTarget = entry.isDirectory && dropTargetPath === entry.path;
 
   return (
-    <div>
+    <div style={{
+      background: isFolderDropTarget ? "var(--color-bg-hover)" : undefined,
+      borderRadius: isFolderDropTarget ? "4px" : undefined,
+      transition: "background 0.1s",
+    }}>
       <button
         data-path={entry.path}
         data-is-dir={String(!!entry.isDirectory)}
@@ -124,10 +129,7 @@ function FileTreeItem({
         style={{
           paddingLeft: `${depth * 16 + 32}px`, paddingRight: "16px", height: compact ? "22px" : "30px",
           fontSize: compact ? "11px" : "13px",
-          background: (entry.isDirectory && dropTargetPath === entry.path) ? "var(--color-accent-subtle)" : isMultiSelected ? "var(--color-accent-subtle)" : "transparent",
-          outline: (entry.isDirectory && dropTargetPath === entry.path) ? "2px solid var(--color-accent)" : "none",
-          outlineOffset: "-2px",
-          borderRadius: (entry.isDirectory && dropTargetPath === entry.path) ? "3px" : undefined,
+          background: isMultiSelected ? "var(--color-accent-subtle)" : "transparent",
           opacity: dragPaths?.includes(entry.path) ? 0.4 : 1,
         }}
       >
@@ -215,8 +217,41 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
   const dragMoveState = useRef<{ startY: number; active: boolean; paths: string[] }>({ startY: 0, active: false, paths: [] });
   const dropTargetRef = useRef<string | null>(null);
 
+  const dragGhostRef = useRef<HTMLDivElement | null>(null);
+
+  const createDragGhost = (name: string, count: number, x: number, y: number) => {
+    const ghost = document.createElement("div");
+    ghost.style.cssText = `
+      position: fixed; pointer-events: none; z-index: 9999;
+      padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 500;
+      background: var(--color-bg-elevated); color: var(--color-text-primary);
+      border: 1px solid var(--color-accent); box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      white-space: nowrap; opacity: 0.9;
+      left: ${x + 12}px; top: ${y - 10}px;
+    `;
+    ghost.textContent = count > 1 ? `${name} 외 ${count - 1}개` : name;
+    document.body.appendChild(ghost);
+    dragGhostRef.current = ghost;
+  };
+
+  const moveDragGhost = (x: number, y: number) => {
+    if (dragGhostRef.current) {
+      dragGhostRef.current.style.left = `${x + 12}px`;
+      dragGhostRef.current.style.top = `${y - 10}px`;
+    }
+  };
+
+  const removeDragGhost = () => {
+    if (dragGhostRef.current) {
+      dragGhostRef.current.remove();
+      dragGhostRef.current = null;
+    }
+  };
+
   const startItemDrag = (e: React.MouseEvent, entry: FileEntry) => {
     if (e.button !== 0) return;
+    // Ctrl/Shift 클릭은 선택용 — 드래그 시작 안 함
+    if (e.ctrlKey || e.shiftKey) return;
     e.preventDefault();
     const paths = selectedPaths.has(entry.path) ? [...selectedPaths] : [entry.path];
     const startY = e.clientY;
@@ -229,7 +264,9 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
         setDragMovePaths(dragMoveState.current.paths);
         document.body.style.userSelect = "none";
         document.body.style.cursor = "grabbing";
+        createDragGhost(entry.name, paths.length, me.clientX, me.clientY);
       }
+      moveDragGhost(me.clientX, me.clientY);
       // 드래그 중 폴더 위 감지 (elementFromPoint)
       if (dragMoveState.current.active) {
         const el = document.elementFromPoint(me.clientX, me.clientY);
@@ -295,6 +332,7 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
       dropTargetRef.current = null;
       setDragMovePaths(null);
       setDropTarget(null);
+      removeDragGhost();
     };
 
     window.addEventListener("mousemove", onMove);
@@ -614,7 +652,12 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
       ref={containerRef}
       data-tree-root={rootPath}
       className="py-0.5"
-      style={{ position: "relative" }}
+      style={{
+        position: "relative",
+        background: dropTarget === rootPath ? "var(--color-bg-hover)" : undefined,
+        borderRadius: dropTarget === rootPath ? "4px" : undefined,
+        transition: "background 0.1s",
+      }}
       onMouseLeave={() => setHighlight(null)}
       onClick={(e) => {
         // 빈 공간 클릭 시 선택 해제
