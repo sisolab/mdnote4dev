@@ -86,9 +86,9 @@ export function StatusBar({ filePath, fileSize, lineCount, charCount, tags: prop
   return (
     <div style={{
       display: "flex", alignItems: "center",
-      height: "28px", padding: "0 16px",
+      height: "34px", padding: "0 16px",
       borderTop: "1px solid var(--color-border-light)",
-      fontSize: "11px", color: "var(--color-text-primary)",
+      fontSize: "12px", color: "var(--color-text-primary)",
       flexShrink: 0, gap: "12px",
     }}>
       {/* 파일 정보 */}
@@ -112,7 +112,7 @@ export function StatusBar({ filePath, fileSize, lineCount, charCount, tags: prop
             key={tag}
             style={{
               display: "inline-flex", alignItems: "center", gap: "3px",
-              padding: "1px 6px", borderRadius: "3px", fontSize: "10px", fontWeight: 500,
+              padding: "2px 8px", borderRadius: "3px", fontSize: "11px", fontWeight: 500,
               background: color.bg, color: color.text, flexShrink: 0,
             }}
           >
@@ -139,7 +139,7 @@ export function StatusBar({ filePath, fileSize, lineCount, charCount, tags: prop
           placeholder="+ 태그"
           style={{
             width: "70px", border: "none", outline: "none", background: "transparent",
-            fontSize: "11px", color: "var(--color-text-primary)", padding: "0 4px",
+            fontSize: "12px", color: "var(--color-text-primary)", padding: "0 4px",
           }}
         />
 

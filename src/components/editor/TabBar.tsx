@@ -53,11 +53,11 @@ export function TabBar() {
 
   const handleHover = useCallback((el: HTMLElement | null) => {
     if (dragIndex !== null) return; // 드래그 중에는 호버 비활성
-    if (!el || !scrollRef.current) {
+    if (!el || !containerRef.current) {
       setHighlight(null);
       return;
     }
-    const cr = scrollRef.current.getBoundingClientRect();
+    const cr = containerRef.current.getBoundingClientRect();
     const br = el.getBoundingClientRect();
     setHighlight({ left: br.left - cr.left, top: br.top - cr.top, width: br.width, height: br.height });
   }, [dragIndex]);
@@ -147,12 +147,6 @@ export function TabBar() {
       style={{ position: "relative", padding: "0 8px" }}
       className="flex items-center border-b border-border-light bg-bg-primary shrink-0 overflow-hidden"
     >
-      {/* 스크롤 가능한 탭 영역 */}
-      <div
-        ref={scrollRef}
-        className="hide-scrollbar"
-        style={{ display: "flex", alignItems: "center", overflowX: "auto", overflowY: "hidden", flex: 1, minWidth: 0, position: "relative" }}
-      >
       {/* 슬라이딩 호버 하이라이트 */}
       <div style={{
         position: "absolute",
@@ -167,6 +161,13 @@ export function TabBar() {
         pointerEvents: "none",
         zIndex: 0,
       }} />
+
+      {/* 스크롤 가능한 탭 영역 */}
+      <div
+        ref={scrollRef}
+        className="hide-scrollbar"
+        style={{ display: "flex", alignItems: "center", overflowX: "auto", overflowY: "hidden", flex: 1, minWidth: 0, position: "relative" }}
+      >
 
       {tabs.map((tab, index) => {
         const isActive = tab.id === activeTabId;
@@ -371,7 +372,7 @@ export function TabBar() {
               flexShrink: 0, transition: "color 0.1s",
             }}
           >
-            <ChevronLeft size={14} />
+            <ChevronLeft size={15} />
           </button>
           <button
             onClick={() => scrollTabs("right")}
@@ -384,7 +385,7 @@ export function TabBar() {
               flexShrink: 0, transition: "color 0.1s",
             }}
           >
-            <ChevronRight size={14} />
+            <ChevronRight size={15} />
           </button>
         </>
       )}
@@ -394,10 +395,10 @@ export function TabBar() {
         onClick={() => newTab()}
         onMouseEnter={(e) => handleHover(e.currentTarget)}
         style={{
-          width: "30px", height: "40px",
+          width: "34px", height: "40px",
           display: "flex", alignItems: "center", justifyContent: "center",
           border: "none", background: "transparent",
-          color: "var(--color-text-tertiary)", cursor: "pointer", fontSize: "16px",
+          color: "var(--color-text-secondary)", cursor: "pointer", fontSize: "15px",
           position: "relative", zIndex: 1, transition: "color 0.1s",
         }}
         title="새 탭"
@@ -417,45 +418,43 @@ export function TabBar() {
         }}
         onMouseEnter={(e) => handleHover(e.currentTarget)}
         style={{
-          width: "30px", height: "40px",
+          width: "34px", height: "40px",
           display: "flex", alignItems: "center", justifyContent: "center",
           border: "none", background: "transparent",
-          color: "var(--color-text-tertiary)", cursor: "pointer",
+          color: "var(--color-text-secondary)", cursor: "pointer",
           position: "relative", zIndex: 1, transition: "color 0.1s",
         }}
         title="문서 열기"
       >
-        <FolderOpen size={14} />
+        <FolderOpen size={15} />
       </button>
 
       {/* 오른쪽: 설정 + 사이드바 토글 */}
       <button
         onClick={() => setShowSettings(true)}
+        onMouseEnter={(e) => handleHover(e.currentTarget)}
         title="설정"
         style={{
-          width: "30px", height: "40px",
+          width: "34px", height: "40px",
           display: "flex", alignItems: "center", justifyContent: "center",
           border: "none", background: "transparent", cursor: "pointer",
-          color: "var(--color-text-tertiary)", transition: "all 0.1s",
+          color: "var(--color-text-secondary)", transition: "color 0.1s",
           position: "relative", zIndex: 1, flexShrink: 0,
         }}
-        onMouseEnter={(e) => { e.currentTarget.style.color = "var(--color-text-secondary)"; }}
-        onMouseLeave={(e) => { e.currentTarget.style.color = "var(--color-text-tertiary)"; }}
       >
         <Settings size={15} />
       </button>
       <button
         onClick={toggleSidebar}
+        onMouseEnter={(e) => handleHover(e.currentTarget)}
         title={sidebarCollapsed ? "사이드바 펼치기" : "사이드바 좁히기"}
         style={{
-          width: "30px", height: "40px",
+          width: "34px", height: "40px",
           display: "flex", alignItems: "center", justifyContent: "center",
           border: "none", background: "transparent", cursor: "pointer",
-          color: "var(--color-text-tertiary)", transition: "all 0.1s",
+          color: "var(--color-text-secondary)", transition: "color 0.1s",
           position: "relative", zIndex: 1, flexShrink: 0,
         }}
-        onMouseEnter={(e) => { e.currentTarget.style.color = "var(--color-text-secondary)"; }}
-        onMouseLeave={(e) => { e.currentTarget.style.color = "var(--color-text-tertiary)"; }}
       >
         {sidebarCollapsed ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
       </button>

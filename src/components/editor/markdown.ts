@@ -98,11 +98,11 @@ export function markdownToHtml(md: string): string {
 
   // 체크박스 리스트
   html = html.replace(
-    /^- \[x\]\s+(.+)$/gm,
+    /^- \[x\]\s*(.*)$/gm,
     '<ul data-type="taskList"><li data-type="taskItem" data-checked="true"><label><input type="checkbox" checked><span>$1</span></label></li></ul>'
   );
   html = html.replace(
-    /^- \[ \]\s+(.+)$/gm,
+    /^- \[ ?\]\s*(.*)$/gm,
     '<ul data-type="taskList"><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span>$1</span></label></li></ul>'
   );
 

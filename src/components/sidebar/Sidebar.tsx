@@ -6,7 +6,7 @@ import { useAppStore } from "@/stores/appStore";
 import { FileTree } from "./FileTree";
 import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
 import { Tooltip } from "@/components/ui/Tooltip";
-import { Unlink, ChevronRight, Folder, Tag, ChevronsDownUp, ChevronsUpDown, ArrowUpDown, FilePlus, FolderPlus, FileText, FolderOpen, ListCollapse, icons } from "lucide-react";
+import { Unlink, ChevronRight, Folder, Tag, ChevronsDownUp, ChevronsUpDown, ArrowUpDown, FilePlus, FolderPlus, FileText, FolderOpen, ListCollapse, Eye, EyeOff, icons } from "lucide-react";
 import { IconPicker } from "@/components/settings/IconPicker";
 
 function shortenPath(path: string): string {
@@ -23,6 +23,7 @@ export function Sidebar() {
   const [favoritesExpanded, setStandaloneExpanded] = useState(true);
   const [folderSectionExpanded, setFolderSectionExpanded] = useState(true);
   const [compactMode, setCompactMode] = useState(false);
+  const [showFavPaths, setShowFavPaths] = useState(true);
   const [brokenFavoriteFiles, setBrokenFavoriteFiles] = useState<Set<string>>(new Set());
   const [foldersWithResults, setFoldersWithResults] = useState<Set<string>>(new Set());
   const [sortMenu, setSortMenu] = useState<{ x: number; y: number } | null>(null);
@@ -352,75 +353,6 @@ export function Sidebar() {
     >
       <>
 
-      {/* 액션 바 */}
-      <div style={{
-        display: "flex", alignItems: "center", gap: "0",
-        padding: "0 16px", height: "40px",
-        borderBottom: "1px solid var(--color-border-light)",
-        flexShrink: 0,
-      }}>
-        <button
-          onClick={() => {
-            const allExpanded = favorites.every((f) => expandedFavs.has(f.path));
-            if (allExpanded) {
-              setExpandedFavs(new Set());
-            } else {
-              setExpandedFavs(new Set(favorites.map((f) => f.path)));
-            }
-          }}
-          title={favorites.every((f) => expandedFavs.has(f.path)) ? "모두 접기" : "모두 펼치기"}
-          style={{
-            width: "34px", height: "34px",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            border: "none", background: "transparent", cursor: "pointer",
-            color: "var(--color-text-tertiary)", borderRadius: "3px",
-            transition: "all 0.1s",
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-hover)"; e.currentTarget.style.color = "var(--color-text-secondary)"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--color-text-tertiary)"; }}
-        >
-          {favorites.every((f) => expandedFavs.has(f.path))
-            ? <ChevronsDownUp size={15} />
-            : <ChevronsUpDown size={15} />
-          }
-        </button>
-
-        <button
-          onClick={() => setCompactMode(!compactMode)}
-          title={compactMode ? "일반 보기" : "컴팩트 보기"}
-          style={{
-            width: "34px", height: "34px",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            border: "none", background: "transparent", cursor: "pointer",
-            color: compactMode ? "var(--color-accent)" : "var(--color-text-tertiary)", borderRadius: "3px",
-            transition: "all 0.1s",
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-hover)"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
-        >
-          <ListCollapse size={15} />
-        </button>
-
-        <button
-          onClick={(e) => {
-            const rect = e.currentTarget.getBoundingClientRect();
-            setSortMenu({ x: rect.left, y: rect.bottom + 4 });
-          }}
-          title="정렬"
-          style={{
-            width: "34px", height: "34px",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            border: "none", background: "transparent", cursor: "pointer",
-            color: "var(--color-text-tertiary)", borderRadius: "3px",
-            transition: "all 0.1s",
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-hover)"; e.currentTarget.style.color = "var(--color-text-secondary)"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--color-text-tertiary)"; }}
-        >
-          <ArrowUpDown size={15} />
-        </button>
-      </div>
-
       <div className="flex-1 overflow-y-auto hide-scrollbar" style={{ padding: "0", fontSize: compactMode ? "11px" : "13px" }} onContextMenu={handleSidebarContextMenu}>
 
         {/* ── 즐겨찾기 섹션 ── */}
@@ -452,6 +384,15 @@ export function Sidebar() {
               )}
             </div>
             </Tooltip>
+            <button
+              onClick={(e) => { e.stopPropagation(); setShowFavPaths(!showFavPaths); }}
+              title={showFavPaths ? "경로 숨기기" : "경로 표시"}
+              style={{ width: "20px", height: "20px", display: "flex", alignItems: "center", justifyContent: "center", border: "none", background: "transparent", cursor: "pointer", color: "var(--color-text-light)", borderRadius: "3px", transition: "all 0.1s" }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-active)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+            >
+              {showFavPaths ? <Eye size={11} /> : <EyeOff size={11} />}
+            </button>
           </div>
           )}
 
@@ -487,7 +428,7 @@ export function Sidebar() {
                     isBrokenFile ? "" : isOpened ? "text-accent" : "text-text-primary"
                   }`}
                   style={{
-                    paddingLeft: "32px", paddingRight: "16px", height: compactMode ? "36px" : "44px",
+                    paddingLeft: "32px", paddingRight: "16px", height: showFavPaths ? (compactMode ? "36px" : "44px") : (compactMode ? "26px" : "30px"),
                     background: isMultiSelected ? "var(--color-accent-subtle)" : "transparent",
                     color: isBrokenFile ? "var(--color-text-muted)" : undefined,
                     cursor: isBrokenFile ? "default" : "pointer",
@@ -506,9 +447,11 @@ export function Sidebar() {
                   )}
                   <div style={{ overflow: "hidden", flex: 1, minWidth: 0 }}>
                     <div className="truncate" style={{ fontSize: compactMode ? "11px" : "13px", fontWeight: isBrokenFile ? 400 : undefined }}>{name}</div>
+                    {showFavPaths && (
                     <div className="truncate" style={{ fontSize: "10px", color: "var(--color-text-light)", fontWeight: 400, marginTop: "-1px" }}>
                       {(() => { const dir = filePath.substring(0, filePath.lastIndexOf("\\")); const m = dir.match(/^([A-Z]:\\Users\\[^\\]+)/i); return m ? dir.replace(m[1], "~") : dir; })()}
                     </div>
+                    )}
                   </div>
                   {/* 폴더 열기 아이콘 */}
                   {!isBrokenFile && (
@@ -753,6 +696,75 @@ export function Sidebar() {
         />
       )}
       </>
+
+      {/* 액션 바 (하단) */}
+      <div style={{
+        display: "flex", alignItems: "center", gap: "0",
+        padding: "0 16px", height: "34px",
+        borderTop: "1px solid var(--color-border-light)",
+        flexShrink: 0,
+      }}>
+        <button
+          onClick={() => {
+            const allExpanded = favorites.every((f) => expandedFavs.has(f.path));
+            if (allExpanded) {
+              setExpandedFavs(new Set());
+            } else {
+              setExpandedFavs(new Set(favorites.map((f) => f.path)));
+            }
+          }}
+          title={favorites.every((f) => expandedFavs.has(f.path)) ? "모두 접기" : "모두 펼치기"}
+          style={{
+            width: "30px", height: "30px",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            border: "none", background: "transparent", cursor: "pointer",
+            color: "var(--color-text-tertiary)", borderRadius: "3px",
+            transition: "all 0.1s",
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-hover)"; e.currentTarget.style.color = "var(--color-text-secondary)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--color-text-tertiary)"; }}
+        >
+          {favorites.every((f) => expandedFavs.has(f.path))
+            ? <ChevronsDownUp size={14} />
+            : <ChevronsUpDown size={14} />
+          }
+        </button>
+
+        <button
+          onClick={() => setCompactMode(!compactMode)}
+          title={compactMode ? "일반 보기" : "컴팩트 보기"}
+          style={{
+            width: "30px", height: "30px",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            border: "none", background: "transparent", cursor: "pointer",
+            color: compactMode ? "var(--color-accent)" : "var(--color-text-tertiary)", borderRadius: "3px",
+            transition: "all 0.1s",
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-hover)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+        >
+          <ListCollapse size={14} />
+        </button>
+
+        <button
+          onClick={(e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            setSortMenu({ x: rect.left, y: rect.top - 4 });
+          }}
+          title="정렬"
+          style={{
+            width: "30px", height: "30px",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            border: "none", background: "transparent", cursor: "pointer",
+            color: "var(--color-text-tertiary)", borderRadius: "3px",
+            transition: "all 0.1s",
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-hover)"; e.currentTarget.style.color = "var(--color-text-secondary)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--color-text-tertiary)"; }}
+        >
+          <ArrowUpDown size={14} />
+        </button>
+      </div>
 
       {/* 컨텍스트 메뉴 */}
       {contextMenu && (
