@@ -24,6 +24,8 @@ export function Sidebar() {
   // ── 최상위 폴더 드래그 순서 변경 ──
   const [dragFav, setDragFav] = useState<{ from: number; over: number; pos: "above" | "below" } | null>(null);
   const dragFavState = useRef<{ startY: number; from: number; to: number; pos: "above" | "below"; active: boolean }>({ startY: 0, from: -1, to: -1, pos: "below", active: false });
+  const favFlipPositions = useRef<Record<string, number>>({});
+  const [flipAnimating, setFlipAnimating] = useState(false);
 
   const startFavDrag = (e: React.MouseEvent, idx: number) => {
     if (e.button !== 0) return;
@@ -53,6 +55,15 @@ export function Sidebar() {
         const insertAt = rawInsert > s.from ? rawInsert - 1 : rawInsert;
         if (insertAt !== s.from) {
           const f = s.from, t = insertAt;
+          // FLIP: 위치 캡처
+          const positions: Record<string, number> = {};
+          document.querySelectorAll("[data-fav-path]").forEach((el) => {
+            const path = (el as HTMLElement).dataset.favPath!;
+            positions[path] = el.getBoundingClientRect().top;
+          });
+          favFlipPositions.current = positions;
+          setFlipAnimating(true);
+          // reorder 실행
           executeUndoable({
             type: "reorder-favorites",
             description: "즐겨찾기 폴더 순서 변경",
@@ -68,6 +79,36 @@ export function Sidebar() {
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onUp);
   };
+
+  // FLIP 애니메이션: reorder 후 위치 차이만큼 역변환 → 0으로 전환
+  useEffect(() => {
+    if (!flipAnimating) return;
+    const oldPositions = favFlipPositions.current;
+    const els = document.querySelectorAll("[data-fav-path]");
+    els.forEach((el) => {
+      const htmlEl = el as HTMLElement;
+      const path = htmlEl.dataset.favPath!;
+      const oldTop = oldPositions[path];
+      if (oldTop === undefined) return;
+      const newTop = htmlEl.getBoundingClientRect().top;
+      const delta = oldTop - newTop;
+      if (Math.abs(delta) < 1) return;
+      htmlEl.style.transform = `translateY(${delta}px)`;
+      htmlEl.style.transition = "none";
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          htmlEl.style.transition = "transform 0.25s ease";
+          htmlEl.style.transform = "translateY(0)";
+          setTimeout(() => {
+            htmlEl.style.transition = "";
+            htmlEl.style.transform = "";
+          }, 260);
+        });
+      });
+    });
+    setFlipAnimating(false);
+    favFlipPositions.current = {};
+  }, [flipAnimating, favorites]);
 
   const updateFavDragTarget = (e: React.MouseEvent, favIdx: number) => {
     if (!dragFavState.current.active) return;
@@ -410,6 +451,7 @@ export function Sidebar() {
                 {showTop && <div style={{ height: "4px", background: "var(--color-accent)", margin: "0 16px", borderRadius: "2px" }} />}
                 <div
                   data-fav-item
+                  data-fav-path={fav.path}
                   onMouseMove={(e) => updateFavDragTarget(e, favIdx)}
                   style={{
                     display: searchQuery && !foldersWithResults.has(fav.path) ? "none" : undefined,
