@@ -43,12 +43,18 @@ export async function saveImageToAssets(docFilePath: string, blob: Blob): Promis
   return `./.assets/${filename}`;
 }
 
-/** 마크다운에서 이미지 경로 추출 */
+/** 마크다운에서 이미지 경로 추출 (![](src) + <img src="...">) */
 export function extractImagePaths(markdown: string): string[] {
-  const regex = /!\[[^\]]*\]\(([^)]+)\)/g;
   const paths: string[] = [];
+  // 마크다운 형식
+  const mdRegex = /!\[[^\]]*\]\(([^)]+)\)/g;
   let match;
-  while ((match = regex.exec(markdown)) !== null) {
+  while ((match = mdRegex.exec(markdown)) !== null) {
+    paths.push(match[1]);
+  }
+  // HTML img 태그 형식
+  const htmlRegex = /<img[^>]+src="([^"]+)"/g;
+  while ((match = htmlRegex.exec(markdown)) !== null) {
     paths.push(match[1]);
   }
   return paths;

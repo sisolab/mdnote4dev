@@ -89,7 +89,12 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
             const docDir = fp.substring(0, fp.lastIndexOf("\\"));
             const absPath = `${docDir}\\${relativePath.substring(2).replace(/\//g, "\\")}`;
             const assetUrl = convertFileSrc(absPath);
-            editor.chain().focus().setImage({ src: assetUrl, width: 320, align: "left" } as any).run();
+            // 원본 크기 확인: 320보다 작으면 원본, 아니면 320
+            const img = new Image();
+            img.src = assetUrl;
+            await new Promise((resolve) => { img.onload = resolve; img.onerror = resolve; });
+            const width = img.naturalWidth > 0 && img.naturalWidth < 320 ? 0 : 320;
+            editor.chain().focus().setImage({ src: assetUrl, width, align: "left" } as any).run();
           } catch (err) {
             console.error("[Marknote] 이미지 저장 실패:", err);
           }

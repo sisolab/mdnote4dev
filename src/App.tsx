@@ -231,19 +231,25 @@ function App() {
   useEffect(() => {
     const appWindow = getCurrentWindow();
     const unlisten = appWindow.onCloseRequested(async (event) => {
+      event.preventDefault();
       const { tabs } = useAppStore.getState();
+
+      // 미저장 임시 문서 확인
+      const unsaved = tabs.filter((t) => t.type !== "tag-explorer" && !t.filePath && t.content);
+      if (unsaved.length > 0) {
+        setShowExitConfirm(true);
+        return;
+      }
+
       // 열린 탭의 고아 이미지 정리
       for (const tab of tabs) {
-        if (tab.filePath && tab.content) {
-          await cleanupOrphanedImages(tab.filePath, tab.content).catch(() => {});
+        if (tab.filePath) {
+          await cleanupOrphanedImages(tab.filePath, tab.content ?? "").catch(() => {});
         }
       }
 
-      const unsaved = tabs.filter((t) => t.type !== "tag-explorer" && !t.filePath && t.content);
-      if (unsaved.length > 0) {
-        event.preventDefault();
-        setShowExitConfirm(true);
-      }
+      // 정리 완료 후 종료
+      await appWindow.destroy();
     });
     return () => { unlisten.then((fn) => fn()); };
   }, []);
