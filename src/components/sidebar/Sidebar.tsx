@@ -5,9 +5,19 @@ import { invoke } from "@tauri-apps/api/core";
 import { useAppStore } from "@/stores/appStore";
 import { FileTree } from "./FileTree";
 import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
+import { Tooltip } from "@/components/ui/Tooltip";
+import { Unlink, ChevronRight, Folder, Pin } from "lucide-react";
+
+function shortenPath(path: string): string {
+  const userHome = path.match(/^([A-Z]:\\Users\\[^\\]+)/i);
+  if (userHome) {
+    return path.replace(userHome[1], "~");
+  }
+  return path;
+}
 
 export function Sidebar() {
-  const { favorites, sidebarCollapsed, removeFavorite, addFavorite } = useAppStore();
+  const { favorites, sidebarCollapsed, removeFavorite, addFavorite, workspace, setWorkspace } = useAppStore();
   const [expandedFavs, setExpandedFavs] = useState<Set<string>>(
     new Set(favorites.map((f) => f.path))
   );
@@ -28,12 +38,35 @@ export function Sidebar() {
     setBrokenPaths(broken);
   }, [favorites]);
 
+  // 앱 시작 시 폴더 유효성 체크
   useEffect(() => {
     checkFolders();
   }, [checkFolders]);
 
-  const toggleFav = (path: string) => {
-    if (brokenPaths.has(path)) return;
+  // 깨진 폴더는 자동으로 접기
+  useEffect(() => {
+    if (brokenPaths.size === 0) return;
+    setExpandedFavs((prev) => {
+      const next = new Set(prev);
+      brokenPaths.forEach((p) => next.delete(p));
+      return next;
+    });
+  }, [brokenPaths]);
+
+  const toggleFav = async (path: string) => {
+    // 클릭 시 유효성 체크
+    try {
+      const valid = await exists(path);
+      if (!valid) {
+        setBrokenPaths((prev) => new Set([...prev, path]));
+        setExpandedFavs((prev) => { const n = new Set(prev); n.delete(path); return n; });
+        return;
+      }
+      setBrokenPaths((prev) => { const n = new Set(prev); n.delete(path); return n; });
+    } catch {
+      setBrokenPaths((prev) => new Set([...prev, path]));
+      return;
+    }
     setExpandedFavs((prev) => {
       const next = new Set(prev);
       if (next.has(path)) next.delete(path);
@@ -83,12 +116,18 @@ export function Sidebar() {
     const isBroken = brokenPaths.has(path);
     if (isBroken) {
       return [
-        { label: "경로 변경...", onClick: () => handleRelink(path) },
+        { label: "경로 다시 지정...", onClick: () => handleRelink(path) },
         { divider: true, label: "", onClick: () => {} },
         { label: "즐겨찾기에서 제거", onClick: () => removeFavorite(path), danger: true },
       ];
     }
+    const isCurrentWorkspace = path === workspace;
     return [
+      ...(isCurrentWorkspace
+        ? [{ label: "기본 폴더 해제", onClick: () => setWorkspace(null) }]
+        : [{ label: "기본 폴더로 지정", onClick: () => setWorkspace(path) }]
+      ),
+      { divider: true, label: "", onClick: () => {} },
       { label: "탐색기에서 열기", onClick: () => { invoke("open_in_explorer", { path }); } },
       { divider: true, label: "", onClick: () => {} },
       { label: "즐겨찾기에서 제거", onClick: () => removeFavorite(path), danger: true },
@@ -106,23 +145,30 @@ export function Sidebar() {
         opacity: sidebarCollapsed ? 0 : 1,
       }}
     >
-      <div className="flex-1 overflow-y-auto" style={{ padding: "8px 16px 16px" }} onContextMenu={handleSidebarContextMenu}>
+      <div className="flex-1 overflow-y-auto" style={{ padding: "0" }} onContextMenu={handleSidebarContextMenu}>
         {favorites.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-text-tertiary">
             <p className="text-[12px]">상단 메뉴에서 폴더를 추가하세요</p>
           </div>
         ) : (
           <div className="space-y-1">
-            {favorites.map((fav) => {
+            {[...favorites].sort((a, b) => {
+              if (a.path === workspace) return -1;
+              if (b.path === workspace) return 1;
+              return 0;
+            }).map((fav) => {
               const isBroken = brokenPaths.has(fav.path);
+              const isWorkspace = fav.path === workspace;
               return (
                 <div key={fav.path} data-fav-item>
+                  <Tooltip text={shortenPath(fav.path)}>
                   <button
                     onClick={() => toggleFav(fav.path)}
                     onContextMenu={(e) => handleContextMenu(e, fav.path)}
-                    className="w-full flex items-center gap-2 px-3 text-[14px] font-semibold rounded-lg transition-all duration-[0.15s]"
+                    className="w-full flex items-center gap-2 text-[14px] font-semibold transition-all duration-[0.15s]"
                     style={{
                       height: "34px",
+                      padding: "0 16px",
                       color: isBroken ? "#bbb" : "#555",
                       cursor: isBroken ? "default" : "pointer",
                     }}
@@ -135,34 +181,29 @@ export function Sidebar() {
                   >
                     {/* 펼침 화살표 */}
                     {!isBroken && (
-                      <svg
-                        width="10"
-                        height="10"
-                        viewBox="0 0 16 16"
-                        fill="none"
+                      <ChevronRight
+                        size={12}
                         className={`shrink-0 transition-transform duration-[0.15s] text-text-light ${expandedFavs.has(fav.path) ? "rotate-90" : ""}`}
-                      >
-                        <path d="M6 4L10 8L6 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
+                      />
                     )}
 
                     {/* 폴더 아이콘 */}
-                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" className="shrink-0" style={{ color: isBroken ? "#ccc" : "#1a73e8" }}>
-                      <path d="M2 4.5A1.5 1.5 0 013.5 3H6l1 2h5.5A1.5 1.5 0 0114 6.5v5a1.5 1.5 0 01-1.5 1.5h-9A1.5 1.5 0 012 11.5v-7z" stroke="currentColor" strokeWidth="1.2" />
-                    </svg>
+                    <Folder size={14} className="shrink-0" style={{ color: isBroken ? "#ccc" : "#1a73e8" }} />
 
                     {/* 폴더 이름 */}
                     <span className="truncate">{fav.name}</span>
 
-                    {/* 깨진 링크 아이콘 */}
+                    {/* 기본 폴더 고정 아이콘 */}
+                    {isWorkspace && (
+                      <Pin size={13} className="shrink-0 ml-auto" style={{ color: "#1a73e8" }} />
+                    )}
+
+                    {/* 끊긴 체인 아이콘 */}
                     {isBroken && (
-                      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" className="shrink-0 ml-auto" style={{ color: "#ccc" }}>
-                        <path d="M6.5 9.5L3.7 12.3a2 2 0 01-2.8-2.8L3.5 7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-                        <path d="M9.5 6.5l2.8-2.8a2 2 0 00-2.8-2.8L7 3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-                        <path d="M4 12L12 4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-                      </svg>
+                      <Unlink size={13} className="shrink-0 ml-auto" style={{ color: "#bbb" }} />
                     )}
                   </button>
+                  </Tooltip>
 
                   {/* 파일 트리 */}
                   {!isBroken && expandedFavs.has(fav.path) && <FileTree rootPath={fav.path} />}

@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { readDir, readTextFile } from "@tauri-apps/plugin-fs";
 import { useAppStore, type FileEntry } from "@/stores/appStore";
+import { ChevronRight, FileText } from "lucide-react";
 
 async function loadDirectory(path: string): Promise<FileEntry[]> {
   try {
@@ -69,23 +70,16 @@ function FileTreeItem({
             : "text-text-primary"
         } ${!entry.isDirectory && !isMarkdown ? "opacity-30" : ""}`}
         style={{
-          paddingLeft: `${depth * 16 + 32}px`, paddingRight: "12px", height: "34px",
+          paddingLeft: `${depth * 16 + 32}px`, paddingRight: "16px", height: "34px",
         }}
       >
         {entry.isDirectory ? (
-          <svg
-            width="10"
-            height="10"
-            viewBox="0 0 16 16"
-            fill="none"
+          <ChevronRight
+            size={12}
             className={`shrink-0 transition-transform duration-[0.15s] text-text-light ${isExpanded ? "rotate-90" : ""}`}
-          >
-            <path d="M6 4L10 8L6 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+          />
         ) : (
-          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" className="shrink-0 text-text-light">
-            <path d="M9 2H4.5A1.5 1.5 0 003 3.5v9A1.5 1.5 0 004.5 14h7a1.5 1.5 0 001.5-1.5V6L9 2z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+          <FileText size={13} className="shrink-0 text-text-light" />
         )}
         <span className="truncate">{entry.name}</span>
         {/* 미니멀 좌측 인디케이터 */}

@@ -4,6 +4,7 @@ import {
   FONT_OPTIONS,
   type EditorSettings,
 } from "@/stores/settingsStore";
+import { X } from "lucide-react";
 
 function SliderSetting({
   label,
@@ -92,9 +93,7 @@ export function SettingsPanel() {
             onClick={() => setShowSettings(false)}
             className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-bg-hover text-text-light hover:text-text-secondary transition-all duration-[0.1s]"
           >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path d="M4 4L12 12M12 4L4 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-            </svg>
+            <X size={16} />
           </button>
         </div>
 
