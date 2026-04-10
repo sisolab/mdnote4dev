@@ -2,6 +2,8 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { readDir, readTextFile, rename, mkdir, create } from "@tauri-apps/plugin-fs";
 import { deleteDocImages, renameDocImages } from "@/utils/imageUtils";
 import { invoke } from "@tauri-apps/api/core";
+import { executeUndoable } from "@/stores/undoStore";
+import { moveToTrash, restoreFromTrash, findFavoriteRoot } from "@/utils/trashUtils";
 import { useAppStore, type FileEntry } from "@/stores/appStore";
 import { ChevronRight, FileText, Star, Folder } from "lucide-react";
 import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
@@ -217,37 +219,44 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
       return;
     }
 
-    try {
-      // 마크다운 파일이면 이미지 파일명도 변경
-      if (!entry.isDirectory && /\.(md|markdown)$/i.test(entry.name)) {
-        const oldDocName = entry.name.replace(/\.(md|markdown)$/i, "");
-        const newDocName = renameValue.trim();
-        if (oldDocName !== newDocName) {
+    const oldPath = entry.path;
+    const oldName = entry.name;
+
+    const doRename = async (from: string, to: string, fromName: string, toName: string) => {
+      // 이미지 파일명 변경
+      if (!entry.isDirectory && /\.(md|markdown)$/i.test(fromName)) {
+        const oldDoc = fromName.replace(/\.(md|markdown)$/i, "");
+        const newDoc = toName.replace(/\.(md|markdown)$/i, "");
+        if (oldDoc !== newDoc) {
           const state = useAppStore.getState();
-          const openTab = tabs.find((t) => t.filePath === entry.path);
+          const openTab = state.tabs.find((t) => t.filePath === from);
           const content = openTab?.content ?? "";
-          const updatedContent = await renameDocImages(parentPath, oldDocName, newDocName, content);
-          if (openTab && updatedContent !== content) {
-            state.updateTabContent(openTab.id, updatedContent);
-            // 파일에도 저장
-            const { writeTextFile } = await import("@tauri-apps/plugin-fs");
-            await writeTextFile(entry.path, updatedContent);
+          const { writeTextFile } = await import("@tauri-apps/plugin-fs");
+          const updated = await renameDocImages(parentPath, oldDoc, newDoc, content);
+          if (openTab && updated !== content) {
+            state.updateTabContent(openTab.id, updated);
+            await writeTextFile(from, updated);
           }
         }
       }
-      await rename(entry.path, newPath);
+      await rename(from, to);
       const state = useAppStore.getState();
-      // 열려있는 탭 경로 업데이트
-      const openTab = tabs.find((t) => t.filePath === entry.path);
-      if (openTab) {
-        state.updateTabFilePath(openTab.id, newPath, newName);
-      }
-      // 문서 섹션 경로 업데이트
-      if (state.favoriteFiles.includes(entry.path)) {
-        state.removeFavoriteFile(entry.path);
-        state.addFavoriteFile(newPath);
+      const openTab = state.tabs.find((t) => t.filePath === from);
+      if (openTab) state.updateTabFilePath(openTab.id, to, toName);
+      if (state.favoriteFiles.includes(from)) {
+        state.removeFavoriteFile(from);
+        state.addFavoriteFile(to);
       }
       refreshFileTree();
+    };
+
+    try {
+      await executeUndoable({
+        type: "rename",
+        description: `이름 변경: ${oldName} → ${newName}`,
+        execute: () => doRename(oldPath, newPath, oldName, newName),
+        undo: () => doRename(newPath, oldPath, newName, oldName),
+      });
     } catch (err) {
       console.error("이름 변경 실패:", err);
     }
@@ -315,19 +324,40 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
 
   const handleDelete = async (items: FileEntry[]) => {
     try {
-      const { removeFavoriteFile } = useAppStore.getState();
-      for (const item of items) {
-        // 마크다운 파일이면 관련 이미지도 삭제
-        if (!item.isDirectory && /\.(md|markdown)$/i.test(item.name)) {
-          await deleteDocImages(item.path);
-        }
-        await invoke("move_to_trash", { path: item.path });
-        const openTab = tabs.find((t) => t.filePath === item.path);
-        if (openTab) closeTab(openTab.id);
-        removeFavoriteFile(item.path);
-      }
-      clearSelectedPaths();
-      refreshFileTree();
+      const state = useAppStore.getState();
+      const favRoot = findFavoriteRoot(items[0].path, state.favorites);
+      if (!favRoot) return;
+
+      const trashRecords: { trashPath: string; originalPath: string }[] = [];
+      const closedTabs: { id: string; filePath: string; title: string; content: string }[] = [];
+
+      await executeUndoable({
+        type: "delete",
+        description: items.length > 1 ? `${items.length}개 항목 삭제` : `삭제: ${items[0].name}`,
+        execute: async () => {
+          for (const item of items) {
+            const record = await moveToTrash(item.path, favRoot);
+            trashRecords.push(record);
+            const openTab = state.tabs.find((t) => t.filePath === item.path);
+            if (openTab) {
+              closedTabs.push({ id: openTab.id, filePath: openTab.filePath!, title: openTab.title, content: openTab.content });
+              closeTab(openTab.id);
+            }
+            state.removeFavoriteFile(item.path);
+          }
+          clearSelectedPaths();
+          refreshFileTree();
+        },
+        undo: async () => {
+          for (const record of trashRecords) {
+            await restoreFromTrash(record.trashPath, record.originalPath);
+          }
+          for (const tab of closedTabs) {
+            state.openTab(tab.filePath, tab.title, tab.content);
+          }
+          refreshFileTree();
+        },
+      });
     } catch (err) {
       console.error("삭제 실패:", err);
     }
