@@ -227,6 +227,7 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
   // ── 파일/폴더 드래그 이동 + 리오더 ──
   const [dragMovePaths, setDragMovePaths] = useState<string[] | null>(null);
   const [reorderTarget, setReorderTarget] = useState<{ path: string; pos: "above" | "below" } | null>(null);
+  const reorderTargetRef = useRef<{ path: string; pos: "above" | "below" } | null>(null);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
   const dragMoveState = useRef<{ startY: number; active: boolean; paths: string[] }>({ startY: 0, active: false, paths: [] });
   const dropTargetRef = useRef<string | null>(null);
@@ -330,9 +331,11 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
           // 같은 폴더 내 파일 위 → 리오더
           const rect = btn!.getBoundingClientRect();
           const pos = me.clientY < rect.top + rect.height / 2 ? "above" : "below";
+          reorderTargetRef.current = { path, pos };
           setReorderTarget({ path, pos });
           target = null; // 폴더 이동은 아님
         } else {
+          reorderTargetRef.current = null;
           setReorderTarget(null);
           if (target === dragDir) target = null;
         }
@@ -373,7 +376,7 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
       }
 
       // 같은 폴더 내 리오더
-      const rt = reorderTarget;
+      const rt = reorderTargetRef.current;
       if (s.active && rt && s.paths.length === 1) {
         const dragPath = s.paths[0];
         const dragName = dragPath.split("\\").pop() ?? "";
@@ -454,6 +457,7 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
       dropTargetRef.current = null;
       setDragMovePaths(null);
       setDropTarget(null);
+      reorderTargetRef.current = null;
       setReorderTarget(null);
       removeDragGhost();
       document.querySelectorAll("[data-drop-active]").forEach((el) => {
