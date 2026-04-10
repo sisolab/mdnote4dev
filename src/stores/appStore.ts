@@ -37,9 +37,9 @@ interface AppState {
   setFavoriteAlias: (path: string, alias: string | undefined) => void;
 
   // 단일 파일 (특수 폴더)
-  standaloneFiles: string[];
-  addStandaloneFile: (path: string) => void;
-  removeStandaloneFile: (path: string) => void;
+  favoriteFiles: string[];
+  addFavoriteFile: (path: string) => void;
+  removeFavoriteFile: (path: string) => void;
 
   // 정렬
   folderSort: SortMode;
@@ -104,14 +104,14 @@ export const useAppStore = create<AppState>((set) => ({
       ),
     })),
 
-  standaloneFiles: [] as string[],
-  addStandaloneFile: (path) =>
+  favoriteFiles: [] as string[],
+  addFavoriteFile: (path) =>
     set((state) => ({
-      standaloneFiles: state.standaloneFiles.includes(path) ? state.standaloneFiles : [...state.standaloneFiles, path],
+      favoriteFiles: state.favoriteFiles.includes(path) ? state.favoriteFiles : [...state.favoriteFiles, path],
     })),
-  removeStandaloneFile: (path) =>
+  removeFavoriteFile: (path) =>
     set((state) => ({
-      standaloneFiles: state.standaloneFiles.filter((p) => p !== path),
+      favoriteFiles: state.favoriteFiles.filter((p) => p !== path),
     })),
 
   folderSort: "name" as SortMode,

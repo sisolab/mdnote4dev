@@ -7,7 +7,7 @@ import { useAppStore } from "@/stores/appStore";
 import { FileTree } from "./FileTree";
 import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
 import { Tooltip } from "@/components/ui/Tooltip";
-import { Unlink, ChevronRight, Folder, Pin, Tag, Search, ChevronsDownUp, ChevronsUpDown, ArrowUpDown, FilePlus, FolderPlus, FileText, FolderOpen, FileUp } from "lucide-react";
+import { Unlink, ChevronRight, Folder, Pin, Tag, Search, ChevronsDownUp, ChevronsUpDown, ArrowUpDown, FilePlus, FolderPlus, FileText, FolderOpen } from "lucide-react";
 
 function shortenPath(path: string): string {
   const userHome = path.match(/^([A-Z]:\\Users\\[^\\]+)/i);
@@ -18,12 +18,12 @@ function shortenPath(path: string): string {
 }
 
 export function Sidebar() {
-  const { favorites, sidebarCollapsed, removeFavorite, addFavorite, workspace, setWorkspace, openTab, refreshFileTree, fileTreeVersion, setFavoriteAlias, folderSort, fileSort, setFolderSort, setFileSort, standaloneFiles, addStandaloneFile, removeStandaloneFile, selectedPaths } = useAppStore();
+  const { favorites, sidebarCollapsed, removeFavorite, addFavorite, workspace, setWorkspace, openTab, refreshFileTree, fileTreeVersion, setFavoriteAlias, folderSort, fileSort, setFolderSort, setFileSort, favoriteFiles, addFavoriteFile, removeFavoriteFile, selectedPaths } = useAppStore();
   const [sidebarTab, setSidebarTab] = useState("files");
   const [searchQuery, setSearchQuery] = useState("");
-  const [standaloneExpanded, setStandaloneExpanded] = useState(true);
+  const [favoritesExpanded, setStandaloneExpanded] = useState(true);
   const [folderSectionExpanded, setFolderSectionExpanded] = useState(true);
-  const [brokenStandaloneFiles, setBrokenStandaloneFiles] = useState<Set<string>>(new Set());
+  const [brokenFavoriteFiles, setBrokenFavoriteFiles] = useState<Set<string>>(new Set());
   const [foldersWithResults, setFoldersWithResults] = useState<Set<string>>(new Set());
   const [sortMenu, setSortMenu] = useState<{ x: number; y: number } | null>(null);
   const [docCounts, setDocCounts] = useState<Record<string, number>>({});
@@ -237,7 +237,7 @@ export function Sidebar() {
   };
 
   const getContextMenuItems = (path: string): ContextMenuItem[] => {
-    if (path === "__standalone_folder__") {
+    if (path === "__favorites_section__") {
       return [
         { label: "파일 열기...", onClick: async () => {
           const p = await open({ filters: [{ name: "Markdown", extensions: ["md"] }], multiple: false });
@@ -245,32 +245,32 @@ export function Sidebar() {
             const content = await readTextFile(p);
             const name = p.split("\\").pop() ?? "문서";
             openTab(p, name, content);
-            addStandaloneFile(p);
+            addFavoriteFile(p);
           }
         }},
       ];
     }
-    if (path.startsWith("__standalone_broken__")) {
-      const filePath = path.replace("__standalone_broken__", "");
+    if (path.startsWith("__favorite_broken__")) {
+      const filePath = path.replace("__favorite_broken__", "");
       return [
         { label: "경로 다시 지정...", onClick: async () => {
           const p = await open({ filters: [{ name: "Markdown", extensions: ["md"] }], multiple: false });
           if (p && typeof p === "string") {
-            removeStandaloneFile(filePath);
-            addStandaloneFile(p);
-            setBrokenStandaloneFiles((prev) => { const n = new Set(prev); n.delete(filePath); return n; });
+            removeFavoriteFile(filePath);
+            addFavoriteFile(p);
+            setBrokenFavoriteFiles((prev) => { const n = new Set(prev); n.delete(filePath); return n; });
           }
         }},
         { divider: true, label: "", onClick: () => {} },
-        { label: "목록에서 제거", onClick: () => { removeStandaloneFile(filePath); setBrokenStandaloneFiles((prev) => { const n = new Set(prev); n.delete(filePath); return n; }); }, danger: true },
+        { label: "즐겨찾기 해제", onClick: () => { removeFavoriteFile(filePath); setBrokenFavoriteFiles((prev) => { const n = new Set(prev); n.delete(filePath); return n; }); }, danger: true },
       ];
     }
-    if (path.startsWith("__standalone__")) {
-      const filePath = path.replace("__standalone__", "");
+    if (path.startsWith("__favorite__")) {
+      const filePath = path.replace("__favorite__", "");
       return [
         { label: "탐색기에서 열기", onClick: () => { const dir = filePath.substring(0, filePath.lastIndexOf("\\")); invoke("open_in_explorer", { path: dir }); } },
         { divider: true, label: "", onClick: () => {} },
-        { label: "목록에서 제거", onClick: () => removeStandaloneFile(filePath), danger: true },
+        { label: "즐겨찾기 해제", onClick: () => removeFavoriteFile(filePath), danger: true },
       ];
     }
     const isBroken = brokenPaths.has(path);
@@ -348,13 +348,13 @@ export function Sidebar() {
       </div>
       <div className="flex-1 overflow-y-auto" style={{ padding: "0" }} onContextMenu={handleSidebarContextMenu}>
 
-        {/* ── 문서 섹션 ── */}
-        {(!searchQuery || standaloneFiles.some((f) => f.split("\\").pop()?.toLowerCase().includes(searchQuery.toLowerCase()))) && (
+        {/* ── 즐겨찾기 섹션 ── */}
+        {(!searchQuery || favoriteFiles.some((f) => f.split("\\").pop()?.toLowerCase().includes(searchQuery.toLowerCase()))) && (
         <div>
           {!searchQuery && (
           <div
-            onClick={() => setStandaloneExpanded(!standaloneExpanded)}
-            onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setContextMenu({ x: e.clientX, y: e.clientY, path: "__standalone_folder__" }); }}
+            onClick={() => setStandaloneExpanded(!favoritesExpanded)}
+            onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setContextMenu({ x: e.clientX, y: e.clientY, path: "__favorites_section__" }); }}
             style={{
               display: "flex", alignItems: "center", justifyContent: "space-between",
               padding: "0 16px", height: "28px", cursor: "pointer",
@@ -364,41 +364,23 @@ export function Sidebar() {
             onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-hover)"; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = ""; }}
           >
-            <Tooltip text="개별 문서를 등록합니다. 파일의 실제 위치는 바뀌지 않습니다." delay={0}>
+            <Tooltip text="즐겨찾기 파일을 관리합니다. 파일의 실제 위치는 바뀌지 않습니다." delay={0}>
             <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-              <ChevronRight size={10} className={`shrink-0 text-text-light transition-transform duration-[0.15s] ${standaloneExpanded ? "rotate-90" : ""}`} />
+              <ChevronRight size={10} className={`shrink-0 text-text-light transition-transform duration-[0.15s] ${favoritesExpanded ? "rotate-90" : ""}`} />
               <span style={{ fontSize: "11px", fontWeight: 600, color: "var(--color-text-tertiary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                문서
+                즐겨찾기
               </span>
-              {standaloneFiles.length > 0 && (
+              {favoriteFiles.length > 0 && (
                 <span style={{ fontSize: "10px", color: "var(--color-text-light)", fontWeight: 400 }}>
-                  ({standaloneFiles.length})
+                  ({favoriteFiles.length})
                 </span>
               )}
             </div>
             </Tooltip>
-            <button
-              onClick={async (e) => {
-                e.stopPropagation();
-                const p = await open({ filters: [{ name: "Markdown", extensions: ["md"] }], multiple: false });
-                if (p && typeof p === "string") {
-                  const content = await readTextFile(p);
-                  const name = p.split("\\").pop() ?? "문서";
-                  openTab(p, name, content);
-                  addStandaloneFile(p);
-                }
-              }}
-              title="문서 열기"
-              style={{ width: "20px", height: "20px", display: "flex", alignItems: "center", justifyContent: "center", border: "none", background: "transparent", cursor: "pointer", color: "var(--color-text-light)", borderRadius: "3px", transition: "all 0.1s" }}
-              onMouseEnter={(e) => { e.currentTarget.style.color = "var(--color-text-secondary)"; e.currentTarget.style.background = "var(--color-bg-active)"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.color = "var(--color-text-light)"; e.currentTarget.style.background = "transparent"; }}
-            >
-              <FileUp size={12} />
-            </button>
           </div>
           )}
 
-          {(searchQuery || standaloneExpanded) && [...standaloneFiles]
+          {(searchQuery || favoritesExpanded) && [...favoriteFiles]
             .filter((f) => !searchQuery || f.split("\\").pop()?.toLowerCase().includes(searchQuery.toLowerCase()))
             .sort((a, b) => {
               if (fileSort === "name") return (a.split("\\").pop() ?? "").localeCompare(b.split("\\").pop() ?? "");
@@ -410,7 +392,7 @@ export function Sidebar() {
               const isFocused = selectedFile === filePath;
               const isOpened = tabs.some((t) => t.filePath === filePath);
               const isMultiSelected = selectedPaths.has(filePath);
-              const isBrokenFile = brokenStandaloneFiles.has(filePath);
+              const isBrokenFile = brokenFavoriteFiles.has(filePath);
               return (
                 <button
                   key={filePath}
@@ -419,11 +401,11 @@ export function Sidebar() {
                     if (isBrokenFile) return;
                     try {
                       const valid = await exists(filePath);
-                      if (!valid) { setBrokenStandaloneFiles((prev) => new Set([...prev, filePath])); return; }
-                      setBrokenStandaloneFiles((prev) => { const n = new Set(prev); n.delete(filePath); return n; });
+                      if (!valid) { setBrokenFavoriteFiles((prev) => new Set([...prev, filePath])); return; }
+                      setBrokenFavoriteFiles((prev) => { const n = new Set(prev); n.delete(filePath); return n; });
                       const content = await readTextFile(filePath);
                       openTab(filePath, name, content);
-                    } catch { setBrokenStandaloneFiles((prev) => new Set([...prev, filePath])); }
+                    } catch { setBrokenFavoriteFiles((prev) => new Set([...prev, filePath])); }
                   }}
                   className={`group w-full flex items-center gap-2 text-[14px] text-left relative z-10 ${
                     isBrokenFile ? "" : isOpened ? "text-accent font-semibold" : "text-text-primary"
@@ -438,7 +420,7 @@ export function Sidebar() {
                   onMouseLeave={(e) => { if (!isMultiSelected) e.currentTarget.style.background = isMultiSelected ? "var(--color-accent-subtle)" : "transparent"; }}
                   onContextMenu={(e) => {
                     e.preventDefault(); e.stopPropagation();
-                    setContextMenu({ x: e.clientX, y: e.clientY, path: isBrokenFile ? `__standalone_broken__${filePath}` : `__standalone__${filePath}` });
+                    setContextMenu({ x: e.clientX, y: e.clientY, path: isBrokenFile ? `__favorite_broken__${filePath}` : `__favorite__${filePath}` });
                   }}
                 >
                   {isBrokenFile ? (
@@ -752,7 +734,7 @@ export function Sidebar() {
             { label: `${folderSort === "date-added" ? "✓  " : "    "}추가 날짜순`, onClick: () => { setFolderSort("date-added"); refreshFileTree(); } },
             { label: `${folderSort === "custom" ? "✓  " : "    "}사용자 지정`, onClick: () => { setFolderSort("custom"); refreshFileTree(); } },
             { divider: true, label: "", onClick: () => {} },
-            { label: "문서 섹션 정렬", header: true, onClick: () => {} },
+            { label: "즐겨찾기 정렬", header: true, onClick: () => {} },
             { label: `${fileSort === "name" ? "✓  " : "    "}이름순`, onClick: () => setFileSort("name") },
             { label: `${fileSort === "date-added" ? "✓  " : "    "}추가 날짜순`, onClick: () => setFileSort("date-added") },
             { label: `${fileSort === "custom" ? "✓  " : "    "}사용자 지정`, onClick: () => setFileSort("custom") },

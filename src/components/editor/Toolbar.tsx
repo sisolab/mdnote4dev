@@ -1,10 +1,11 @@
 import type { Editor } from "@tiptap/react";
 import { useRef, useState, useCallback } from "react";
 import { useSettingsStore } from "@/stores/settingsStore";
+import { useAppStore } from "@/stores/appStore";
 import {
   Bold, Italic, Strikethrough, Code,
   List, ListOrdered, ListChecks,
-  AlignLeft, AlignCenter, Columns2, Square,
+  AlignLeft, AlignCenter, Columns2, Square, Star,
   Quote, SquareCode, Minus, Table,
 } from "lucide-react";
 
@@ -76,6 +77,8 @@ export function Toolbar({ editor }: ToolbarProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [highlight, setHighlight] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
   const { settings, updateSetting } = useSettingsStore();
+  const { selectedFile, favoriteFiles, addFavoriteFile, removeFavoriteFile } = useAppStore();
+  const isFavorite = selectedFile ? favoriteFiles.includes(selectedFile) : false;
 
   const handleHover = useCallback((el: HTMLButtonElement | null) => {
     if (!el || !containerRef.current) {
@@ -182,6 +185,19 @@ export function Toolbar({ editor }: ToolbarProps) {
         onHover={handleHover}
       >
         {settings.pageAlign === "left" ? <AlignLeft size={15} /> : <AlignCenter size={15} />}
+      </ToolbarButton>
+
+      <ToolbarButton
+        onClick={() => {
+          if (!selectedFile) return;
+          if (isFavorite) removeFavoriteFile(selectedFile);
+          else addFavoriteFile(selectedFile);
+        }}
+        active={isFavorite}
+        title={isFavorite ? "즐겨찾기 해제" : "즐겨찾기 등록"}
+        onHover={handleHover}
+      >
+        <Star size={15} style={isFavorite ? { color: "#f5c518", fill: "#f5c518" } : {}} />
       </ToolbarButton>
     </div>
   );

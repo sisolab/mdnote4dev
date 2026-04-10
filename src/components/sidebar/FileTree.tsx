@@ -2,7 +2,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { readDir, readTextFile, rename, mkdir, create } from "@tauri-apps/plugin-fs";
 import { invoke } from "@tauri-apps/api/core";
 import { useAppStore, type FileEntry } from "@/stores/appStore";
-import { ChevronRight, FileText } from "lucide-react";
+import { ChevronRight, FileText, Star } from "lucide-react";
 import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
 
 async function loadDirectory(path: string): Promise<FileEntry[]> {
@@ -51,7 +51,7 @@ function FileTreeItem({
   onFinishRename: (entry: FileEntry) => void;
   searchMode?: boolean;
 }) {
-  const { expandedFolders, toggleFolder, selectedFile, openTab, fileTreeVersion, selectedPaths, tabs } =
+  const { expandedFolders, toggleFolder, selectedFile, openTab, fileTreeVersion, selectedPaths, tabs, favoriteFiles } =
     useAppStore();
   const [children, setChildren] = useState<FileEntry[]>([]);
   const isExpanded = expandedFolders.has(entry.path);
@@ -135,7 +135,12 @@ function FileTreeItem({
             }}
           />
         ) : (
+          <>
           <span className="truncate">{entry.name}</span>
+          {!entry.isDirectory && favoriteFiles.includes(entry.path) && (
+            <Star size={11} className="shrink-0" style={{ color: "#f5c518", fill: "#f5c518" }} />
+          )}
+          </>
         )}
         {/* 포커스 인디케이터 */}
         <div style={{
@@ -214,9 +219,9 @@ export function FileTree({ rootPath, searchQuery = "" }: { rootPath: string; sea
         state.updateTabFilePath(openTab.id, newPath, newName);
       }
       // 문서 섹션 경로 업데이트
-      if (state.standaloneFiles.includes(entry.path)) {
-        state.removeStandaloneFile(entry.path);
-        state.addStandaloneFile(newPath);
+      if (state.favoriteFiles.includes(entry.path)) {
+        state.removeFavoriteFile(entry.path);
+        state.addFavoriteFile(newPath);
       }
       refreshFileTree();
     } catch (err) {
@@ -286,12 +291,12 @@ export function FileTree({ rootPath, searchQuery = "" }: { rootPath: string; sea
 
   const handleDelete = async (items: FileEntry[]) => {
     try {
-      const { removeStandaloneFile } = useAppStore.getState();
+      const { removeFavoriteFile } = useAppStore.getState();
       for (const item of items) {
         await invoke("move_to_trash", { path: item.path });
         const openTab = tabs.find((t) => t.filePath === item.path);
         if (openTab) closeTab(openTab.id);
-        removeStandaloneFile(item.path);
+        removeFavoriteFile(item.path);
       }
       clearSelectedPaths();
       refreshFileTree();
@@ -355,7 +360,11 @@ export function FileTree({ rootPath, searchQuery = "" }: { rootPath: string; sea
         { label: "삭제", onClick: () => setDeleteConfirm(items), danger: true },
       ];
     }
+    const { favoriteFiles: favFiles, addFavoriteFile: addFav, removeFavoriteFile: removeFav } = useAppStore.getState();
+    const isFav = favFiles.includes(entry.path);
     return [
+      { label: isFav ? "즐겨찾기 해제" : "즐겨찾기 등록", onClick: () => isFav ? removeFav(entry.path) : addFav(entry.path) },
+      { divider: true, label: "", onClick: () => {} },
       { label: "이름 바꾸기", onClick: () => startRename(entry) },
       { divider: true, label: "", onClick: () => {} },
       { label: "삭제", onClick: () => setDeleteConfirm(items), danger: true },

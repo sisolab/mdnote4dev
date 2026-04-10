@@ -1,7 +1,8 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { rename } from "@tauri-apps/plugin-fs";
+import { rename, readTextFile } from "@tauri-apps/plugin-fs";
+import { open } from "@tauri-apps/plugin-dialog";
 import { useAppStore } from "@/stores/appStore";
-import { Save } from "lucide-react";
+import { Save, FolderOpen } from "lucide-react";
 
 export function TabBar() {
   const { tabs, activeTabId, setActiveTab, closeTab, updateTabTitle, newTab, reorderTabs } = useAppStore();
@@ -47,9 +48,9 @@ export function TabBar() {
             const state = useAppStore.getState();
             state.updateTabFilePath(id, newPath, newTitle);
             // 문서 섹션 경로 업데이트
-            if (state.standaloneFiles.includes(tab.filePath)) {
-              state.removeStandaloneFile(tab.filePath);
-              state.addStandaloneFile(newPath);
+            if (state.favoriteFiles.includes(tab.filePath)) {
+              state.removeFavoriteFile(tab.filePath);
+              state.addFavoriteFile(newPath);
             }
             state.refreshFileTree();
           } catch (err) {
@@ -331,6 +332,29 @@ export function TabBar() {
         title="새 탭"
       >
         +
+      </button>
+
+      {/* 문서 열기 버튼 */}
+      <button
+        onClick={async () => {
+          const path = await open({ filters: [{ name: "Markdown", extensions: ["md"] }], multiple: false });
+          if (path && typeof path === "string") {
+            const content = await readTextFile(path);
+            const name = path.split("\\").pop() ?? "문서";
+            useAppStore.getState().openTab(path, name, content);
+          }
+        }}
+        onMouseEnter={(e) => handleHover(e.currentTarget)}
+        style={{
+          width: "30px", height: "40px",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          border: "none", background: "transparent",
+          color: "var(--color-text-muted)", cursor: "pointer",
+          position: "relative", zIndex: 1, transition: "color 0.1s",
+        }}
+        title="문서 열기"
+      >
+        <FolderOpen size={14} />
       </button>
 
       {/* 임시 문서 닫기 확인 */}
