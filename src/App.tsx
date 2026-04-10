@@ -9,6 +9,8 @@ import { SettingsPanel } from "./components/settings/SettingsPanel";
 import { useSettingsStore, getAccentColors } from "./stores/settingsStore";
 import { useAppStore } from "./stores/appStore";
 import { THEMES } from "./stores/themeData";
+import { useUndoStore } from "./stores/undoStore";
+import { emptyTrash } from "./utils/trashUtils";
 
 function App() {
   const { showSettings, themeMode, accentColor } = useSettingsStore();
@@ -166,6 +168,15 @@ function App() {
         }
       }
 
+      // .trash 폴더 비우기
+      const { favorites } = useAppStore.getState();
+      for (const fav of favorites) {
+        await emptyTrash(fav.path).catch(() => {});
+      }
+
+      // undo 히스토리 초기화
+      useUndoStore.getState().clear();
+
       // 정리 완료 후 종료
       await appWindow.destroy();
     });
@@ -192,6 +203,24 @@ function App() {
       }
     });
     return () => { unlisten.then((fn) => fn()); };
+  }, []);
+
+  // 글로벌 Ctrl+Z / Ctrl+Shift+Z (에디터 포커스 아닐 때 사이드바 undo/redo)
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (!e.ctrlKey || e.key.toLowerCase() !== "z") return;
+      // 에디터 내부에 포커스가 있으면 TipTap undo/redo에 맡김
+      const active = document.activeElement;
+      if (active?.closest(".tiptap")) return;
+      e.preventDefault();
+      if (e.shiftKey) {
+        useUndoStore.getState().redo();
+      } else {
+        useUndoStore.getState().undo();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
   }, []);
 
   const handleForceClose = () => {

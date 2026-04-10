@@ -44,6 +44,9 @@ interface AppState {
   addFavoriteFile: (path: string) => void;
   removeFavoriteFile: (path: string) => void;
 
+  // 즐겨찾기 순서
+  reorderFavorites: (fromIndex: number, toIndex: number) => void;
+
   // 태그
   allTags: Record<string, string[]>;
   setAllTags: (tags: Record<string, string[]>) => void;
@@ -144,6 +147,14 @@ export const useAppStore = create<AppState>()(
         set((state) => ({
           favoriteFiles: state.favoriteFiles.filter((p) => p !== path),
         })),
+
+      reorderFavorites: (fromIndex, toIndex) =>
+        set((state) => {
+          const newFavorites = [...state.favorites];
+          const [moved] = newFavorites.splice(fromIndex, 1);
+          newFavorites.splice(toIndex, 0, moved);
+          return { favorites: newFavorites };
+        }),
 
       allTags: {} as Record<string, string[]>,
       setAllTags: (tags) => {
