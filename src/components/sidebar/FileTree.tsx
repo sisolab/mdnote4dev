@@ -214,17 +214,37 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
 
   const dragGhostRef = useRef<HTMLDivElement | null>(null);
 
-  const createDragGhost = (name: string, count: number, x: number, y: number) => {
+  const createDragGhost = (entry: FileEntry, count: number, x: number, y: number) => {
+    // 원본 행을 복제해서 고스트로 사용
+    const srcBtn = document.querySelector(`[data-path="${CSS.escape(entry.path)}"]`) as HTMLElement | null;
     const ghost = document.createElement("div");
+    if (srcBtn) {
+      const clone = srcBtn.cloneNode(true) as HTMLElement;
+      clone.style.position = "static";
+      clone.style.background = "var(--color-bg-elevated)";
+      clone.style.border = "1px solid var(--color-border-medium)";
+      clone.style.borderRadius = "4px";
+      clone.style.width = `${srcBtn.offsetWidth}px`;
+      clone.style.opacity = "1";
+      ghost.appendChild(clone);
+      if (count > 1) {
+        const badge = document.createElement("div");
+        badge.style.cssText = `
+          position: absolute; top: -6px; right: -6px;
+          background: var(--color-accent); color: #fff;
+          font-size: 10px; font-weight: 600; border-radius: 8px;
+          padding: 1px 5px; min-width: 16px; text-align: center;
+        `;
+        badge.textContent = String(count);
+        ghost.appendChild(badge);
+      }
+    }
     ghost.style.cssText = `
       position: fixed; pointer-events: none; z-index: 9999;
-      padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 500;
-      background: var(--color-bg-elevated); color: var(--color-text-primary);
-      border: 1px solid var(--color-accent); box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-      white-space: nowrap; opacity: 0.9;
-      left: ${x + 12}px; top: ${y - 10}px;
+      opacity: 0.75; box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+      border-radius: 4px;
+      left: ${x + 8}px; top: ${y - 4}px;
     `;
-    ghost.textContent = count > 1 ? `${name} 외 ${count - 1}개` : name;
     document.body.appendChild(ghost);
     dragGhostRef.current = ghost;
   };
@@ -259,7 +279,7 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
         setDragMovePaths(dragMoveState.current.paths);
         document.body.style.userSelect = "none";
         document.body.style.cursor = "grabbing";
-        createDragGhost(entry.name, paths.length, me.clientX, me.clientY);
+        createDragGhost(entry, paths.length, me.clientX, me.clientY);
       }
       moveDragGhost(me.clientX, me.clientY);
       // 드래그 중 폴더 위 감지 (elementFromPoint)
