@@ -118,13 +118,10 @@ function FileTreeItem({
   };
 
   const isMarkdown = entry.name.endsWith(".md");
-  // 리오더 드롭선: 이 항목 아래에 선 표시 (below이거나, 다음 항목이 above)
   const rt = reorderTargetProp;
-  const showReorderLine = rt && !dragPaths?.includes(entry.path) && (
-    (rt.path === entry.path && rt.pos === "below")
-  );
-  // 맨 위 드롭선: 첫 항목이 above일 때
-  const showReorderTop = rt && rt.path === entry.path && rt.pos === "above" && !dragPaths?.includes(entry.path);
+  const isRtTarget = rt?.path === entry.path && !dragPaths?.includes(entry.path);
+  const showReorderTop = isRtTarget && rt?.pos === "above";
+  const showReorderLine = isRtTarget && rt?.pos === "below";
 
   return (
     <div>
@@ -429,9 +426,9 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
                 htmlEl.style.transform = `translateY(${delta}px)`;
                 htmlEl.style.transition = "none";
                 requestAnimationFrame(() => {
-                  htmlEl.style.transition = "transform 0.25s ease";
+                  htmlEl.style.transition = "transform 0.4s ease";
                   htmlEl.style.transform = "translateY(0)";
-                  setTimeout(() => { htmlEl.style.transition = ""; htmlEl.style.transform = ""; }, 260);
+                  setTimeout(() => { htmlEl.style.transition = ""; htmlEl.style.transform = ""; }, 420);
                 });
               });
             }));
