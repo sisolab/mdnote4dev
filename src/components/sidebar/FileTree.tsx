@@ -328,35 +328,41 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
       const favRoot = findFavoriteRoot(items[0].path, state.favorites);
       if (!favRoot) return;
 
-      const trashRecords: { trashPath: string; originalPath: string }[] = [];
+      let trashRecords: { trashPath: string; originalPath: string }[] = [];
       const closedTabs: { id: string; filePath: string; title: string; content: string }[] = [];
+
+      const doDelete = async () => {
+        trashRecords = [];
+        const currentState = useAppStore.getState();
+        for (const item of items) {
+          const record = await moveToTrash(item.path, favRoot);
+          trashRecords.push(record);
+          const openTab = currentState.tabs.find((t) => t.filePath === item.path);
+          if (openTab) {
+            closedTabs.push({ id: openTab.id, filePath: openTab.filePath!, title: openTab.title, content: openTab.content });
+            closeTab(openTab.id);
+          }
+          currentState.removeFavoriteFile(item.path);
+        }
+        clearSelectedPaths();
+        refreshFileTree();
+      };
+
+      const doRestore = async () => {
+        for (const record of trashRecords) {
+          await restoreFromTrash(record.trashPath, record.originalPath);
+        }
+        for (const tab of closedTabs) {
+          useAppStore.getState().openTab(tab.filePath, tab.title, tab.content);
+        }
+        refreshFileTree();
+      };
 
       await executeUndoable({
         type: "delete",
         description: items.length > 1 ? `${items.length}개 항목 삭제` : `삭제: ${items[0].name}`,
-        execute: async () => {
-          for (const item of items) {
-            const record = await moveToTrash(item.path, favRoot);
-            trashRecords.push(record);
-            const openTab = state.tabs.find((t) => t.filePath === item.path);
-            if (openTab) {
-              closedTabs.push({ id: openTab.id, filePath: openTab.filePath!, title: openTab.title, content: openTab.content });
-              closeTab(openTab.id);
-            }
-            state.removeFavoriteFile(item.path);
-          }
-          clearSelectedPaths();
-          refreshFileTree();
-        },
-        undo: async () => {
-          for (const record of trashRecords) {
-            await restoreFromTrash(record.trashPath, record.originalPath);
-          }
-          for (const tab of closedTabs) {
-            state.openTab(tab.filePath, tab.title, tab.content);
-          }
-          refreshFileTree();
-        },
+        execute: doDelete,
+        undo: doRestore,
       });
     } catch (err) {
       console.error("삭제 실패:", err);
@@ -427,7 +433,7 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
   const getContextMenuItems = (items: FileEntry[]): ContextMenuItem[] => {
     if (items.length > 1) {
       return [
-        { label: `${items.length}개 항목 삭제`, onClick: () => setDeleteConfirm(items), danger: true },
+        { label: `${items.length}개 항목 삭제`, onClick: () => setDeleteConfirm(items), danger: true },  /* 멀티 삭제는 확인창 */
       ];
     }
     const entry = items[0];
@@ -439,7 +445,7 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
         { label: "경로 복사", onClick: () => navigator.clipboard.writeText(entry.path) },
         { label: "이름 바꾸기", onClick: () => startRename(entry) },
         { divider: true, label: "", onClick: () => {} },
-        { label: "삭제", onClick: () => setDeleteConfirm(items), danger: true },
+        { label: "삭제", onClick: () => handleDelete(items), danger: true },
       ];
     }
     const { favoriteFiles: favFiles, addFavoriteFile: addFav, removeFavoriteFile: removeFav } = useAppStore.getState();
@@ -451,7 +457,7 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
       { label: "복제", onClick: () => handleDuplicateFile(entry) },
       { label: "이름 바꾸기", onClick: () => startRename(entry) },
       { divider: true, label: "", onClick: () => {} },
-      { label: "삭제", onClick: () => setDeleteConfirm(items), danger: true },
+      { label: "삭제", onClick: () => handleDelete(items), danger: true },
     ];
   };
 

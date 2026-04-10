@@ -366,6 +366,7 @@ export function Sidebar() {
                   {(
                   <Tooltip text={shortenPath(fav.path)}>
                   <button
+                    draggable={false}
                     onClick={() => toggleFav(fav.path)}
                     onContextMenu={(e) => handleContextMenu(e, fav.path)}
                     className={`group w-full flex items-center gap-2 font-semibold transition-all duration-[0.15s]`}
