@@ -27,10 +27,13 @@ export function Sidebar() {
   const favFlipPositions = useRef<Record<string, number>>({});
   const [flipAnimating, setFlipAnimating] = useState(false);
 
+  const favGhostRef = useRef<HTMLDivElement | null>(null);
+
   const startFavDrag = (e: React.MouseEvent, idx: number) => {
     if (e.button !== 0) return;
     e.preventDefault();
     const startY = e.clientY;
+    const favPath = favorites[idx]?.path;
     dragFavState.current = { startY, from: idx, to: -1, pos: "below", active: false };
 
     const onMove = (me: MouseEvent) => {
@@ -41,6 +44,26 @@ export function Sidebar() {
         setDragFav({ from: idx, over: -1, pos: "below" });
         document.body.style.userSelect = "none";
         document.body.style.cursor = "grabbing";
+        // 고스트 생성
+        const srcEl = document.querySelector(`[data-fav-path="${CSS.escape(favPath)}"] [data-path]`) as HTMLElement | null;
+        if (srcEl) {
+          const ghost = document.createElement("div");
+          const clone = srcEl.cloneNode(true) as HTMLElement;
+          clone.style.position = "static";
+          clone.style.background = "var(--color-bg-elevated)";
+          clone.style.border = "1px solid var(--color-border-medium)";
+          clone.style.borderRadius = "4px";
+          clone.style.width = `${srcEl.offsetWidth}px`;
+          ghost.appendChild(clone);
+          ghost.style.cssText = `position:fixed;pointer-events:none;z-index:9999;opacity:0.75;box-shadow:0 4px 16px rgba(0,0,0,0.2);border-radius:4px;left:${me.clientX + 8}px;top:${me.clientY - 4}px;`;
+          document.body.appendChild(ghost);
+          favGhostRef.current = ghost;
+        }
+      }
+      // 고스트 이동
+      if (favGhostRef.current) {
+        favGhostRef.current.style.left = `${me.clientX + 8}px`;
+        favGhostRef.current.style.top = `${me.clientY - 4}px`;
       }
     };
 
@@ -49,6 +72,7 @@ export function Sidebar() {
       window.removeEventListener("mouseup", onUp);
       document.body.style.userSelect = "";
       document.body.style.cursor = "";
+      if (favGhostRef.current) { favGhostRef.current.remove(); favGhostRef.current = null; }
       const s = dragFavState.current;
       if (s.active && s.to >= 0 && s.from !== s.to) {
         const rawInsert = s.pos === "above" ? s.to : s.to + 1;
