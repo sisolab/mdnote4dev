@@ -347,45 +347,49 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
       if (target) {
         const itemPaths = s.paths;
         if (!itemPaths.includes(target)) {
-          // 고스트를 대상 폴더로 날리는 애니메이션
-          const targetEl = document.querySelector(`[data-path="${CSS.escape(target)}"][data-is-dir="true"]`) as HTMLElement
-            ?? document.querySelector(`[data-fav-path="${CSS.escape(target)}"] [data-path]`) as HTMLElement
-            ?? document.querySelector(`[data-tree-root="${CSS.escape(target)}"]`) as HTMLElement;
+          // 고스트 페이드아웃 애니메이션
           const ghost = dragGhostRef.current;
-
-          if (ghost && targetEl) {
-            const targetRect = targetEl.getBoundingClientRect();
-            ghost.style.transition = "all 0.25s ease";
-            ghost.style.left = `${targetRect.left}px`;
-            ghost.style.top = `${targetRect.top}px`;
-            ghost.style.opacity = "0.3";
-            ghost.style.transform = "scale(0.8)";
-
-            // 하이라이트 정리
-            document.querySelectorAll("[data-drop-active]").forEach((el) => {
-              (el as HTMLElement).removeAttribute("data-drop-active");
-            });
-            dropTargetRef.current = null;
-            setDropTarget(null);
-            setDragMovePaths(null);
-
-            await new Promise((r) => setTimeout(r, 250));
-            removeDragGhost();
-
-            if (itemPaths.length > 1) {
-              setMoveConfirm({ paths: itemPaths, target });
-            } else {
-              await doMove(itemPaths, target);
-            }
-            dragMoveState.current = { startY: 0, active: false, paths: [] };
-            return;
+          if (ghost) {
+            ghost.style.transition = "opacity 0.2s ease, transform 0.2s ease";
+            ghost.style.opacity = "0";
+            ghost.style.transform = "scale(0.9)";
           }
+
+          // 하이라이트 정리
+          document.querySelectorAll("[data-drop-active]").forEach((el) => {
+            (el as HTMLElement).removeAttribute("data-drop-active");
+          });
+          dropTargetRef.current = null;
+          setDropTarget(null);
+          setDragMovePaths(null);
+
+          await new Promise((r) => setTimeout(r, 200));
+          removeDragGhost();
 
           if (itemPaths.length > 1) {
             setMoveConfirm({ paths: itemPaths, target });
           } else {
             await doMove(itemPaths, target);
+            // 이동 후 새 위치 하이라이트
+            setTimeout(() => {
+              for (const p of itemPaths) {
+                const name = p.split("\\").pop() ?? "";
+                const newPath = `${target}\\${name}`;
+                const el = document.querySelector(`[data-path="${CSS.escape(newPath)}"]`) as HTMLElement;
+                if (el) {
+                  el.style.transition = "none";
+                  el.style.background = "var(--color-accent-subtle)";
+                  requestAnimationFrame(() => {
+                    el.style.transition = "background 1s ease";
+                    el.style.background = "";
+                  });
+                }
+              }
+            }, 100);
           }
+          dragMoveState.current = { startY: 0, active: false, paths: [] };
+          return;
+        }
         }
       }
       cleanup();
