@@ -13,6 +13,8 @@ export interface FavoriteFolder {
   alias?: string;
 }
 
+export type SortMode = "name" | "date-added" | "date-modified" | "custom";
+
 export interface Tab {
   id: string;
   title: string;
@@ -33,6 +35,17 @@ interface AppState {
   addFavorite: (folder: FavoriteFolder) => void;
   removeFavorite: (path: string) => void;
   setFavoriteAlias: (path: string, alias: string | undefined) => void;
+
+  // 단일 파일 (특수 폴더)
+  standaloneFiles: string[];
+  addStandaloneFile: (path: string) => void;
+  removeStandaloneFile: (path: string) => void;
+
+  // 정렬
+  folderSort: SortMode;
+  fileSort: SortMode;
+  setFolderSort: (mode: SortMode) => void;
+  setFileSort: (mode: SortMode) => void;
 
   // 파일 트리
   expandedFolders: Set<string>;
@@ -90,6 +103,21 @@ export const useAppStore = create<AppState>((set) => ({
         f.path === path ? { ...f, alias } : f
       ),
     })),
+
+  standaloneFiles: [] as string[],
+  addStandaloneFile: (path) =>
+    set((state) => ({
+      standaloneFiles: state.standaloneFiles.includes(path) ? state.standaloneFiles : [...state.standaloneFiles, path],
+    })),
+  removeStandaloneFile: (path) =>
+    set((state) => ({
+      standaloneFiles: state.standaloneFiles.filter((p) => p !== path),
+    })),
+
+  folderSort: "name" as SortMode,
+  fileSort: "name" as SortMode,
+  setFolderSort: (mode) => set({ folderSort: mode }),
+  setFileSort: (mode) => set({ fileSort: mode }),
 
   expandedFolders: new Set<string>(),
   toggleFolder: (path) =>

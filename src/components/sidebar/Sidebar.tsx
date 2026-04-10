@@ -1,13 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { SidebarTabs } from "./SidebarTabs";
-import { exists, mkdir, create, readDir } from "@tauri-apps/plugin-fs";
+import { exists, mkdir, create, readDir as tauriReadDir, readTextFile } from "@tauri-apps/plugin-fs";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { useAppStore } from "@/stores/appStore";
 import { FileTree } from "./FileTree";
 import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
 import { Tooltip } from "@/components/ui/Tooltip";
-import { Unlink, ChevronRight, Folder, Pin, Tag, Search, ChevronsDownUp, ChevronsUpDown } from "lucide-react";
+import { Unlink, ChevronRight, Folder, Pin, Tag, Search, ChevronsDownUp, ChevronsUpDown, ArrowUpDown, FilePlus, FolderPlus, FileText } from "lucide-react";
 
 function shortenPath(path: string): string {
   const userHome = path.match(/^([A-Z]:\\Users\\[^\\]+)/i);
@@ -18,10 +18,13 @@ function shortenPath(path: string): string {
 }
 
 export function Sidebar() {
-  const { favorites, sidebarCollapsed, removeFavorite, addFavorite, workspace, setWorkspace, openTab, refreshFileTree, setFavoriteAlias } = useAppStore();
+  const { favorites, sidebarCollapsed, removeFavorite, addFavorite, workspace, setWorkspace, openTab, refreshFileTree, fileTreeVersion, setFavoriteAlias, folderSort, fileSort, setFolderSort, setFileSort, standaloneFiles, addStandaloneFile, removeStandaloneFile, selectedPaths } = useAppStore();
   const [sidebarTab, setSidebarTab] = useState("files");
   const [searchQuery, setSearchQuery] = useState("");
+  const [standaloneExpanded, setStandaloneExpanded] = useState(true);
   const [foldersWithResults, setFoldersWithResults] = useState<Set<string>>(new Set());
+  const [sortMenu, setSortMenu] = useState<{ x: number; y: number } | null>(null);
+  const [docCounts, setDocCounts] = useState<Record<string, number>>({});
   const [aliasEditing, setAliasEditing] = useState<string | null>(null);
   const [aliasValue, setAliasValue] = useState("");
   const [sidebarWidth, setSidebarWidth] = useState(280);
@@ -72,6 +75,32 @@ export function Sidebar() {
     setBrokenPaths(broken);
   }, [favorites]);
 
+  // 문서 수 카운트
+  useEffect(() => {
+    const countDocs = async (path: string): Promise<number> => {
+      try {
+        const entries = await tauriReadDir(path);
+        let count = 0;
+        for (const entry of entries) {
+          if (!entry.name || entry.name.startsWith(".")) continue;
+          if (!entry.isDirectory && /\.(md|markdown)$/i.test(entry.name)) count++;
+          if (entry.isDirectory) count += await countDocs(`${path}\\${entry.name}`);
+        }
+        return count;
+      } catch { return 0; }
+    };
+    const update = async () => {
+      const counts: Record<string, number> = {};
+      for (const fav of favorites) {
+        if (!brokenPaths.has(fav.path)) {
+          counts[fav.path] = await countDocs(fav.path);
+        }
+      }
+      setDocCounts(counts);
+    };
+    update();
+  }, [favorites, brokenPaths, fileTreeVersion]);
+
   // 검색 시 결과 있는 폴더 체크
   useEffect(() => {
     if (!searchQuery) { setFoldersWithResults(new Set()); return; }
@@ -80,7 +109,7 @@ export function Sidebar() {
       const result = new Set<string>();
       const searchRecursive = async (path: string): Promise<boolean> => {
         try {
-          const entries = await readDir(path);
+          const entries = await tauriReadDir(path);
           for (const entry of entries) {
             if (!entry.isDirectory && entry.name && entry.name.toLowerCase().includes(q)) return true;
             if (entry.isDirectory && entry.name && !entry.name.startsWith(".")) {
@@ -213,6 +242,27 @@ export function Sidebar() {
         { label: "폴더 추가...", onClick: handleAddFolder },
       ];
     }
+    if (path === "__standalone_folder__") {
+      return [
+        { label: "파일 열기...", onClick: async () => {
+          const p = await open({ filters: [{ name: "Markdown", extensions: ["md"] }], multiple: false });
+          if (p && typeof p === "string") {
+            const content = await readTextFile(p);
+            const name = p.split("\\").pop() ?? "문서";
+            openTab(p, name, content);
+            addStandaloneFile(p);
+          }
+        }},
+      ];
+    }
+    if (path.startsWith("__standalone__")) {
+      const filePath = path.replace("__standalone__", "");
+      return [
+        { label: "탐색기에서 열기", onClick: () => { const dir = filePath.substring(0, filePath.lastIndexOf("\\")); invoke("open_in_explorer", { path: dir }); } },
+        { divider: true, label: "", onClick: () => {} },
+        { label: "목록에서 제거", onClick: () => removeStandaloneFile(filePath), danger: true },
+      ];
+    }
     const isBroken = brokenPaths.has(path);
     if (isBroken) {
       return [
@@ -296,6 +346,7 @@ export function Sidebar() {
             {[...favorites].sort((a, b) => {
               if (a.path === workspace) return -1;
               if (b.path === workspace) return 1;
+              if (folderSort === "name") return (a.alias ?? a.name).localeCompare(b.alias ?? b.name);
               return 0;
             }).map((fav) => {
               const isBroken = brokenPaths.has(fav.path);
@@ -361,7 +412,14 @@ export function Sidebar() {
                         }}
                       />
                     ) : (
+                      <>
                       <span className="truncate">{fav.alias ?? fav.name}</span>
+                      {docCounts[fav.path] !== undefined && (
+                        <span style={{ fontSize: "10px", color: "var(--color-text-light)", fontWeight: 400, marginLeft: "4px", flexShrink: 0 }}>
+                          ({docCounts[fav.path]})
+                        </span>
+                      )}
+                      </>
                     )}
                     {/* 별칭 아이콘 */}
                     {fav.alias && aliasEditing !== fav.path && (
@@ -388,6 +446,89 @@ export function Sidebar() {
             })}
           </div>
         )}
+
+        {/* 단일 파일 특수 폴더 */}
+        {(!searchQuery || standaloneFiles.some((f) => f.split("\\").pop()?.toLowerCase().includes(searchQuery.toLowerCase()))) && (
+          <div data-fav-item>
+            {!searchQuery && (
+            <Tooltip text="개별 파일을 등록할 수 있습니다. 파일의 실제 위치는 바뀌지 않습니다." delay={0}>
+            <button
+              onClick={() => setStandaloneExpanded(!standaloneExpanded)}
+              onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setContextMenu({ x: e.clientX, y: e.clientY, path: "__standalone_folder__" }); }}
+              className="w-full flex items-center gap-2 text-[14px] font-semibold transition-all duration-[0.15s]"
+              style={{
+                height: "36px",
+                padding: "0 16px",
+                color: "var(--color-text-secondary)",
+                cursor: "pointer",
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-hover)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = ""; }}
+            >
+              <ChevronRight
+                size={12}
+                className={`shrink-0 transition-transform duration-[0.15s] text-text-light ${standaloneExpanded ? "rotate-90" : ""}`}
+              />
+              <FileText size={14} className="shrink-0" style={{ color: "var(--color-text-tertiary)" }} />
+              <span className="truncate">단일 파일</span>
+              <span style={{ fontSize: "10px", color: "var(--color-text-light)", fontWeight: 400, marginLeft: "4px", flexShrink: 0 }}>
+                ({standaloneFiles.length})
+              </span>
+            </button>
+            </Tooltip>
+            )}
+
+            {(searchQuery || standaloneExpanded) && (
+              <div>
+                {standaloneFiles
+                  .filter((f) => !searchQuery || f.split("\\").pop()?.toLowerCase().includes(searchQuery.toLowerCase()))
+                  .map((filePath) => {
+                    const name = filePath.split("\\").pop() ?? "";
+                    const { selectedFile, tabs } = useAppStore.getState();
+                    const isFocused = selectedFile === filePath;
+                    const isOpened = tabs.some((t) => t.filePath === filePath);
+                    const isMultiSelected = selectedPaths.has(filePath);
+                    return (
+                      <button
+                        key={filePath}
+                        data-path={filePath}
+                        onClick={async () => {
+                          try {
+                            const content = await readTextFile(filePath);
+                            openTab(filePath, name, content);
+                          } catch {}
+                        }}
+                        className={`w-full flex items-center gap-2 text-[14px] relative z-10 ${
+                          isOpened ? "text-accent font-semibold" : "text-text-primary"
+                        }`}
+                        style={{
+                          paddingLeft: "32px", paddingRight: "16px", height: "36px",
+                          background: isMultiSelected ? "var(--color-accent-subtle)" : "transparent",
+                        }}
+                        onMouseEnter={(e) => { if (!isMultiSelected) e.currentTarget.style.background = "var(--color-bg-hover)"; }}
+                        onMouseLeave={(e) => { if (!isMultiSelected) e.currentTarget.style.background = isMultiSelected ? "var(--color-accent-subtle)" : "transparent"; }}
+                        onContextMenu={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setContextMenu({ x: e.clientX, y: e.clientY, path: `__standalone__${filePath}` });
+                        }}
+                      >
+                        <FileText size={13} className="shrink-0 text-text-light" />
+                        <span className="truncate">{name}</span>
+                        {/* 포커스 인디케이터 */}
+                        <div style={{
+                          position: "absolute", left: "4px", top: "50%", transform: "translateY(-50%)",
+                          width: "2px", height: isFocused ? "16px" : "0px",
+                          borderRadius: "1px", background: "var(--color-accent)",
+                          transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+                        }} />
+                      </button>
+                    );
+                  })}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* 하단 액션 바 */}
@@ -395,7 +536,7 @@ export function Sidebar() {
         display: "flex", alignItems: "center", gap: "0",
         padding: "0 16px", height: "40px",
         borderTop: "1px solid var(--color-border-light)",
-        shrinkFlex: 0,
+        flexShrink: 0,
       }}>
         <button
           onClick={() => {
@@ -422,7 +563,82 @@ export function Sidebar() {
             : <ChevronsUpDown size={15} />
           }
         </button>
+
+        <button
+          onClick={() => {
+            const ws = workspace ?? favorites[0]?.path;
+            if (ws) handleNewFile(ws);
+          }}
+          title="새 문서"
+          style={{
+            width: "34px", height: "34px",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            border: "none", background: "transparent", cursor: "pointer",
+            color: "var(--color-text-tertiary)", borderRadius: "3px",
+            transition: "all 0.1s",
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-hover)"; e.currentTarget.style.color = "var(--color-text-secondary)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--color-text-tertiary)"; }}
+        >
+          <FilePlus size={15} />
+        </button>
+
+        <button
+          onClick={handleAddFolder}
+          title="폴더 추가"
+          style={{
+            width: "34px", height: "34px",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            border: "none", background: "transparent", cursor: "pointer",
+            color: "var(--color-text-tertiary)", borderRadius: "3px",
+            transition: "all 0.1s",
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-hover)"; e.currentTarget.style.color = "var(--color-text-secondary)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--color-text-tertiary)"; }}
+        >
+          <FolderPlus size={15} />
+        </button>
+
+        <button
+          onClick={(e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            setSortMenu({ x: rect.left, y: rect.top });
+          }}
+          title="정렬"
+          style={{
+            width: "34px", height: "34px",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            border: "none", background: "transparent", cursor: "pointer",
+            color: "var(--color-text-tertiary)", borderRadius: "3px",
+            transition: "all 0.1s",
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-hover)"; e.currentTarget.style.color = "var(--color-text-secondary)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--color-text-tertiary)"; }}
+        >
+          <ArrowUpDown size={15} />
+        </button>
       </div>
+
+      {/* 정렬 메뉴 */}
+      {sortMenu && (
+        <ContextMenu
+          x={sortMenu.x}
+          y={sortMenu.y}
+          anchorBottom
+          items={[
+            { label: "폴더", header: true, onClick: () => {} },
+            { label: `${folderSort === "name" ? "✓  " : "    "}이름순`, onClick: () => setFolderSort("name") },
+            { label: `${folderSort === "date-added" ? "✓  " : "    "}추가 날짜순`, onClick: () => setFolderSort("date-added") },
+            { label: `${folderSort === "custom" ? "✓  " : "    "}사용자 지정`, onClick: () => setFolderSort("custom") },
+            { divider: true, label: "", onClick: () => {} },
+            { label: "문서", header: true, onClick: () => {} },
+            { label: `${fileSort === "name" ? "✓  " : "    "}이름순`, onClick: () => { setFileSort("name"); refreshFileTree(); } },
+            { label: `${fileSort === "date-added" ? "✓  " : "    "}추가 날짜순`, onClick: () => { setFileSort("date-added"); refreshFileTree(); } },
+            { label: `${fileSort === "custom" ? "✓  " : "    "}사용자 지정`, onClick: () => { setFileSort("custom"); refreshFileTree(); } },
+          ]}
+          onClose={() => setSortMenu(null)}
+        />
+      )}
       </>
       ) : (
       <div className="flex-1 flex items-center justify-center" style={{ color: "var(--color-text-light)", fontSize: "12px" }}>

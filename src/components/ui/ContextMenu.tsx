@@ -6,6 +6,7 @@ export interface ContextMenuItem {
   danger?: boolean;
   disabled?: boolean;
   divider?: boolean;
+  header?: boolean;
 }
 
 interface ContextMenuProps {
@@ -13,9 +14,10 @@ interface ContextMenuProps {
   y: number;
   items: ContextMenuItem[];
   onClose: () => void;
+  anchorBottom?: boolean;
 }
 
-export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
+export function ContextMenu({ x, y, items, onClose, anchorBottom }: ContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -42,7 +44,9 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
     if (rect.right > window.innerWidth) {
       menuRef.current.style.left = `${window.innerWidth - rect.width - 4}px`;
     }
-    if (rect.bottom > window.innerHeight) {
+    if (anchorBottom) {
+      menuRef.current.style.top = `${y - rect.height}px`;
+    } else if (rect.bottom > window.innerHeight) {
       menuRef.current.style.top = `${window.innerHeight - rect.height - 4}px`;
     }
   }, []);
@@ -68,6 +72,10 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
       {items.map((item, i) =>
         item.divider ? (
           <div key={i} style={{ height: "1px", background: "var(--color-border-light)", margin: "4px 8px" }} />
+        ) : item.header ? (
+          <div key={i} style={{ padding: "6px 12px 2px", fontSize: "10px", fontWeight: 600, color: "var(--color-text-tertiary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            {item.label}
+          </div>
         ) : (
           <button
             key={i}

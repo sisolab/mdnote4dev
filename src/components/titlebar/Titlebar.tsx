@@ -1,8 +1,6 @@
 import { useAppStore } from "@/stores/appStore";
 import { useSettingsStore } from "@/stores/settingsStore";
-import { open } from "@tauri-apps/plugin-dialog";
-import { readTextFile } from "@tauri-apps/plugin-fs";
-import { FilePlus, FolderOpen, FolderPlus, Save, Settings, PanelLeft } from "lucide-react";
+import { Save, Settings, PanelLeft } from "lucide-react";
 
 function MenuButton({
   onClick,
@@ -26,28 +24,8 @@ function MenuButton({
 }
 
 export function Titlebar() {
-  const { favorites, addFavorite, newTab, openTab, toggleSidebar } = useAppStore();
+  const { toggleSidebar } = useAppStore();
   const { setShowSettings } = useSettingsStore();
-
-  const handleNewFile = () => { newTab(); };
-
-  const handleOpenFile = async () => {
-    const path = await open({ filters: [{ name: "Markdown", extensions: ["md"] }], multiple: false });
-    if (path && typeof path === "string") {
-      const content = await readTextFile(path);
-      const name = path.split("\\").pop() ?? "문서";
-      openTab(path, name, content);
-    }
-  };
-
-  const handleOpenFolder = async () => {
-    const path = await open({ directory: true, multiple: false });
-    if (path && typeof path === "string") {
-      const name = path.split("\\").pop() ?? path;
-      const exists = favorites.some((f) => f.path === path);
-      if (!exists) addFavorite({ path, name });
-    }
-  };
 
   const handleSave = () => {
     window.dispatchEvent(new KeyboardEvent("keydown", { ctrlKey: true, key: "s" }));
@@ -71,27 +49,10 @@ export function Titlebar() {
 
         <div style={{ width: "1px", height: "16px", background: "var(--color-border-light)", margin: "0 4px" }} />
 
-        <MenuButton onClick={handleNewFile} title="새 문서 (Ctrl+N)">
-          <FilePlus size={14} />
-          <span>새 문서</span>
-        </MenuButton>
-
-        <MenuButton onClick={handleOpenFile} title="파일 열기 (Ctrl+O)">
-          <FolderOpen size={14} />
-          <span>열기</span>
-        </MenuButton>
-
-        <MenuButton onClick={handleOpenFolder} title="폴더 추가">
-          <FolderPlus size={14} />
-          <span>폴더</span>
-        </MenuButton>
-
         <MenuButton onClick={handleSave} title="저장 (Ctrl+S)">
           <Save size={14} />
           <span>저장</span>
         </MenuButton>
-
-        <div style={{ width: "1px", height: "16px", background: "var(--color-border-light)", margin: "0 4px" }} />
 
         <MenuButton onClick={() => setShowSettings(true)} title="에디터 설정">
           <Settings size={14} />
