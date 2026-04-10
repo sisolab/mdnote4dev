@@ -2,8 +2,9 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { readDir, readTextFile, rename, mkdir, create } from "@tauri-apps/plugin-fs";
 import { deleteDocImages, renameDocImages } from "@/utils/imageUtils";
 import { invoke } from "@tauri-apps/api/core";
-import { executeUndoable } from "@/stores/undoStore";
+import { executeUndoable, useUndoStore } from "@/stores/undoStore";
 import { moveToTrash, restoreFromTrash, findFavoriteRoot } from "@/utils/trashUtils";
+import { moveItems, undoMoveItems } from "@/utils/fileOps";
 import { useAppStore, type FileEntry } from "@/stores/appStore";
 import { ChevronRight, FileText, Star, Folder } from "lucide-react";
 import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
@@ -43,6 +44,10 @@ function FileTreeItem({
   onFinishRename,
   searchMode,
   compact,
+  onDragStart,
+  onDragOverFolder,
+  dragPaths,
+  dropTargetPath,
 }: {
   entry: FileEntry;
   depth: number;
@@ -55,6 +60,10 @@ function FileTreeItem({
   onFinishRename: (entry: FileEntry) => void;
   searchMode?: boolean;
   compact?: boolean;
+  onDragStart?: (e: React.MouseEvent, entry: FileEntry) => void;
+  onDragOverFolder?: (e: React.MouseEvent, folderPath: string) => void;
+  dragPaths?: string[] | null;
+  dropTargetPath?: string | null;
 }) {
   const { expandedFolders, toggleFolder, selectedFile, openTab, fileTreeVersion, selectedPaths, tabs, favoriteFiles } =
     useAppStore();
@@ -102,7 +111,9 @@ function FileTreeItem({
         data-path={entry.path}
         onClick={handleClick}
         onDoubleClick={handleDoubleClick}
-        onMouseEnter={(e) => onHover(e.currentTarget)}
+        onMouseEnter={(e) => { onHover(e.currentTarget); if (entry.isDirectory && onDragOverFolder) onDragOverFolder(e, entry.path); }}
+        onMouseMove={(e) => { if (entry.isDirectory && onDragOverFolder) onDragOverFolder(e, entry.path); }}
+        onMouseDown={(e) => { if (onDragStart && !renamingPath) onDragStart(e, entry); }}
         onContextMenu={(e) => onContextMenu(e, entry)}
         className={`w-full flex items-center gap-2 text-[14px] relative z-10 ${
           isOpened
@@ -112,7 +123,11 @@ function FileTreeItem({
         style={{
           paddingLeft: `${depth * 16 + 32}px`, paddingRight: "16px", height: compact ? "22px" : "30px",
           fontSize: compact ? "11px" : "13px",
-          background: isMultiSelected ? "var(--color-accent-subtle)" : "transparent",
+          background: (entry.isDirectory && dropTargetPath === entry.path) ? "var(--color-accent-subtle)" : isMultiSelected ? "var(--color-accent-subtle)" : "transparent",
+          outline: (entry.isDirectory && dropTargetPath === entry.path) ? "2px solid var(--color-accent)" : "none",
+          outlineOffset: "-2px",
+          borderRadius: (entry.isDirectory && dropTargetPath === entry.path) ? "3px" : undefined,
+          opacity: dragPaths?.includes(entry.path) ? 0.4 : 1,
         }}
       >
         {entry.isDirectory ? (
@@ -164,7 +179,7 @@ function FileTreeItem({
 
       {(searchMode ? entry.isDirectory : isExpanded) &&
         (searchMode ? entry.children ?? [] : children).map((child) => (
-          <FileTreeItem key={child.path} entry={child} depth={depth + 1} onHover={onHover} onItemClick={onItemClick} onContextMenu={onContextMenu} renamingPath={renamingPath} renameValue={renameValue} setRenameValue={setRenameValue} onFinishRename={onFinishRename} searchMode={searchMode} compact={compact} />
+          <FileTreeItem key={child.path} entry={child} depth={depth + 1} onHover={onHover} onItemClick={onItemClick} onContextMenu={onContextMenu} renamingPath={renamingPath} renameValue={renameValue} setRenameValue={setRenameValue} onFinishRename={onFinishRename} searchMode={searchMode} compact={compact} onDragStart={onDragStart} onDragOverFolder={onDragOverFolder} dragPaths={dragPaths} dropTargetPath={dropTargetPath} />
         ))}
     </div>
   );
@@ -192,6 +207,87 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
   const { fileTreeVersion, refreshFileTree, closeTab, tabs, selectedPaths, setSelectedPaths, toggleSelectedPath, clearSelectedPaths, openTab, expandedFolders, toggleFolder } = useAppStore();
   const containerRef = useRef<HTMLDivElement>(null);
   const [highlight, setHighlight] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
+
+  // ── 파일/폴더 드래그 이동 ──
+  const [dragMovePaths, setDragMovePaths] = useState<string[] | null>(null);
+  const [dropTarget, setDropTarget] = useState<string | null>(null);
+  const dragMoveState = useRef<{ startY: number; active: boolean; paths: string[] }>({ startY: 0, active: false, paths: [] });
+  const dropTargetRef = useRef<string | null>(null);
+
+  const startItemDrag = (e: React.MouseEvent, entry: FileEntry) => {
+    if (e.button !== 0) return;
+    const paths = selectedPaths.has(entry.path) ? [...selectedPaths] : [entry.path];
+    const startY = e.clientY;
+    dragMoveState.current = { startY, active: false, paths };
+
+    const onMove = (me: MouseEvent) => {
+      me.preventDefault();
+      if (!dragMoveState.current.active && Math.abs(me.clientY - dragMoveState.current.startY) > 5) {
+        dragMoveState.current.active = true;
+        setDragMovePaths(dragMoveState.current.paths);
+        document.body.style.userSelect = "none";
+        document.body.style.cursor = "grabbing";
+      }
+    };
+
+    const onUp = async () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+      document.body.style.userSelect = "";
+      document.body.style.cursor = "";
+      const s = dragMoveState.current;
+      const target = dropTargetRef.current;
+      if (s.active && target) {
+        const itemPaths = s.paths;
+        // 대상 폴더가 드래그 항목 중 하나면 스킵
+        if (itemPaths.includes(target)) { cleanup(); return; }
+        // 멀티 이동 확인창
+        if (itemPaths.length > 1) {
+          setMoveConfirm({ paths: itemPaths, target });
+        } else {
+          await doMove(itemPaths, target);
+        }
+      }
+      cleanup();
+    };
+
+    const cleanup = () => {
+      dragMoveState.current = { startY: 0, active: false, paths: [] };
+      dropTargetRef.current = null;
+      setDragMovePaths(null);
+      setDropTarget(null);
+    };
+
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+  };
+
+  const [moveConfirm, setMoveConfirm] = useState<{ paths: string[]; target: string } | null>(null);
+
+  const doMove = async (paths: string[], target: string) => {
+    try {
+      const result = await moveItems(paths, target);
+      if (result.oldPaths.length > 0) {
+        const old = [...result.oldPaths];
+        const nw = [...result.newPaths];
+        useUndoStore.getState().push({
+          type: "move",
+          description: old.length > 1 ? `${old.length}개 항목 이동` : `이동: ${old[0].split("\\").pop()}`,
+          execute: async () => { await moveItems(old, target); refreshFileTree(); },
+          undo: async () => { await undoMoveItems(old, nw); refreshFileTree(); },
+        });
+      }
+      refreshFileTree();
+    } catch (err) {
+      console.error("이동 실패:", err);
+    }
+  };
+
+  const updateDropTarget = (e: React.MouseEvent, folderPath: string) => {
+    if (!dragMoveState.current.active) return;
+    dropTargetRef.current = folderPath;
+    setDropTarget(folderPath);
+  };
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; entries: FileEntry[] } | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<FileEntry[] | null>(null);
   const [renamingPath, setRenamingPath] = useState<string | null>(null);
@@ -509,7 +605,7 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
           <p className="text-[11px] text-text-light px-3 py-2">빈 폴더</p>
         ) : (
           items.map((entry) => (
-            <FileTreeItem key={entry.path} entry={entry} depth={0} onHover={handleHover} onItemClick={handleItemClick} onContextMenu={handleContextMenu} renamingPath={renamingPath} renameValue={renameValue} setRenameValue={setRenameValue} onFinishRename={finishRename} searchMode={!!searchQuery} compact={compact} />
+            <FileTreeItem key={entry.path} entry={entry} depth={0} onHover={handleHover} onItemClick={handleItemClick} onContextMenu={handleContextMenu} renamingPath={renamingPath} renameValue={renameValue} setRenameValue={setRenameValue} onFinishRename={finishRename} searchMode={!!searchQuery} compact={compact} onDragStart={startItemDrag} onDragOverFolder={updateDropTarget} dragPaths={dragMovePaths} dropTargetPath={dropTarget} />
           ))
         );
       })()}
@@ -581,6 +677,22 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
               >
                 삭제
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 멀티 파일 이동 확인창 */}
+      {moveConfirm && (
+        <div onClick={() => setMoveConfirm(null)} style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", alignItems: "start", justifyContent: "center", paddingTop: "120px", background: "rgba(0,0,0,0.35)" }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ width: "360px", background: "var(--color-bg-elevated)", borderRadius: "12px", border: "1px solid var(--color-border-medium)", boxShadow: "0 8px 32px rgba(0,0,0,0.18)", padding: "24px" }}>
+            <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--color-text-heading)", marginBottom: "8px" }}>파일 이동</div>
+            <div style={{ fontSize: "12px", color: "var(--color-text-secondary)", marginBottom: "20px", lineHeight: 1.6 }}>
+              {moveConfirm.paths.length}개 항목을 <strong>{moveConfirm.target.split("\\").pop()}</strong> 폴더로 이동하시겠습니까?
+            </div>
+            <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+              <button onClick={() => setMoveConfirm(null)} style={{ padding: "6px 16px", fontSize: "12px", fontWeight: 500, background: "var(--color-bg-hover)", color: "var(--color-text-primary)", border: "none", borderRadius: "6px", cursor: "pointer" }}>취소</button>
+              <button onClick={async () => { await doMove(moveConfirm.paths, moveConfirm.target); setMoveConfirm(null); }} style={{ padding: "6px 16px", fontSize: "12px", fontWeight: 600, background: "var(--color-accent)", color: "#fff", border: "none", borderRadius: "6px", cursor: "pointer" }}>이동</button>
             </div>
           </div>
         </div>

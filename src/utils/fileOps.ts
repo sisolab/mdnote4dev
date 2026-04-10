@@ -1,0 +1,88 @@
+import { rename, exists } from "@tauri-apps/plugin-fs";
+import { useAppStore } from "@/stores/appStore";
+import { renameDocImages } from "./imageUtils";
+
+/** 파일/폴더를 다른 폴더로 이동 */
+export async function moveItems(
+  paths: string[],
+  targetFolder: string,
+): Promise<{ oldPaths: string[]; newPaths: string[] }> {
+  const oldPaths: string[] = [];
+  const newPaths: string[] = [];
+
+  for (const srcPath of paths) {
+    const name = srcPath.split("\\").pop() ?? "";
+    let destPath = `${targetFolder}\\${name}`;
+
+    // 같은 폴더면 스킵
+    const srcDir = srcPath.substring(0, srcPath.lastIndexOf("\\"));
+    if (srcDir === targetFolder) continue;
+
+    // 중복 이름 처리
+    let counter = 1;
+    while (await exists(destPath)) {
+      const ext = name.match(/\.[^.]+$/)?.[0] ?? "";
+      const baseName = name.replace(/\.[^.]+$/, "");
+      destPath = `${targetFolder}\\${baseName} (${counter})${ext}`;
+      counter++;
+    }
+
+    // 마크다운 파일이면 이미지 경로도 업데이트
+    if (/\.(md|markdown)$/i.test(name)) {
+      const oldDocName = name.replace(/\.(md|markdown)$/i, "");
+      const state = useAppStore.getState();
+      const openTab = state.tabs.find((t) => t.filePath === srcPath);
+      if (openTab) {
+        const updated = await renameDocImages(srcDir, oldDocName, oldDocName, openTab.content);
+        if (updated !== openTab.content) {
+          const { writeTextFile } = await import("@tauri-apps/plugin-fs");
+          await writeTextFile(srcPath, updated);
+          state.updateTabContent(openTab.id, updated);
+        }
+      }
+    }
+
+    await rename(srcPath, destPath);
+
+    // 열린 탭 경로 업데이트
+    const state = useAppStore.getState();
+    const openTab = state.tabs.find((t) => t.filePath === srcPath);
+    if (openTab) {
+      const newName = destPath.split("\\").pop() ?? "";
+      state.updateTabFilePath(openTab.id, destPath, newName);
+    }
+
+    // 즐겨찾기 경로 업데이트
+    if (state.favoriteFiles.includes(srcPath)) {
+      state.removeFavoriteFile(srcPath);
+      state.addFavoriteFile(destPath);
+    }
+
+    oldPaths.push(srcPath);
+    newPaths.push(destPath);
+  }
+
+  return { oldPaths, newPaths };
+}
+
+/** 이동 되돌리기 */
+export async function undoMoveItems(oldPaths: string[], newPaths: string[]): Promise<void> {
+  for (let i = 0; i < newPaths.length; i++) {
+    const srcPath = newPaths[i];
+    const destPath = oldPaths[i];
+
+    await rename(srcPath, destPath);
+
+    const state = useAppStore.getState();
+    const openTab = state.tabs.find((t) => t.filePath === srcPath);
+    if (openTab) {
+      const newName = destPath.split("\\").pop() ?? "";
+      state.updateTabFilePath(openTab.id, destPath, newName);
+    }
+
+    if (state.favoriteFiles.includes(srcPath)) {
+      state.removeFavoriteFile(srcPath);
+      state.addFavoriteFile(destPath);
+    }
+  }
+}
