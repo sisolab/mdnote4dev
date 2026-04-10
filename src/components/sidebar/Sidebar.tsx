@@ -343,15 +343,15 @@ export function Sidebar() {
       <div
         onMouseDown={handleMouseDown}
         style={{
-          width: "4px",
+          width: "1px",
           cursor: "col-resize",
-          background: "transparent",
+          background: "var(--color-border-light)",
           flexShrink: 0,
-          borderRight: "1px solid #eee",
+          transition: "width 0.1s",
           transition: "background 0.15s",
         }}
-        onMouseEnter={(e) => { e.currentTarget.style.borderRightColor = "var(--color-accent)"; }}
-        onMouseLeave={(e) => { e.currentTarget.style.borderRightColor = "var(--color-border-light)"; }}
+        onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-accent)"; e.currentTarget.style.width = "3px"; }}
+        onMouseLeave={(e) => { e.currentTarget.style.background = "var(--color-border-light)"; e.currentTarget.style.width = "1px"; }}
       />
     )}
     </div>

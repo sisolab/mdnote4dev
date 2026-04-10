@@ -133,13 +133,11 @@ function FileTreeItem({
         ) : (
           <span className="truncate">{entry.name}</span>
         )}
+        {/* 포커스 인디케이터 */}
         <div style={{
-          position: "absolute",
-          left: "4px",
-          top: "50%",
-          transform: "translateY(-50%)",
-          width: isFocused ? "12px" : "2px",
-          height: isFocused || isOpened ? "16px" : "0px",
+          position: "absolute", left: "4px", top: "50%", transform: "translateY(-50%)",
+          width: "2px",
+          height: isFocused ? "16px" : "0px",
           borderRadius: "1px",
           background: "var(--color-accent)",
           transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
