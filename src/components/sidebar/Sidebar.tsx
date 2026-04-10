@@ -328,7 +328,7 @@ export function Sidebar() {
           }}
         >
           <span style={{ fontSize: "11px", fontWeight: 600, color: "var(--color-text-tertiary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-            Files Explorer
+            Documents
           </span>
         </div>
         )}

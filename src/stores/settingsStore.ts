@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
 export interface EditorSettings {
   fontSize: number;
@@ -148,29 +149,41 @@ interface SettingsState {
   setAccentColor: (color: AccentColor) => void;
 }
 
-export const useSettingsStore = create<SettingsState>((set) => ({
-  settings: { ...DEFAULT_SETTINGS },
-  showSettings: false,
-  themeMode: "newspaper",
-  accentColor: "blue",
+export const useSettingsStore = create<SettingsState>()(
+  persist(
+    (set) => ({
+      settings: { ...DEFAULT_SETTINGS },
+      showSettings: false,
+      themeMode: "newspaper" as ThemeMode,
+      accentColor: "blue" as AccentColor,
 
-  updateSetting: (key, value) =>
-    set((state) => ({
-      settings: { ...state.settings, [key]: value },
-    })),
+      updateSetting: (key, value) =>
+        set((state) => ({
+          settings: { ...state.settings, [key]: value },
+        })),
 
-  applyPreset: (preset) =>
-    set((state) => ({ settings: { ...preset, fontFamily: state.settings.fontFamily } })),
+      applyPreset: (preset) =>
+        set((state) => ({ settings: { ...preset, fontFamily: state.settings.fontFamily } })),
 
-  resetToDefault: () =>
-    set({ settings: { ...DEFAULT_SETTINGS } }),
+      resetToDefault: () =>
+        set({ settings: { ...DEFAULT_SETTINGS } }),
 
-  setShowSettings: (show) =>
-    set({ showSettings: show }),
+      setShowSettings: (show) =>
+        set({ showSettings: show }),
 
-  setThemeMode: (mode) => set({ themeMode: mode }),
-  setAccentColor: (color) => set({ accentColor: color }),
-}));
+      setThemeMode: (mode) => set({ themeMode: mode }),
+      setAccentColor: (color) => set({ accentColor: color }),
+    }),
+    {
+      name: "marknote-settings",
+      partialize: (state) => ({
+        settings: state.settings,
+        themeMode: state.themeMode,
+        accentColor: state.accentColor,
+      }),
+    }
+  )
+);
 
 export function useAccent(): ThemeColors {
   const accentColor = useSettingsStore((s) => s.accentColor);

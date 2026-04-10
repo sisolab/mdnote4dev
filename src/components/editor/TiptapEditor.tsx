@@ -178,7 +178,13 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
       <TableToolbar editor={editor} />
       <div
         className={`flex-1 overflow-auto ${s.pageAlign === "center" ? "flex justify-center" : ""}`}
-        style={{ padding: "24px 48px" }}
+        style={{ padding: "24px 48px", cursor: "text" }}
+        onClick={(e) => {
+          // 에디터 내부 콘텐츠 클릭이 아닌 빈 영역 클릭 시 문서 끝에 포커스
+          if (e.target === e.currentTarget || !(e.target as HTMLElement).closest(".tiptap")) {
+            editor.commands.focus("end");
+          }
+        }}
       >
         <div style={{
           ...(s.widthMode === "fixed" ? { maxWidth: `${s.editorMaxWidth}px`, width: "100%" } : { width: "100%" }),

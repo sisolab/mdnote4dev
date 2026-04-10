@@ -246,7 +246,7 @@ export function Toolbar({ editor }: ToolbarProps) {
 
       <ToolbarButton
         onClick={() => updateSetting("widthMode", settings.widthMode === "fluid" ? "fixed" : "fluid")}
-        active={settings.widthMode === "fixed"}
+        active={settings.widthMode === "fluid"}
         title={settings.widthMode === "fluid" ? "고정폭으로 전환" : "가변폭으로 전환"}
         onHover={handleHover}
       >
@@ -255,7 +255,7 @@ export function Toolbar({ editor }: ToolbarProps) {
 
       <ToolbarButton
         onClick={() => updateSetting("pageAlign", settings.pageAlign === "left" ? "center" : "left")}
-        active={settings.pageAlign === "center"}
+        active={settings.pageAlign === "left"}
         title={settings.pageAlign === "left" ? "가운데 정렬" : "왼쪽 정렬"}
         onHover={handleHover}
       >
