@@ -29,6 +29,7 @@
     "dialog:allow-save",
     "dialog:allow-message",
     "dialog:allow-ask",
-    "shell:default"
+    "shell:default",
+    "shell:allow-open"
   ]
 }

@@ -49,7 +49,7 @@ export function TiptapEditor({ content, onSave }: TiptapEditorProps) {
         class: "outline-none prose prose-sm max-w-none",
       },
     },
-    onTransaction: () => setTick((t) => t + 1),
+    onTransaction: (_props) => setTick((t) => t + 1),
   });
 
   // 툴바 active 상태 즉시 반영용
@@ -71,7 +71,7 @@ export function TiptapEditor({ content, onSave }: TiptapEditorProps) {
   }, [editor, onSave]);
 
   // 실시간 자동 저장 (타이핑 멈추고 500ms 후)
-  const saveTimer = useRef<ReturnType<typeof setTimeout>>();
+  const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   useEffect(() => {
     if (!editor) return;
     const handler = () => {

@@ -47,6 +47,7 @@ interface AppState {
   updateTabTitle: (id: string, title: string) => void;
   updateTabFilePath: (id: string, filePath: string, title: string) => void;
   markTabClean: (id: string) => void;
+  reorderTabs: (fromIndex: number, toIndex: number) => void;
 
   // 사이드바
   sidebarCollapsed: boolean;
@@ -59,7 +60,7 @@ interface AppState {
   setFileContent: (content: string) => void;
 }
 
-export const useAppStore = create<AppState>((set, get) => ({
+export const useAppStore = create<AppState>((set) => ({
   workspace: "C:\\Users\\siu\\Desktop\\Notes",
   setWorkspace: (path) => set({ workspace: path }),
 
@@ -185,6 +186,14 @@ export const useAppStore = create<AppState>((set, get) => ({
         t.id === id ? { ...t, isDirty: false } : t
       ),
     })),
+
+  reorderTabs: (fromIndex, toIndex) =>
+    set((state) => {
+      const newTabs = [...state.tabs];
+      const [moved] = newTabs.splice(fromIndex, 1);
+      newTabs.splice(toIndex, 0, moved);
+      return { tabs: newTabs };
+    }),
 
   sidebarCollapsed: false,
   toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
