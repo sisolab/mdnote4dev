@@ -1,6 +1,6 @@
 import { useAppStore } from "@/stores/appStore";
 import { useSettingsStore } from "@/stores/settingsStore";
-import { Save, Settings, PanelLeft } from "lucide-react";
+import { Settings, PanelLeft } from "lucide-react";
 
 function MenuButton({
   onClick,
@@ -27,10 +27,6 @@ export function Titlebar() {
   const { toggleSidebar } = useAppStore();
   const { setShowSettings } = useSettingsStore();
 
-  const handleSave = () => {
-    window.dispatchEvent(new KeyboardEvent("keydown", { ctrlKey: true, key: "s" }));
-  };
-
   return (
     <div style={{ height: "40px", padding: "0 10px", background: "var(--color-bg-frosted)", borderBottom: "1px solid var(--color-border-light)", backdropFilter: "blur(8px)" }} className="flex items-center justify-between shrink-0">
       <div className="flex items-center gap-1">
@@ -48,11 +44,6 @@ export function Titlebar() {
         </span>
 
         <div style={{ width: "1px", height: "16px", background: "var(--color-border-light)", margin: "0 4px" }} />
-
-        <MenuButton onClick={handleSave} title="저장 (Ctrl+S)">
-          <Save size={14} />
-          <span>저장</span>
-        </MenuButton>
 
         <MenuButton onClick={() => setShowSettings(true)} title="에디터 설정">
           <Settings size={14} />

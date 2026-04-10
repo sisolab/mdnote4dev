@@ -1,12 +1,15 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Sidebar } from "./components/sidebar/Sidebar";
 import { EditorArea } from "./components/editor/EditorArea";
 import { Titlebar } from "./components/titlebar/Titlebar";
 import { SettingsPanel } from "./components/settings/SettingsPanel";
 import { useSettingsStore, getAccentColors } from "./stores/settingsStore";
+import { useAppStore } from "./stores/appStore";
 
 function App() {
   const { showSettings, themeMode, accentColor } = useSettingsStore();
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
 
   // 테마 CSS 변수 적용
   useEffect(() => {
@@ -103,6 +106,24 @@ function App() {
     });
   }, [themeMode, accentColor]);
 
+  // 앱 종료 시 임시 문서 확인
+  useEffect(() => {
+    const appWindow = getCurrentWindow();
+    const unlisten = appWindow.onCloseRequested(async (event) => {
+      const { tabs } = useAppStore.getState();
+      const unsaved = tabs.filter((t) => !t.filePath && t.content);
+      if (unsaved.length > 0) {
+        event.preventDefault();
+        setShowExitConfirm(true);
+      }
+    });
+    return () => { unlisten.then((fn) => fn()); };
+  }, []);
+
+  const handleForceClose = () => {
+    getCurrentWindow().destroy();
+  };
+
   return (
     <div className="flex flex-col h-screen bg-bg-primary">
       <Titlebar />
@@ -111,6 +132,58 @@ function App() {
         <EditorArea />
       </div>
       {showSettings && <SettingsPanel />}
+
+      {/* 종료 확인 */}
+      {showExitConfirm && (
+        <div style={{
+          position: "fixed", inset: 0, zIndex: 300,
+          display: "flex", alignItems: "start", justifyContent: "center", paddingTop: "120px",
+          background: "rgba(0,0,0,0.35)", animation: "fadeIn 0.15s ease-out",
+        }}>
+          <div style={{
+            width: "380px", background: "var(--color-bg-elevated)", borderRadius: "12px",
+            border: "1px solid var(--color-border-medium)",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
+            padding: "24px", animation: "fadeIn 0.15s ease-out",
+          }}>
+            <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--color-text-heading)", marginBottom: "8px" }}>
+              저장되지 않은 문서가 있습니다
+            </div>
+            <div style={{ fontSize: "12px", color: "var(--color-text-secondary)", marginBottom: "12px", lineHeight: 1.6 }}>
+              종료하면 아래 임시 문서의 내용이 삭제됩니다.
+            </div>
+            <div style={{ marginBottom: "20px", padding: "8px 12px", borderRadius: "6px", background: "var(--color-bg-hover)" }}>
+              {useAppStore.getState().tabs.filter((t) => !t.filePath && t.content).map((t) => (
+                <div key={t.id} style={{ fontSize: "12px", color: "var(--color-text-primary)", fontStyle: "italic", padding: "2px 0" }}>
+                  • {t.title.replace(/\.(md|markdown)$/i, "")}
+                </div>
+              ))}
+            </div>
+            <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+              <button
+                onClick={() => setShowExitConfirm(false)}
+                style={{
+                  padding: "6px 16px", fontSize: "12px", fontWeight: 500,
+                  background: "var(--color-bg-hover)", color: "var(--color-text-primary)",
+                  border: "none", borderRadius: "6px", cursor: "pointer",
+                }}
+              >
+                취소
+              </button>
+              <button
+                onClick={handleForceClose}
+                style={{
+                  padding: "6px 16px", fontSize: "12px", fontWeight: 600,
+                  background: "#e53935", color: "#fff",
+                  border: "none", borderRadius: "6px", cursor: "pointer",
+                }}
+              >
+                저장하지 않고 종료
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

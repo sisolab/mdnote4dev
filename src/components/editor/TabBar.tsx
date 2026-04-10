@@ -1,12 +1,14 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { rename } from "@tauri-apps/plugin-fs";
 import { useAppStore } from "@/stores/appStore";
+import { Save } from "lucide-react";
 
 export function TabBar() {
   const { tabs, activeTabId, setActiveTab, closeTab, updateTabTitle, newTab, reorderTabs } = useAppStore();
   const containerRef = useRef<HTMLDivElement>(null);
   const [highlight, setHighlight] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [closeConfirmId, setCloseConfirmId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -187,8 +189,9 @@ export function TabBar() {
                   cursor: isDragging ? "grabbing" : "pointer",
                   position: "relative",
                   zIndex: 1,
-                  color: isActive ? "var(--color-accent)" : "var(--color-text-secondary)",
-                  fontWeight: 600,
+                  color: !tab.filePath ? "var(--color-text-light)" : isActive ? "var(--color-accent)" : "var(--color-text-secondary)",
+                  fontWeight: tab.filePath ? 600 : 400,
+                  fontStyle: tab.filePath ? "normal" : "italic",
                   fontSize: "12px",
                   transition: "color 0.1s",
                 }}
@@ -208,7 +211,7 @@ export function TabBar() {
 
                 {/* 더티 인디케이터 */}
                 <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                  {tab.isDirty && (
+                  {tab.isDirty && tab.filePath && (
                     <div style={{
                       width: "5px", height: "5px", borderRadius: "50%",
                       background: isActive ? "var(--color-accent)" : "#aaa",
@@ -248,11 +251,38 @@ export function TabBar() {
                   )}
                 </div>
 
+                {/* 저장 버튼 (임시 문서만) */}
+                {!tab.filePath && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveTab(tab.id);
+                      window.dispatchEvent(new KeyboardEvent("keydown", { ctrlKey: true, key: "s" }));
+                    }}
+                    title="저장"
+                    style={{
+                      width: "16px", height: "16px",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      borderRadius: "3px", border: "none", background: "transparent",
+                      color: "var(--color-accent)", cursor: "pointer", flexShrink: 0,
+                      transition: "all 0.1s",
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-active)"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                  >
+                    <Save size={12} />
+                  </button>
+                )}
+
                 {/* 닫기 버튼 */}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    closeTab(tab.id);
+                    if (!tab.filePath && tab.content) {
+                      setCloseConfirmId(tab.id);
+                    } else {
+                      closeTab(tab.id);
+                    }
                   }}
                   style={{
                     width: "16px", height: "16px",
@@ -302,6 +332,72 @@ export function TabBar() {
       >
         +
       </button>
+
+      {/* 임시 문서 닫기 확인 */}
+      {closeConfirmId && (
+        <div
+          onClick={() => setCloseConfirmId(null)}
+          style={{
+            position: "fixed", inset: 0, zIndex: 200,
+            display: "flex", alignItems: "start", justifyContent: "center", paddingTop: "120px",
+            background: "rgba(0,0,0,0.35)", animation: "fadeIn 0.15s ease-out",
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: "360px", background: "var(--color-bg-elevated)", borderRadius: "12px",
+              border: "1px solid var(--color-border-medium)",
+              boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
+              padding: "24px", animation: "fadeIn 0.15s ease-out",
+            }}
+          >
+            <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--color-text-heading)", marginBottom: "8px" }}>
+              임시 문서 닫기
+            </div>
+            <div style={{ fontSize: "12px", color: "var(--color-text-secondary)", marginBottom: "20px", lineHeight: 1.6 }}>
+              이 문서는 아직 파일로 저장되지 않았습니다.<br />
+              닫으면 내용이 삭제됩니다. 파일로 먼저 저장하세요.
+            </div>
+            <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+              <button
+                onClick={() => setCloseConfirmId(null)}
+                style={{
+                  padding: "6px 16px", fontSize: "12px", fontWeight: 500,
+                  background: "var(--color-bg-hover)", color: "var(--color-text-primary)",
+                  border: "none", borderRadius: "6px", cursor: "pointer",
+                }}
+              >
+                취소
+              </button>
+              <button
+                onClick={() => {
+                  setActiveTab(closeConfirmId);
+                  window.dispatchEvent(new KeyboardEvent("keydown", { ctrlKey: true, key: "s" }));
+                  setCloseConfirmId(null);
+                }}
+                style={{
+                  padding: "6px 16px", fontSize: "12px", fontWeight: 600,
+                  background: "var(--color-accent)", color: "#fff",
+                  border: "none", borderRadius: "6px", cursor: "pointer",
+                }}
+              >
+                저장
+              </button>
+              <button
+                onClick={() => { closeTab(closeConfirmId); setCloseConfirmId(null); }}
+                style={{
+                  padding: "6px 16px", fontSize: "12px", fontWeight: 600,
+                  background: "#e53935", color: "#fff",
+                  border: "none", borderRadius: "6px", cursor: "pointer",
+                }}
+              >
+                닫기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

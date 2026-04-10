@@ -7,7 +7,7 @@ import { useAppStore } from "@/stores/appStore";
 import { FileTree } from "./FileTree";
 import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
 import { Tooltip } from "@/components/ui/Tooltip";
-import { Unlink, ChevronRight, Folder, Pin, Tag, Search, ChevronsDownUp, ChevronsUpDown, ArrowUpDown, FilePlus, FolderPlus, FileText, Plus } from "lucide-react";
+import { Unlink, ChevronRight, Folder, Pin, Tag, Search, ChevronsDownUp, ChevronsUpDown, ArrowUpDown, FilePlus, FolderPlus, FileText, FolderOpen, FileUp } from "lucide-react";
 
 function shortenPath(path: string): string {
   const userHome = path.match(/^([A-Z]:\\Users\\[^\\]+)/i);
@@ -231,19 +231,12 @@ export function Sidebar() {
   };
 
   const handleSidebarContextMenu = (e: React.MouseEvent) => {
-    // 폴더 항목 위에서의 우클릭은 무시 (개별 핸들러가 처리)
     if ((e.target as HTMLElement).closest("[data-fav-item]")) return;
     e.preventDefault();
     e.stopPropagation();
-    setContextMenu({ x: e.clientX, y: e.clientY, path: "__sidebar__" });
   };
 
   const getContextMenuItems = (path: string): ContextMenuItem[] => {
-    if (path === "__sidebar__") {
-      return [
-        { label: "폴더 추가...", onClick: handleAddFolder },
-      ];
-    }
     if (path === "__standalone_folder__") {
       return [
         { label: "파일 열기...", onClick: async () => {
@@ -331,7 +324,7 @@ export function Sidebar() {
       {/* 검색창 */}
       <div style={{
         display: "flex", alignItems: "center", gap: "8px",
-        padding: "0 16px", height: "36px",
+        padding: "0 16px", height: "40px",
         borderBottom: "1px solid var(--color-border-light)",
       }}>
         <Search size={13} style={{ color: "var(--color-text-light)", flexShrink: 0 }} />
@@ -365,6 +358,7 @@ export function Sidebar() {
             style={{
               display: "flex", alignItems: "center", justifyContent: "space-between",
               padding: "0 16px", height: "28px", cursor: "pointer",
+              borderTop: "1px solid var(--color-border-light)",
               borderBottom: "1px solid var(--color-border-light)",
             }}
             onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-hover)"; }}
@@ -394,12 +388,12 @@ export function Sidebar() {
                   addStandaloneFile(p);
                 }
               }}
-              title="문서 추가"
+              title="문서 열기"
               style={{ width: "20px", height: "20px", display: "flex", alignItems: "center", justifyContent: "center", border: "none", background: "transparent", cursor: "pointer", color: "var(--color-text-light)", borderRadius: "3px", transition: "all 0.1s" }}
               onMouseEnter={(e) => { e.currentTarget.style.color = "var(--color-text-secondary)"; e.currentTarget.style.background = "var(--color-bg-active)"; }}
               onMouseLeave={(e) => { e.currentTarget.style.color = "var(--color-text-light)"; e.currentTarget.style.background = "transparent"; }}
             >
-              <Plus size={12} />
+              <FileUp size={12} />
             </button>
           </div>
           )}
@@ -431,7 +425,7 @@ export function Sidebar() {
                       openTab(filePath, name, content);
                     } catch { setBrokenStandaloneFiles((prev) => new Set([...prev, filePath])); }
                   }}
-                  className={`w-full flex items-center gap-2 text-[14px] text-left relative z-10 ${
+                  className={`group w-full flex items-center gap-2 text-[14px] text-left relative z-10 ${
                     isBrokenFile ? "" : isOpened ? "text-accent font-semibold" : "text-text-primary"
                   }`}
                   style={{
@@ -458,6 +452,23 @@ export function Sidebar() {
                       {(() => { const dir = filePath.substring(0, filePath.lastIndexOf("\\")); const m = dir.match(/^([A-Z]:\\Users\\[^\\]+)/i); return m ? dir.replace(m[1], "~") : dir; })()}
                     </div>
                   </div>
+                  {/* 폴더 열기 아이콘 */}
+                  {!isBrokenFile && (
+                  <div
+                    className="shrink-0 opacity-0 group-hover:opacity-100"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const dir = filePath.substring(0, filePath.lastIndexOf("\\"));
+                      invoke("open_in_explorer", { path: dir });
+                    }}
+                    title="폴더 열기"
+                    style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "20px", height: "20px", borderRadius: "3px", cursor: "pointer", color: "var(--color-text-light)", transition: "opacity 0.1s" }}
+                    onMouseEnter={(e) => { e.currentTarget.style.color = "var(--color-text-secondary)"; e.currentTarget.style.background = "var(--color-bg-active)"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.color = "var(--color-text-light)"; e.currentTarget.style.background = "transparent"; }}
+                  >
+                    <FolderOpen size={13} />
+                  </div>
+                  )}
                   {!isBrokenFile && (
                   <div style={{ position: "absolute", left: "4px", top: "50%", transform: "translateY(-50%)", width: "2px", height: isFocused ? "16px" : "0px", borderRadius: "1px", background: "var(--color-accent)", transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)" }} />
                   )}
@@ -475,6 +486,7 @@ export function Sidebar() {
           style={{
             display: "flex", alignItems: "center", justifyContent: "space-between",
             padding: "0 16px", height: "28px", cursor: "pointer",
+            borderTop: "1px solid var(--color-border-light)",
             borderBottom: "1px solid var(--color-border-light)",
           }}
           onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-hover)"; }}
@@ -488,12 +500,12 @@ export function Sidebar() {
           </div>
           <button
             onClick={(e) => { e.stopPropagation(); handleAddFolder(); }}
-            title="폴더 추가"
+            title="폴더 열기"
             style={{ width: "20px", height: "20px", display: "flex", alignItems: "center", justifyContent: "center", border: "none", background: "transparent", cursor: "pointer", color: "var(--color-text-light)", borderRadius: "3px", transition: "all 0.1s" }}
             onMouseEnter={(e) => { e.currentTarget.style.color = "var(--color-text-secondary)"; e.currentTarget.style.background = "var(--color-bg-active)"; }}
             onMouseLeave={(e) => { e.currentTarget.style.color = "var(--color-text-light)"; e.currentTarget.style.background = "transparent"; }}
           >
-            <Plus size={12} />
+            <FolderOpen size={12} />
           </button>
         </div>
         )}
@@ -518,7 +530,7 @@ export function Sidebar() {
                   <button
                     onClick={() => toggleFav(fav.path)}
                     onContextMenu={(e) => handleContextMenu(e, fav.path)}
-                    className="w-full flex items-center gap-2 text-[14px] font-semibold transition-all duration-[0.15s]"
+                    className="group w-full flex items-center gap-2 text-[14px] font-semibold transition-all duration-[0.15s]"
                     style={{
                       height: "36px",
                       padding: "0 16px",
@@ -572,28 +584,59 @@ export function Sidebar() {
                         }}
                       />
                     ) : (
-                      <>
-                      <span className="truncate">{fav.alias ?? fav.name}</span>
-                      {docCounts[fav.path] !== undefined && (
-                        <span style={{ fontSize: "10px", color: "var(--color-text-light)", fontWeight: 400, marginLeft: "4px", flexShrink: 0 }}>
-                          ({docCounts[fav.path]})
-                        </span>
-                      )}
-                      </>
+                      <div className="flex-1 flex items-center gap-1 min-w-0">
+                        <span className="truncate">{fav.alias ?? fav.name}</span>
+                        {docCounts[fav.path] !== undefined && (
+                          <span style={{ fontSize: "10px", color: "var(--color-text-light)", fontWeight: 400, flexShrink: 0 }}>
+                            ({docCounts[fav.path]})
+                          </span>
+                        )}
+                      </div>
                     )}
-                    {/* 별칭 아이콘 */}
+                    {/* 상태 아이콘 (별칭, 핀) */}
                     {fav.alias && aliasEditing !== fav.path && (
                       <Tag size={11} className="shrink-0" style={{ color: "var(--color-text-muted)" }} />
                     )}
-
-                    {/* 기본 폴더 고정 아이콘 */}
                     {isWorkspace && (
-                      <Pin size={13} className="shrink-0 ml-auto" style={{ color: "var(--color-accent)" }} />
+                      <Pin size={13} className="shrink-0" style={{ color: "var(--color-accent)" }} />
                     )}
 
                     {/* 끊긴 체인 아이콘 */}
                     {isBroken && (
                       <Unlink size={13} className="shrink-0 ml-auto" style={{ color: "var(--color-text-muted)" }} />
+                    )}
+
+                    {/* 우측 액션 아이콘 (호버 시 표시) */}
+                    {!isBroken && aliasEditing !== fav.path && (
+                      <div className="shrink-0 ml-auto opacity-0 group-hover:opacity-100" style={{ display: "flex", gap: "2px", transition: "opacity 0.1s" }}>
+                        <div
+                          onClick={(e) => { e.stopPropagation(); invoke("open_in_explorer", { path: fav.path }); }}
+                          title="탐색기에서 열기"
+                          style={{ width: "20px", height: "20px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "3px", cursor: "pointer", color: "var(--color-text-light)" }}
+                          onMouseEnter={(e) => { e.currentTarget.style.color = "var(--color-text-secondary)"; e.currentTarget.style.background = "var(--color-bg-active)"; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.color = "var(--color-text-light)"; e.currentTarget.style.background = "transparent"; }}
+                        >
+                          <FolderOpen size={13} />
+                        </div>
+                        <div
+                          onClick={(e) => { e.stopPropagation(); handleNewFolder(fav.path); }}
+                          title="새 폴더"
+                          style={{ width: "20px", height: "20px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "3px", cursor: "pointer", color: "var(--color-text-light)" }}
+                          onMouseEnter={(e) => { e.currentTarget.style.color = "var(--color-text-secondary)"; e.currentTarget.style.background = "var(--color-bg-active)"; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.color = "var(--color-text-light)"; e.currentTarget.style.background = "transparent"; }}
+                        >
+                          <FolderPlus size={13} />
+                        </div>
+                        <div
+                          onClick={(e) => { e.stopPropagation(); handleNewFile(fav.path); }}
+                          title="새 문서"
+                          style={{ width: "20px", height: "20px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "3px", cursor: "pointer", color: "var(--color-text-light)" }}
+                          onMouseEnter={(e) => { e.currentTarget.style.color = "var(--color-text-secondary)"; e.currentTarget.style.background = "var(--color-bg-active)"; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.color = "var(--color-text-light)"; e.currentTarget.style.background = "transparent"; }}
+                        >
+                          <FilePlus size={13} />
+                        </div>
+                      </div>
                     )}
                   </button>
                   </Tooltip>
