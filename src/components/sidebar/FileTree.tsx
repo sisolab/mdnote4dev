@@ -1,7 +1,9 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { readDir, readTextFile } from "@tauri-apps/plugin-fs";
+import { invoke } from "@tauri-apps/api/core";
 import { useAppStore, type FileEntry } from "@/stores/appStore";
 import { ChevronRight, FileText } from "lucide-react";
+import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
 
 async function loadDirectory(path: string): Promise<FileEntry[]> {
   try {
@@ -27,10 +29,12 @@ function FileTreeItem({
   entry,
   depth,
   onHover,
+  onContextMenu,
 }: {
   entry: FileEntry;
   depth: number;
   onHover: (el: HTMLButtonElement | null) => void;
+  onContextMenu: (e: React.MouseEvent, entry: FileEntry) => void;
 }) {
   const { expandedFolders, toggleFolder, selectedFile, openTab, fileTreeVersion } =
     useAppStore();
@@ -64,6 +68,7 @@ function FileTreeItem({
       <button
         onClick={handleClick}
         onMouseEnter={(e) => onHover(e.currentTarget)}
+        onContextMenu={(e) => onContextMenu(e, entry)}
         className={`w-full flex items-center gap-2 text-[14px] relative z-10 ${
           isSelected
             ? "text-accent font-semibold"
@@ -82,7 +87,6 @@ function FileTreeItem({
           <FileText size={13} className="shrink-0 text-text-light" />
         )}
         <span className="truncate">{entry.name}</span>
-        {/* 미니멀 좌측 인디케이터 */}
         <div style={{
           position: "absolute",
           left: "4px",
@@ -98,7 +102,7 @@ function FileTreeItem({
 
       {isExpanded &&
         children.map((child) => (
-          <FileTreeItem key={child.path} entry={child} depth={depth + 1} onHover={onHover} />
+          <FileTreeItem key={child.path} entry={child} depth={depth + 1} onHover={onHover} onContextMenu={onContextMenu} />
         ))}
     </div>
   );
@@ -106,24 +110,46 @@ function FileTreeItem({
 
 export function FileTree({ rootPath }: { rootPath: string }) {
   const [entries, setEntries] = useState<FileEntry[]>([]);
-  const { expandedFolders, fileTreeVersion } = useAppStore();
+  const { fileTreeVersion, refreshFileTree, closeTab, tabs } = useAppStore();
   const containerRef = useRef<HTMLDivElement>(null);
   const [highlight, setHighlight] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; entry: FileEntry } | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<FileEntry | null>(null);
 
   const handleHover = useCallback((el: HTMLButtonElement | null) => {
     if (!el || !containerRef.current) {
       setHighlight(null);
       return;
     }
-    const containerRect = containerRef.current.getBoundingClientRect();
-    const btnRect = el.getBoundingClientRect();
-    setHighlight({
-      left: btnRect.left - containerRect.left,
-      top: btnRect.top - containerRect.top,
-      width: btnRect.width,
-      height: btnRect.height,
-    });
+    const cr = containerRef.current.getBoundingClientRect();
+    const br = el.getBoundingClientRect();
+    setHighlight({ left: br.left - cr.left, top: br.top - cr.top, width: br.width, height: br.height });
   }, []);
+
+  const handleContextMenu = useCallback((e: React.MouseEvent, entry: FileEntry) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenu({ x: e.clientX, y: e.clientY, entry });
+  }, []);
+
+  const handleDelete = async (entry: FileEntry) => {
+    try {
+      await invoke("move_to_trash", { path: entry.path });
+      // 열려있는 탭이면 닫기
+      const openTab = tabs.find((t) => t.filePath === entry.path);
+      if (openTab) closeTab(openTab.id);
+      refreshFileTree();
+    } catch (err) {
+      console.error("삭제 실패:", err);
+    }
+    setDeleteConfirm(null);
+  };
+
+  const getContextMenuItems = (entry: FileEntry): ContextMenuItem[] => {
+    return [
+      { label: "삭제", onClick: () => setDeleteConfirm(entry), danger: true },
+    ];
+  };
 
   useEffect(() => {
     loadDirectory(rootPath).then(setEntries);
@@ -137,28 +163,92 @@ export function FileTree({ rootPath }: { rootPath: string }) {
       onMouseLeave={() => setHighlight(null)}
     >
       {/* 슬라이딩 하이라이트 */}
-      <div
-        style={{
-          position: "absolute",
-          left: highlight ? `${highlight.left}px` : 0,
-          top: highlight ? `${highlight.top}px` : 0,
-          width: highlight ? `${highlight.width}px` : 0,
-          height: highlight ? `${highlight.height}px` : 0,
-          background: "var(--color-bg-hover)",
-          borderRadius: "3px",
-          transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
-          opacity: highlight ? 1 : 0,
-          pointerEvents: "none",
-          zIndex: 0,
-        }}
-      />
+      <div style={{
+        position: "absolute",
+        left: highlight ? `${highlight.left}px` : 0,
+        top: highlight ? `${highlight.top}px` : 0,
+        width: highlight ? `${highlight.width}px` : 0,
+        height: highlight ? `${highlight.height}px` : 0,
+        background: "var(--color-bg-hover)",
+        borderRadius: "3px",
+        transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+        opacity: highlight ? 1 : 0,
+        pointerEvents: "none",
+        zIndex: 0,
+      }} />
 
       {entries.length === 0 ? (
         <p className="text-[11px] text-text-light px-3 py-2">빈 폴더</p>
       ) : (
         entries.map((entry) => (
-          <FileTreeItem key={entry.path} entry={entry} depth={0} onHover={handleHover} />
+          <FileTreeItem key={entry.path} entry={entry} depth={0} onHover={handleHover} onContextMenu={handleContextMenu} />
         ))
+      )}
+
+      {/* 컨텍스트 메뉴 */}
+      {contextMenu && (
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          items={getContextMenuItems(contextMenu.entry)}
+          onClose={() => setContextMenu(null)}
+        />
+      )}
+
+      {/* 삭제 확인 */}
+      {deleteConfirm && (
+        <div
+          onClick={() => setDeleteConfirm(null)}
+          style={{
+            position: "fixed", inset: 0, zIndex: 200,
+            display: "flex", alignItems: "start", justifyContent: "center", paddingTop: "120px",
+            background: "rgba(0,0,0,0.35)", animation: "fadeIn 0.15s ease-out",
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: "360px", background: "var(--color-bg-elevated)", borderRadius: "12px",
+              border: "1px solid var(--color-border-medium)",
+              boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
+              padding: "24px", animation: "fadeIn 0.15s ease-out",
+            }}
+          >
+            <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--color-text-heading)", marginBottom: "8px" }}>
+              {deleteConfirm.isDirectory ? "폴더를 삭제하시겠습니까?" : "파일을 삭제하시겠습니까?"}
+            </div>
+            <div style={{ fontSize: "12px", color: "var(--color-text-secondary)", marginBottom: "4px", lineHeight: 1.5 }}>
+              <strong>{deleteConfirm.name}</strong>
+            </div>
+            <div style={{ fontSize: "11px", color: "var(--color-text-tertiary)", marginBottom: "20px", lineHeight: 1.5 }}>
+              {deleteConfirm.isDirectory
+                ? "폴더와 내부의 모든 파일이 휴지통으로 이동됩니다."
+                : "이 파일이 휴지통으로 이동됩니다."}
+            </div>
+            <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                style={{
+                  padding: "6px 16px", fontSize: "12px", fontWeight: 500,
+                  background: "var(--color-bg-hover)", color: "var(--color-text-primary)",
+                  border: "none", borderRadius: "6px", cursor: "pointer",
+                }}
+              >
+                취소
+              </button>
+              <button
+                onClick={() => handleDelete(deleteConfirm)}
+                style={{
+                  padding: "6px 16px", fontSize: "12px", fontWeight: 600,
+                  background: "#e53935", color: "#fff",
+                  border: "none", borderRadius: "6px", cursor: "pointer",
+                }}
+              >
+                삭제
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

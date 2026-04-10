@@ -1,4 +1,9 @@
 #[tauri::command]
+fn move_to_trash(path: String) -> Result<(), String> {
+  trash::delete(&path).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 fn open_in_explorer(path: String) {
   #[cfg(target_os = "windows")]
   {
@@ -15,7 +20,7 @@ pub fn run() {
     .plugin(tauri_plugin_fs::init())
     .plugin(tauri_plugin_dialog::init())
     .plugin(tauri_plugin_shell::init())
-    .invoke_handler(tauri::generate_handler![open_in_explorer])
+    .invoke_handler(tauri::generate_handler![open_in_explorer, move_to_trash])
     .setup(|app| {
       if cfg!(debug_assertions) {
         app.handle().plugin(
