@@ -67,7 +67,7 @@ export const PRESETS: Preset[] = [
       fontSize: 17,
       lineHeight: 2.0,
       paragraphSpacing: 0.75,
-      fontFamily: "serif",
+      fontFamily: "system",
       editorMaxWidth: 860,
       headingScale: 1.4,
       codeFontSize: 14,
@@ -118,9 +118,13 @@ export function getAccentColors(accent: AccentColor, isDark = false): ThemeColor
 
 export const FONT_OPTIONS = [
   { value: "system", label: "시스템 기본" },
+  { value: "inter", label: "Inter" },
+  { value: "noto-sans-kr", label: "Noto Sans KR" },
+  { value: "ibm-plex-sans-kr", label: "IBM Plex Sans KR" },
+  { value: "gowun-dodum", label: "고운돋움" },
+  { value: "nanum-gothic", label: "나눔고딕" },
   { value: "serif", label: "Serif (명조)" },
   { value: "mono", label: "Monospace (고정폭)" },
-  { value: "pretendard", label: "Pretendard" },
 ];
 
 interface SettingsState {
@@ -148,7 +152,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
     })),
 
   applyPreset: (preset) =>
-    set({ settings: { ...preset } }),
+    set((state) => ({ settings: { ...preset, fontFamily: state.settings.fontFamily } })),
 
   resetToDefault: () =>
     set({ settings: { ...DEFAULT_SETTINGS } }),
@@ -167,12 +171,20 @@ export function useAccent(): ThemeColors {
 
 export function getFontFamily(value: string): string {
   switch (value) {
+    case "inter":
+      return '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    case "noto-sans-kr":
+      return '"Noto Sans KR", -apple-system, BlinkMacSystemFont, sans-serif';
+    case "ibm-plex-sans-kr":
+      return '"IBM Plex Sans KR", -apple-system, BlinkMacSystemFont, sans-serif';
+    case "gowun-dodum":
+      return '"Gowun Dodum", -apple-system, BlinkMacSystemFont, sans-serif';
+    case "nanum-gothic":
+      return '"Nanum Gothic", -apple-system, BlinkMacSystemFont, sans-serif';
     case "serif":
       return '"Georgia", "Noto Serif KR", "Times New Roman", serif';
     case "mono":
       return '"Cascadia Code", "Fira Code", "Consolas", monospace';
-    case "pretendard":
-      return '"Pretendard", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
     default:
       return '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
   }
