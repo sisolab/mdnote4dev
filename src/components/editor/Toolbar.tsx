@@ -87,8 +87,10 @@ function TableGridButton({ editor, onHover }: { editor: Editor; onHover: (el: HT
     const handler = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     };
+    const escHandler = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
     setTimeout(() => window.addEventListener("click", handler), 0);
-    return () => window.removeEventListener("click", handler);
+    window.addEventListener("keydown", escHandler);
+    return () => { window.removeEventListener("click", handler); window.removeEventListener("keydown", escHandler); };
   }, [open]);
 
   return (
@@ -131,10 +133,9 @@ function TableGridButton({ editor, onHover }: { editor: Editor; onHover: (el: HT
                   }}
                   style={{
                     width: CELL, height: CELL,
-                    borderRadius: "2px",
                     border: `1px solid ${active ? "var(--color-accent)" : "var(--color-border-light)"}`,
                     background: active ? "var(--color-accent-subtle)" : "transparent",
-                    cursor: "pointer", transition: "all 0.05s",
+                    cursor: "pointer",
                   }}
                 />
               );
@@ -170,7 +171,7 @@ export function Toolbar({ editor }: ToolbarProps) {
     <div
       ref={containerRef}
       onMouseLeave={() => setHighlight(null)}
-      style={{ padding: "0 16px", position: "relative" }}
+      style={{ padding: "0 16px", position: "relative", zIndex: 10 }}
       className="flex items-center gap-0 border-b border-border-light bg-bg-frosted backdrop-blur-[8px] shrink-0"
     >
       <div style={{

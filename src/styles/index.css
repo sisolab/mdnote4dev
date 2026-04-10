@@ -295,7 +295,7 @@ body {
   border: 1px solid var(--color-border-medium);
   padding: 0.25rem 0.5rem;
   text-align: left;
-  min-width: 160px;
+  min-width: 100px;
   max-width: 300px;
   vertical-align: top;
   word-wrap: break-word;

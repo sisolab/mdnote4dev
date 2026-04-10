@@ -52,46 +52,31 @@ turndown.addRule("image", {
 });
 
 // 테이블 변환 규칙
-turndown.addRule("tableCell", {
-  filter: ["th", "td"],
-  replacement: (content) => ` ${content.trim()} |`,
-});
-
-turndown.addRule("tableRow", {
-  filter: "tr",
-  replacement: (content) => `|${content}\n`,
-});
-
+// 테이블: table 노드에서 직접 마크다운 생성
 turndown.addRule("table", {
   filter: "table",
   replacement: (_content, node) => {
-    const rows = (node as HTMLElement).querySelectorAll("tr");
+    const tableEl = node as HTMLElement;
+    const rows = tableEl.querySelectorAll("tr");
     if (rows.length === 0) return "";
 
     const lines: string[] = [];
     rows.forEach((row, i) => {
       const cells = row.querySelectorAll("th, td");
-      const line =
-        "| " +
-        Array.from(cells)
-          .map((c) => c.textContent?.trim() ?? "")
-          .join(" | ") +
-        " |";
+      const line = "| " + Array.from(cells).map((c) => c.textContent?.trim() || " ").join(" | ") + " |";
       lines.push(line);
-
       if (i === 0) {
-        const separator =
-          "| " +
-          Array.from(cells)
-            .map(() => "---")
-            .join(" | ") +
-          " |";
-        lines.push(separator);
+        lines.push("| " + Array.from(cells).map(() => "---").join(" | ") + " |");
       }
     });
     return "\n" + lines.join("\n") + "\n";
   },
 });
+
+turndown.addRule("tableCell", { filter: ["th", "td"], replacement: (content) => content });
+turndown.addRule("tableRow", { filter: "tr", replacement: (content) => content });
+turndown.addRule("tableSection", { filter: ["thead", "tbody", "tfoot"], replacement: (content) => content });
+turndown.addRule("tableExtra", { filter: ["colgroup", "col"], replacement: () => "" });
 
 export function htmlToMarkdown(html: string): string {
   return turndown.turndown(html);
@@ -143,18 +128,23 @@ export function markdownToHtml(md: string, docFilePath?: string | null): string 
   // 일반 리스트
   html = html.replace(/^- (.+)$/gm, "<ul><li>$1</li></ul>");
 
-  // 테이블
-  html = html.replace(/(\|.+\|\n)+/g, (match) => {
-    const rows = match.trim().split("\n");
+  // 테이블 (\r\n도 지원)
+  // 표: | 로 시작하고 | 로 끝나는 연속된 줄 (구분선 포함)
+  html = html.replace(/(^\|.*\|[ \t]*$\n?)+/gm, (match) => {
+    const rows = match.trim().split(/\r?\n/).filter(Boolean);
+    // 최소 2줄(헤더 + 구분선)이 있어야 표
+    if (rows.length < 2) return match;
+    // 구분선이 있는지 확인
+    const hasSeparator = rows.some((r) => /^\|\s*[-:]+\s*(\|\s*[-:]+\s*)*\|$/.test(r.trim()));
+    if (!hasSeparator) return match;
     const tableRows = rows
-      .filter((row) => !row.match(/^\|\s*-+/)) // 구분선 제거
+      .filter((row) => !/^\|\s*[-:]+\s*(\|\s*[-:]+\s*)*\|$/.test(row.trim())) // 구분선 제거
       .map((row, i) => {
-        const cells = row
-          .split("|")
-          .filter((c) => c.trim() !== "")
+        const parts = row.split("|");
+        const cells = parts.slice(1, parts.length - 1)
           .map((c) => {
             const tag = i === 0 ? "th" : "td";
-            return `<${tag}>${c.trim()}</${tag}>`;
+            return `<${tag}>${c.trim() || " "}</${tag}>`;
           })
           .join("");
         return `<tr>${cells}</tr>`;

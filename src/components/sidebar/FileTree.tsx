@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { readDir, readTextFile, rename, mkdir, create } from "@tauri-apps/plugin-fs";
-import { deleteDocImages } from "@/utils/imageUtils";
+import { deleteDocImages, renameDocImages } from "@/utils/imageUtils";
 import { invoke } from "@tauri-apps/api/core";
 import { useAppStore, type FileEntry } from "@/stores/appStore";
 import { ChevronRight, FileText, Star, Folder } from "lucide-react";
@@ -218,6 +218,23 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
     }
 
     try {
+      // 마크다운 파일이면 이미지 파일명도 변경
+      if (!entry.isDirectory && /\.(md|markdown)$/i.test(entry.name)) {
+        const oldDocName = entry.name.replace(/\.(md|markdown)$/i, "");
+        const newDocName = renameValue.trim();
+        if (oldDocName !== newDocName) {
+          const state = useAppStore.getState();
+          const openTab = tabs.find((t) => t.filePath === entry.path);
+          const content = openTab?.content ?? "";
+          const updatedContent = await renameDocImages(parentPath, oldDocName, newDocName, content);
+          if (openTab && updatedContent !== content) {
+            state.updateTabContent(openTab.id, updatedContent);
+            // 파일에도 저장
+            const { writeTextFile } = await import("@tauri-apps/plugin-fs");
+            await writeTextFile(entry.path, updatedContent);
+          }
+        }
+      }
       await rename(entry.path, newPath);
       const state = useAppStore.getState();
       // 열려있는 탭 경로 업데이트
