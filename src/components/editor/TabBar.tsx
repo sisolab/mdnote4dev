@@ -98,7 +98,7 @@ export function TabBar() {
         top: highlight ? `${highlight.top}px` : 0,
         width: highlight ? `${highlight.width}px` : 0,
         height: highlight ? `${highlight.height}px` : 0,
-        background: "#f0f1f3",
+        background: "var(--color-bg-hover)",
         borderRadius: "3px",
         transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
         opacity: highlight ? 1 : 0,
@@ -127,7 +127,7 @@ export function TabBar() {
           <div key={tab.id} style={{ display: "flex", alignItems: "center" }}>
             {index > 0 && (
               <div style={{
-                width: "1px", height: "14px", background: "#ddd", flexShrink: 0, margin: "0 2px",
+                width: "1px", height: "14px", background: "var(--color-border-light)", flexShrink: 0, margin: "0 2px",
                 opacity: (isDragging || (index > 0 && dragIndex === index - 1)) ? 0 : 1,
                 transition: "opacity 0.15s",
               }} />
@@ -165,7 +165,7 @@ export function TabBar() {
                   cursor: isDragging ? "grabbing" : "pointer",
                   position: "relative",
                   zIndex: 1,
-                  color: isActive ? "#1a73e8" : "#555",
+                  color: isActive ? "var(--color-accent)" : "var(--color-text-secondary)",
                   fontWeight: 600,
                   fontSize: "12px",
                   transition: "color 0.1s",
@@ -180,7 +180,7 @@ export function TabBar() {
                   width: isActive ? "80%" : "0%",
                   height: "2px",
                   borderRadius: "1px",
-                  background: "#1a73e8",
+                  background: "var(--color-accent)",
                   transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
                 }} />
 
@@ -189,7 +189,7 @@ export function TabBar() {
                   {tab.isDirty && (
                     <div style={{
                       width: "5px", height: "5px", borderRadius: "50%",
-                      background: isActive ? "#1a73e8" : "#aaa",
+                      background: isActive ? "var(--color-accent)" : "#aaa",
                       flexShrink: 0,
                     }} />
                   )}
@@ -207,7 +207,7 @@ export function TabBar() {
                       }}
                       onClick={(e) => e.stopPropagation()}
                       style={{
-                        fontSize: "12px", fontWeight: 600, color: "#1a73e8",
+                        fontSize: "12px", fontWeight: 600, color: "var(--color-accent)",
                         background: "transparent", border: "none",
                         borderRadius: "0", padding: "0", outline: "none", width: "100px",
                       }}
@@ -236,11 +236,11 @@ export function TabBar() {
                     width: "16px", height: "16px",
                     display: "flex", alignItems: "center", justifyContent: "center",
                     borderRadius: "3px", border: "none", background: "transparent",
-                    color: "#aaa", cursor: "pointer", flexShrink: 0,
+                    color: "var(--color-text-muted)", cursor: "pointer", flexShrink: 0,
                     fontSize: "14px", lineHeight: 1, transition: "all 0.1s",
                   }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = "#e0e0e0"; e.currentTarget.style.color = "#555"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#aaa"; }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-active)"; e.currentTarget.style.color = "var(--color-text-secondary)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--color-text-muted)"; }}
                 >
                   ×
                 </button>
@@ -256,7 +256,7 @@ export function TabBar() {
                   bottom: "4px",
                   width: "2px",
                   borderRadius: "1px",
-                  background: "#1a73e8",
+                  background: "var(--color-accent)",
                   zIndex: 20,
                 }} />
               )}
@@ -273,7 +273,7 @@ export function TabBar() {
           width: "30px", height: "34px",
           display: "flex", alignItems: "center", justifyContent: "center",
           border: "none", background: "transparent",
-          color: "#aaa", cursor: "pointer", fontSize: "16px",
+          color: "var(--color-text-muted)", cursor: "pointer", fontSize: "16px",
           position: "relative", zIndex: 1, transition: "color 0.1s",
         }}
         title="새 탭"

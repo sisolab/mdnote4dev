@@ -15,7 +15,7 @@ export function Tooltip({ text, delay = 1000, children }: TooltipProps) {
     clearTimeout(timer.current);
     setVisible(false);
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    setPos({ x: rect.left, y: rect.bottom + 4 });
+    setPos({ x: rect.left, y: rect.top - 28 });
     timer.current = setTimeout(() => setVisible(true), delay);
   }, [delay]);
 

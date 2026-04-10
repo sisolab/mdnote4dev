@@ -43,7 +43,7 @@ function ToolbarButton({
         position: "relative",
         zIndex: 1,
         transition: "color 0.1s",
-        color: active ? "#1a73e8" : "#555",
+        color: active ? "var(--color-accent)" : "var(--color-text-secondary)",
         fontWeight: 600,
         fontSize: "11px",
         borderRadius: "3px",
@@ -59,7 +59,7 @@ function ToolbarButton({
         width: active ? "14px" : "0px",
         height: "2px",
         borderRadius: "1px",
-        background: "#1a73e8",
+        background: "var(--color-accent)",
         transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
       }} />
     </button>
@@ -67,7 +67,7 @@ function ToolbarButton({
 }
 
 function Divider() {
-  return <div style={{ width: "1px", height: "24px", background: "#eeeeee", margin: "0 10px" }} />;
+  return <div style={{ width: "1px", height: "24px", background: "var(--color-border-light)", margin: "0 10px" }} />;
 }
 
 export function Toolbar({ editor }: ToolbarProps) {
@@ -97,7 +97,7 @@ export function Toolbar({ editor }: ToolbarProps) {
         top: highlight ? `${highlight.top}px` : 0,
         width: highlight ? `${highlight.width}px` : 0,
         height: highlight ? `${highlight.height}px` : 0,
-        background: "#f5f5f5",
+        background: "var(--color-bg-hover)",
         borderRadius: "3px",
         transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
         opacity: highlight ? 1 : 0,

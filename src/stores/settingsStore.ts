@@ -80,6 +80,42 @@ export const PRESETS: Preset[] = [
   },
 ];
 
+export type ThemeMode = "light" | "warm" | "charcoal" | "dark";
+export type AccentColor = "blue" | "emerald" | "orange" | "yellow" | "purple";
+
+export interface ThemeColors {
+  accent: string;
+  accentHover: string;
+  accentSubtle: string;
+}
+
+export const ACCENT_OPTIONS: { value: AccentColor; label: string; color: string }[] = [
+  { value: "blue", label: "블루", color: "#1a73e8" },
+  { value: "emerald", label: "에메랄드", color: "#0d9488" },
+  { value: "orange", label: "오렌지", color: "#ea580c" },
+  { value: "yellow", label: "옐로우", color: "#ca8a04" },
+  { value: "purple", label: "퍼플", color: "#7c3aed" },
+];
+
+export function getAccentColors(accent: AccentColor, isDark = false): ThemeColors {
+  if (isDark) {
+    switch (accent) {
+      case "emerald": return { accent: "#2dd4bf", accentHover: "#5eead4", accentSubtle: "rgba(45, 212, 191, 0.15)" };
+      case "orange": return { accent: "#fb923c", accentHover: "#fdba74", accentSubtle: "rgba(251, 146, 60, 0.15)" };
+      case "yellow": return { accent: "#facc15", accentHover: "#fde047", accentSubtle: "rgba(250, 204, 21, 0.15)" };
+      case "purple": return { accent: "#a78bfa", accentHover: "#c4b5fd", accentSubtle: "rgba(167, 139, 250, 0.15)" };
+      default: return { accent: "#60a5fa", accentHover: "#93c5fd", accentSubtle: "rgba(96, 165, 250, 0.15)" };
+    }
+  }
+  switch (accent) {
+    case "emerald": return { accent: "#0d9488", accentHover: "#0f766e", accentSubtle: "rgba(13, 148, 136, 0.1)" };
+    case "orange": return { accent: "#ea580c", accentHover: "#c2410c", accentSubtle: "rgba(234, 88, 12, 0.1)" };
+    case "yellow": return { accent: "#ca8a04", accentHover: "#a16207", accentSubtle: "rgba(202, 138, 4, 0.1)" };
+    case "purple": return { accent: "#7c3aed", accentHover: "#6d28d9", accentSubtle: "rgba(124, 58, 237, 0.1)" };
+    default: return { accent: "#1a73e8", accentHover: "#1557b0", accentSubtle: "rgba(26, 115, 232, 0.12)" };
+  }
+}
+
 export const FONT_OPTIONS = [
   { value: "system", label: "시스템 기본" },
   { value: "serif", label: "Serif (명조)" },
@@ -90,15 +126,21 @@ export const FONT_OPTIONS = [
 interface SettingsState {
   settings: EditorSettings;
   showSettings: boolean;
+  themeMode: ThemeMode;
+  accentColor: AccentColor;
   updateSetting: <K extends keyof EditorSettings>(key: K, value: EditorSettings[K]) => void;
   applyPreset: (preset: EditorSettings) => void;
   resetToDefault: () => void;
   setShowSettings: (show: boolean) => void;
+  setThemeMode: (mode: ThemeMode) => void;
+  setAccentColor: (color: AccentColor) => void;
 }
 
 export const useSettingsStore = create<SettingsState>((set) => ({
   settings: { ...DEFAULT_SETTINGS },
   showSettings: false,
+  themeMode: "light",
+  accentColor: "blue",
 
   updateSetting: (key, value) =>
     set((state) => ({
@@ -113,7 +155,15 @@ export const useSettingsStore = create<SettingsState>((set) => ({
 
   setShowSettings: (show) =>
     set({ showSettings: show }),
+
+  setThemeMode: (mode) => set({ themeMode: mode }),
+  setAccentColor: (color) => set({ accentColor: color }),
 }));
+
+export function useAccent(): ThemeColors {
+  const accentColor = useSettingsStore((s) => s.accentColor);
+  return getAccentColors(accentColor);
+}
 
 export function getFontFamily(value: string): string {
   switch (value) {

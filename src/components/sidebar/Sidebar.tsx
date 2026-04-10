@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { exists } from "@tauri-apps/plugin-fs";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
@@ -18,6 +18,34 @@ function shortenPath(path: string): string {
 
 export function Sidebar() {
   const { favorites, sidebarCollapsed, removeFavorite, addFavorite, workspace, setWorkspace } = useAppStore();
+  const [sidebarWidth, setSidebarWidth] = useState(280);
+  const isResizing = useRef(false);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    isResizing.current = true;
+    const startX = e.clientX;
+    const startWidth = sidebarWidth;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing.current) return;
+      const newWidth = Math.max(180, Math.min(500, startWidth + (e.clientX - startX)));
+      setSidebarWidth(newWidth);
+    };
+
+    const handleMouseUp = () => {
+      isResizing.current = false;
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+  }, [sidebarWidth]);
   const [expandedFavs, setExpandedFavs] = useState<Set<string>>(
     new Set(favorites.map((f) => f.path))
   );
@@ -135,14 +163,15 @@ export function Sidebar() {
   };
 
   return (
+    <div className="flex shrink-0" style={{
+      width: sidebarCollapsed ? "0px" : `${sidebarWidth}px`,
+      transition: sidebarCollapsed ? "width 0.25s cubic-bezier(0.4, 0, 0.2, 1)" : "none",
+    }}>
     <aside
-      className="bg-bg-primary border-r border-border-light flex flex-col shrink-0 overflow-hidden"
+      className="bg-bg-primary flex flex-col overflow-hidden flex-1"
       style={{
-        width: sidebarCollapsed ? "0px" : "280px",
-        minWidth: sidebarCollapsed ? "0px" : "280px",
-        borderRightWidth: sidebarCollapsed ? "0px" : "1px",
-        transition: "width 0.25s cubic-bezier(0.4, 0, 0.2, 1), min-width 0.25s cubic-bezier(0.4, 0, 0.2, 1), border-right-width 0.25s",
         opacity: sidebarCollapsed ? 0 : 1,
+        transition: "opacity 0.2s",
       }}
     >
       <div className="flex-1 overflow-y-auto" style={{ padding: "0" }} onContextMenu={handleSidebarContextMenu}>
@@ -169,11 +198,11 @@ export function Sidebar() {
                     style={{
                       height: "34px",
                       padding: "0 16px",
-                      color: isBroken ? "#bbb" : "#555",
+                      color: isBroken ? "var(--color-text-muted)" : "var(--color-text-secondary)",
                       cursor: isBroken ? "default" : "pointer",
                     }}
                     onMouseEnter={(e) => {
-                      if (!isBroken) e.currentTarget.style.background = "#eef1f5";
+                      if (!isBroken) e.currentTarget.style.background = "var(--color-bg-hover)";
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.background = "";
@@ -188,19 +217,19 @@ export function Sidebar() {
                     )}
 
                     {/* 폴더 아이콘 */}
-                    <Folder size={14} className="shrink-0" style={{ color: isBroken ? "#ccc" : "#1a73e8" }} />
+                    <Folder size={14} className="shrink-0" style={{ color: isBroken ? "var(--color-text-muted)" : "var(--color-accent)" }} />
 
                     {/* 폴더 이름 */}
                     <span className="truncate">{fav.name}</span>
 
                     {/* 기본 폴더 고정 아이콘 */}
                     {isWorkspace && (
-                      <Pin size={13} className="shrink-0 ml-auto" style={{ color: "#1a73e8" }} />
+                      <Pin size={13} className="shrink-0 ml-auto" style={{ color: "var(--color-accent)" }} />
                     )}
 
                     {/* 끊긴 체인 아이콘 */}
                     {isBroken && (
-                      <Unlink size={13} className="shrink-0 ml-auto" style={{ color: "#bbb" }} />
+                      <Unlink size={13} className="shrink-0 ml-auto" style={{ color: "var(--color-text-muted)" }} />
                     )}
                   </button>
                   </Tooltip>
@@ -224,5 +253,23 @@ export function Sidebar() {
         />
       )}
     </aside>
+
+    {/* 리사이즈 핸들 */}
+    {!sidebarCollapsed && (
+      <div
+        onMouseDown={handleMouseDown}
+        style={{
+          width: "4px",
+          cursor: "col-resize",
+          background: "transparent",
+          flexShrink: 0,
+          borderRight: "1px solid #eee",
+          transition: "background 0.15s",
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.borderRightColor = "var(--color-accent)"; }}
+        onMouseLeave={(e) => { e.currentTarget.style.borderRightColor = "var(--color-border-light)"; }}
+      />
+    )}
+    </div>
   );
 }

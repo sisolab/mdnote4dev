@@ -91,7 +91,7 @@ function FileTreeItem({
           width: "2px",
           height: isSelected ? "14px" : "0px",
           borderRadius: "1px",
-          background: "#1a73e8",
+          background: "var(--color-accent)",
           transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
         }} />
       </button>
@@ -150,7 +150,7 @@ export function FileTree({ rootPath }: { rootPath: string }) {
           top: highlight ? `${highlight.top}px` : 0,
           width: highlight ? `${highlight.width}px` : 0,
           height: highlight ? `${highlight.height}px` : 0,
-          background: "#eef1f5",
+          background: "var(--color-bg-hover)",
           borderRadius: "3px",
           transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
           opacity: highlight ? 1 : 0,

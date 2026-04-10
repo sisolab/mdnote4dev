@@ -56,9 +56,9 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
         top: y,
         zIndex: 200,
         minWidth: "160px",
-        background: "rgba(255,255,255,0.98)",
+        background: "var(--color-bg-frosted)",
         backdropFilter: "blur(8px)",
-        border: "1px solid #e0e0e0",
+        border: "1px solid var(--color-border-medium)",
         borderRadius: "6px",
         boxShadow: "0 4px 16px rgba(0,0,0,0.12), 0 1px 4px rgba(0,0,0,0.06)",
         padding: "4px 4px",
@@ -67,7 +67,7 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
     >
       {items.map((item, i) =>
         item.divider ? (
-          <div key={i} style={{ height: "1px", background: "#eee", margin: "4px 8px" }} />
+          <div key={i} style={{ height: "1px", background: "var(--color-border-light)", margin: "4px 8px" }} />
         ) : (
           <button
             key={i}
@@ -87,12 +87,12 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
               textAlign: "left",
               fontSize: "12px",
               fontWeight: 500,
-              color: item.disabled ? "#bbb" : item.danger ? "#e53935" : "#333",
+              color: item.disabled ? "var(--color-text-muted)" : item.danger ? "#e53935" : "var(--color-text-primary)",
               cursor: item.disabled ? "default" : "pointer",
               transition: "background 0.1s",
             }}
             onMouseEnter={(e) => {
-              if (!item.disabled) e.currentTarget.style.background = "#f0f1f3";
+              if (!item.disabled) e.currentTarget.style.background = "var(--color-bg-hover)";
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.background = "transparent";
