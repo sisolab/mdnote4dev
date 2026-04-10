@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { exists } from "@tauri-apps/plugin-fs";
+import { exists, writeTextFile, mkdir } from "@tauri-apps/plugin-fs";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { useAppStore } from "@/stores/appStore";
@@ -17,7 +17,7 @@ function shortenPath(path: string): string {
 }
 
 export function Sidebar() {
-  const { favorites, sidebarCollapsed, removeFavorite, addFavorite, workspace, setWorkspace } = useAppStore();
+  const { favorites, sidebarCollapsed, removeFavorite, addFavorite, workspace, setWorkspace, openTab } = useAppStore();
   const [sidebarWidth, setSidebarWidth] = useState(280);
   const isResizing = useRef(false);
 
@@ -118,6 +118,32 @@ export function Sidebar() {
     }
   };
 
+  const handleNewFile = async (folderPath: string) => {
+    let name = "제목 없음.md";
+    let i = 1;
+    while (await exists(`${folderPath}\\${name}`)) {
+      name = `제목 없음 ${i}.md`;
+      i++;
+    }
+    const filePath = `${folderPath}\\${name}`;
+    await writeTextFile(filePath, "");
+    openTab(filePath, name, "");
+    // 폴더 펼치기
+    setExpandedFavs((prev) => new Set([...prev, folderPath]));
+  };
+
+  const handleNewFolder = async (folderPath: string) => {
+    let name = "새 폴더";
+    let i = 1;
+    while (await exists(`${folderPath}\\${name}`)) {
+      name = `새 폴더 ${i}`;
+      i++;
+    }
+    await mkdir(`${folderPath}\\${name}`);
+    // 폴더 펼치기
+    setExpandedFavs((prev) => new Set([...prev, folderPath]));
+  };
+
   const handleAddFolder = async () => {
     const selected = await open({ directory: true, multiple: false });
     if (selected && typeof selected === "string") {
@@ -151,6 +177,9 @@ export function Sidebar() {
     }
     const isCurrentWorkspace = path === workspace;
     return [
+      { label: "새 문서", onClick: () => handleNewFile(path) },
+      { label: "새 폴더", onClick: () => handleNewFolder(path) },
+      { divider: true, label: "", onClick: () => {} },
       ...(isCurrentWorkspace
         ? [{ label: "기본 폴더 해제", onClick: () => setWorkspace(null) }]
         : [{ label: "기본 폴더로 지정", onClick: () => setWorkspace(path) }]
@@ -180,7 +209,7 @@ export function Sidebar() {
             <p className="text-[12px]">상단 메뉴에서 폴더를 추가하세요</p>
           </div>
         ) : (
-          <div className="space-y-1">
+          <div>
             {[...favorites].sort((a, b) => {
               if (a.path === workspace) return -1;
               if (b.path === workspace) return 1;
@@ -196,7 +225,7 @@ export function Sidebar() {
                     onContextMenu={(e) => handleContextMenu(e, fav.path)}
                     className="w-full flex items-center gap-2 text-[14px] font-semibold transition-all duration-[0.15s]"
                     style={{
-                      height: "34px",
+                      height: "36px",
                       padding: "0 16px",
                       color: isBroken ? "var(--color-text-muted)" : "var(--color-text-secondary)",
                       cursor: isBroken ? "default" : "pointer",

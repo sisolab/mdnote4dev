@@ -33,7 +33,7 @@ function ToolbarButton({
       title={title}
       style={{
         width: "34px",
-        height: "38px",
+        height: "40px",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",

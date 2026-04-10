@@ -70,7 +70,7 @@ function FileTreeItem({
             : "text-text-primary"
         } ${!entry.isDirectory && !isMarkdown ? "opacity-30" : ""}`}
         style={{
-          paddingLeft: `${depth * 16 + 32}px`, paddingRight: "16px", height: "34px",
+          paddingLeft: `${depth * 16 + 32}px`, paddingRight: "16px", height: "36px",
         }}
       >
         {entry.isDirectory ? (

@@ -155,7 +155,7 @@ export function TabBar() {
                 data-tab-inner
                 onMouseEnter={(e) => handleHover(e.currentTarget)}
                 style={{
-                  height: "34px",
+                  height: "40px",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
@@ -270,7 +270,7 @@ export function TabBar() {
         onClick={() => newTab()}
         onMouseEnter={(e) => handleHover(e.currentTarget)}
         style={{
-          width: "30px", height: "34px",
+          width: "30px", height: "40px",
           display: "flex", alignItems: "center", justifyContent: "center",
           border: "none", background: "transparent",
           color: "var(--color-text-muted)", cursor: "pointer", fontSize: "16px",
