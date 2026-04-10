@@ -31,6 +31,7 @@ interface AppState {
   addFavorite: (folder: FavoriteFolder) => void;
   removeFavorite: (path: string) => void;
   setFavoriteAlias: (path: string, alias: string | undefined) => void;
+  updateFavoritePath: (oldPath: string, newPath: string, newName: string) => void;
 
   // 단일 파일 (특수 폴더)
   favoriteFiles: string[];
@@ -96,6 +97,13 @@ export const useAppStore = create<AppState>((set) => ({
     set((state) => ({
       favorites: state.favorites.map((f) =>
         f.path === path ? { ...f, alias } : f
+      ),
+    })),
+
+  updateFavoritePath: (oldPath, newPath, newName) =>
+    set((state) => ({
+      favorites: state.favorites.map((f) =>
+        f.path === oldPath ? { ...f, path: newPath, name: newName } : f
       ),
     })),
 

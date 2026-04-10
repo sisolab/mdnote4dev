@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { SidebarTabs } from "./SidebarTabs";
-import { exists, mkdir, create, readDir as tauriReadDir, readTextFile } from "@tauri-apps/plugin-fs";
+import { exists, mkdir, create, readDir as tauriReadDir, readTextFile, rename } from "@tauri-apps/plugin-fs";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { useAppStore } from "@/stores/appStore";
@@ -18,7 +18,7 @@ function shortenPath(path: string): string {
 }
 
 export function Sidebar() {
-  const { favorites, sidebarCollapsed, removeFavorite, addFavorite, openTab, refreshFileTree, fileTreeVersion, setFavoriteAlias, folderSort, fileSort, setFolderSort, setFileSort, favoriteFiles, addFavoriteFile, removeFavoriteFile, selectedPaths } = useAppStore();
+  const { favorites, sidebarCollapsed, removeFavorite, addFavorite, openTab, refreshFileTree, fileTreeVersion, setFavoriteAlias, updateFavoritePath, folderSort, fileSort, setFolderSort, setFileSort, favoriteFiles, addFavoriteFile, removeFavoriteFile, selectedPaths } = useAppStore();
   const [sidebarTab, setSidebarTab] = useState("files");
   const [searchQuery, setSearchQuery] = useState("");
   const [favoritesExpanded, setStandaloneExpanded] = useState(true);
@@ -30,6 +30,8 @@ export function Sidebar() {
   const [docCounts, setDocCounts] = useState<Record<string, number>>({});
   const [aliasEditing, setAliasEditing] = useState<string | null>(null);
   const [aliasValue, setAliasValue] = useState("");
+  const [folderRenaming, setFolderRenaming] = useState<string | null>(null);
+  const [folderRenameValue, setFolderRenameValue] = useState("");
   const [sidebarWidth, setSidebarWidth] = useState(280);
   const isResizing = useRef(false);
 
@@ -146,6 +148,36 @@ export function Sidebar() {
       return next;
     });
   }, [brokenPaths]);
+
+  const handleFolderRename = async (oldPath: string) => {
+    if (!folderRenameValue.trim() || !folderRenaming) {
+      setFolderRenaming(null);
+      return;
+    }
+    const parentPath = oldPath.substring(0, oldPath.lastIndexOf("\\"));
+    const newPath = `${parentPath}\\${folderRenameValue.trim()}`;
+    if (newPath === oldPath) {
+      setFolderRenaming(null);
+      return;
+    }
+    try {
+      await rename(oldPath, newPath);
+      // 즐겨찾기 경로 업데이트 (위치 유지)
+      updateFavoritePath(oldPath, newPath, folderRenameValue.trim());
+      const state = useAppStore.getState();
+      // 즐겨찾기 파일 경로 업데이트 (해당 폴더 안 파일들)
+      state.favoriteFiles.forEach((fp) => {
+        if (fp.startsWith(oldPath + "\\")) {
+          state.removeFavoriteFile(fp);
+          state.addFavoriteFile(fp.replace(oldPath, newPath));
+        }
+      });
+      refreshFileTree();
+    } catch (err) {
+      console.error("폴더 이름 변경 실패:", err);
+    }
+    setFolderRenaming(null);
+  };
 
   const toggleFav = async (path: string) => {
     // 클릭 시 유효성 체크
@@ -293,6 +325,11 @@ export function Sidebar() {
         setAliasValue(fav?.alias ?? fav?.name ?? "");
       }},
       ...(hasAlias ? [{ label: "별칭 제거", onClick: () => setFavoriteAlias(path, undefined) }] : []),
+      { divider: true, label: "", onClick: () => {} },
+      { label: "이름 바꾸기", onClick: () => {
+        setFolderRenaming(path);
+        setFolderRenameValue(path.split("\\").pop() ?? "");
+      }},
       { divider: true, label: "", onClick: () => {} },
       { label: "탐색기에서 열기", onClick: () => { invoke("open_in_explorer", { path }); } },
       { divider: true, label: "", onClick: () => {} },
@@ -530,7 +567,24 @@ export function Sidebar() {
                     <Folder size={14} className="shrink-0" style={{ color: isBroken ? "var(--color-text-muted)" : "var(--color-accent)" }} />
 
                     {/* 폴더 이름 */}
-                    {aliasEditing === fav.path ? (
+                    {folderRenaming === fav.path ? (
+                      <input
+                        autoFocus
+                        value={folderRenameValue}
+                        onChange={(e) => setFolderRenameValue(e.target.value)}
+                        onBlur={() => handleFolderRename(fav.path)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") handleFolderRename(fav.path);
+                          if (e.key === "Escape") setFolderRenaming(null);
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        style={{
+                          fontSize: "14px", fontWeight: 600, color: "var(--color-accent)",
+                          background: "transparent", border: "none",
+                          borderRadius: "0", padding: "0", outline: "none", width: "100%",
+                        }}
+                      />
+                    ) : aliasEditing === fav.path ? (
                       <input
                         autoFocus
                         value={aliasValue}
@@ -560,16 +614,15 @@ export function Sidebar() {
                     ) : (
                       <div className="flex-1 flex items-center gap-1 min-w-0">
                         <span className="truncate">{fav.alias ?? fav.name}</span>
+                        {fav.alias && aliasEditing !== fav.path && folderRenaming !== fav.path && (
+                          <Tag size={10} className="shrink-0" style={{ color: "var(--color-accent)" }} />
+                        )}
                         {docCounts[fav.path] !== undefined && (
                           <span style={{ fontSize: "10px", color: "var(--color-text-light)", fontWeight: 400, flexShrink: 0 }}>
                             ({docCounts[fav.path]})
                           </span>
                         )}
                       </div>
-                    )}
-                    {/* 상태 아이콘 (별칭, 핀) */}
-                    {fav.alias && aliasEditing !== fav.path && (
-                      <Tag size={11} className="shrink-0" style={{ color: "var(--color-text-muted)" }} />
                     )}
 
                     {/* 끊긴 체인 아이콘 */}
