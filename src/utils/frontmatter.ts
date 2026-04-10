@@ -4,41 +4,35 @@ export interface FrontmatterData {
   raw: string;
 }
 
-export function parseFrontmatter(content: string): FrontmatterData {
-  const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/);
-  if (!match) {
-    return { tags: [], body: content, raw: "" };
-  }
-  const raw = match[1];
-  const body = match[2];
+const FRONTMATTER_RE = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/;
 
-  // tags 파싱: tags: [tag1, tag2] 또는 tags:\n- tag1\n- tag2
-  const tagsMatch = raw.match(/tags:\s*\[([^\]]*)\]/);
-  if (tagsMatch) {
-    const tags = tagsMatch[1]
-      .split(",")
-      .map((t) => t.trim().replace(/^["']|["']$/g, ""))
-      .filter(Boolean);
-    return { tags, body, raw };
+/** YAML raw에서 tags 배열 추출 */
+function parseTags(raw: string): string[] {
+  // tags: [tag1, tag2]
+  const bracketMatch = raw.match(/tags:\s*\[([^\]]*)\]/);
+  if (bracketMatch) {
+    return bracketMatch[1].split(",").map((t) => t.trim().replace(/^["']|["']$/g, "")).filter(Boolean);
   }
-
-  // YAML list 형태
+  // tags:\n- tag1\n- tag2
   const listMatch = raw.match(/tags:\s*\n((?:\s*-\s*.+\n?)*)/);
   if (listMatch) {
-    const tags = listMatch[1]
-      .split("\n")
-      .map((line) => line.replace(/^\s*-\s*/, "").trim())
-      .filter(Boolean);
-    return { tags, body, raw };
+    return listMatch[1].split("\n").map((line) => line.replace(/^\s*-\s*/, "").trim()).filter(Boolean);
   }
+  return [];
+}
 
-  return { tags: [], body, raw };
+export function parseFrontmatter(content: string): FrontmatterData {
+  const match = content.match(FRONTMATTER_RE);
+  if (!match) return { tags: [], body: content, raw: "" };
+  const raw = match[1];
+  const body = match[2];
+  return { tags: parseTags(raw), body, raw };
 }
 
 export function updateFrontmatterTags(content: string, tags: string[]): string {
   const tagsStr = tags.length > 0 ? `tags: [${tags.join(", ")}]` : "";
 
-  const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/);
+  const match = content.match(FRONTMATTER_RE);
   if (!match) {
     // frontmatter 없음 → 추가
     if (tags.length === 0) return content;
