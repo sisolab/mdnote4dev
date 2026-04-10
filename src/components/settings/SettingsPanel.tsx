@@ -4,9 +4,31 @@ import {
   PRESETS,
   FONT_OPTIONS,
   ACCENT_OPTIONS,
+  DEFAULT_SETTINGS,
+  getFontFamily,
   type EditorSettings,
 } from "@/stores/settingsStore";
-import { X, Sun, Moon } from "lucide-react";
+import { Sun, Moon, Minimize2, AlignCenter, Maximize2, SlidersHorizontal, RotateCcw, Type } from "lucide-react";
+import { FontPreview } from "./FontPreview";
+
+function ResetButton({ onClick, visible }: { onClick: () => void; visible: boolean }) {
+  if (!visible) return <div style={{ width: "20px", flexShrink: 0 }} />;
+  return (
+    <button
+      onClick={onClick}
+      title="초기화"
+      style={{
+        width: "20px", height: "20px", display: "flex", alignItems: "center", justifyContent: "center",
+        borderRadius: "4px", border: "none", background: "transparent", cursor: "pointer",
+        color: "var(--color-text-muted)", transition: "all 0.1s", flexShrink: 0,
+      }}
+      onMouseEnter={(e) => { e.currentTarget.style.color = "var(--color-text-secondary)"; e.currentTarget.style.background = "var(--color-bg-hover)"; }}
+      onMouseLeave={(e) => { e.currentTarget.style.color = "var(--color-text-muted)"; e.currentTarget.style.background = "transparent"; }}
+    >
+      <RotateCcw size={11} />
+    </button>
+  );
+}
 
 /* ── 공통 컴포넌트 ── */
 
@@ -18,31 +40,54 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   );
 }
 
-function SettingRow({ label, children }: { label: string; children: React.ReactNode }) {
+function SettingRow({ label, children, onReset, changed }: { label: string; children: React.ReactNode; onReset?: () => void; changed?: boolean }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", minHeight: "36px", padding: "4px 0" }}>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", minHeight: "36px", padding: "4px 0", gap: "8px" }}>
       <span style={{ fontSize: "13px", fontWeight: 500, color: "var(--color-text-primary)" }}>{label}</span>
-      {children}
+      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+        {children}
+        {onReset && <ResetButton onClick={onReset} visible={!!changed} />}
+      </div>
     </div>
   );
 }
 
-function SliderSetting({
-  label, value, min, max, step, unit, onChange,
+function formatNum(n: number, decimals?: number): string {
+  if (decimals !== undefined) return n.toFixed(decimals);
+  if (Number.isInteger(n)) return String(n);
+  return n.toFixed(1);
+}
+
+function ChipSetting({
+  label, value, options, unit, decimals, onChange, defaultValue,
 }: {
-  label: string; value: number; min: number; max: number; step: number; unit: string; onChange: (v: number) => void;
+  label: string; value: number; options: number[]; unit: string; decimals?: number; onChange: (v: number) => void; defaultValue?: number;
 }) {
   return (
-    <SettingRow label={label}>
-      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-        <input
-          type="range" min={min} max={max} step={step} value={value}
-          onChange={(e) => onChange(Number(e.target.value))}
-          style={{ width: "120px", accentColor: "var(--color-accent)", cursor: "pointer" }}
-        />
-        <span style={{ fontSize: "11px", color: "#888", width: "48px", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
-          {value}{unit}
-        </span>
+    <SettingRow label={label} onReset={defaultValue !== undefined ? () => onChange(defaultValue) : undefined} changed={defaultValue !== undefined && value !== defaultValue}>
+      <div style={{ display: "flex", borderRadius: "6px", border: "1px solid var(--color-border-input)", overflow: "hidden", width: "240px" }}>
+        {options.map((opt) => (
+          <button
+            key={opt}
+            onClick={() => onChange(opt)}
+            style={{
+              width: `${240 / 8}px`, padding: "5px 0", fontSize: "11px", fontWeight: value === opt ? 600 : 400,
+              border: "none", cursor: "pointer", position: "relative",
+              background: "var(--color-bg-primary)",
+              color: value === opt ? "var(--color-accent)" : "var(--color-text-secondary)",
+              transition: "all 0.15s",
+              fontVariantNumeric: "tabular-nums",
+              flexShrink: 0,
+            }}
+          >
+            {formatNum(opt, decimals)}{unit}
+            <div style={{
+              position: "absolute", bottom: "0", left: "50%", transform: "translateX(-50%)",
+              width: value === opt ? "60%" : "0%", height: "2px", borderRadius: "1px",
+              background: "var(--color-accent)", transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+            }} />
+          </button>
+        ))}
       </div>
     </SettingRow>
   );
@@ -60,38 +105,44 @@ function ToggleButtons({ options, value, onChange }: {
           key={opt.value}
           onClick={() => onChange(opt.value)}
           style={{
-            display: "flex", alignItems: "center", gap: "5px",
-            padding: "5px 12px", fontSize: "12px", fontWeight: 500,
-            border: "none", cursor: "pointer",
-            background: value === opt.value ? "var(--color-accent)" : "var(--color-bg-primary)",
-            color: value === opt.value ? "#fff" : "var(--color-text-secondary)",
+            display: "flex", alignItems: "center", justifyContent: "center", gap: "5px",
+            padding: "5px 12px", fontSize: "12px", fontWeight: value === opt.value ? 600 : 400,
+            border: "none", cursor: "pointer", position: "relative",
+            background: "var(--color-bg-primary)",
+            color: value === opt.value ? "var(--color-accent)" : "var(--color-text-secondary)",
             transition: "all 0.15s",
           }}
         >
           {opt.icon}{opt.label}
+          <div style={{
+            position: "absolute", bottom: "0", left: "50%", transform: "translateX(-50%)",
+            width: value === opt.value ? "60%" : "0%", height: "2px", borderRadius: "1px",
+            background: "var(--color-accent)", transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+          }} />
         </button>
       ))}
     </div>
   );
 }
 
-function PresetCard({ name, description, settings, isActive, onApply }: {
-  name: string; description: string; settings: EditorSettings; isActive: boolean; onApply: (s: EditorSettings) => void;
+function PresetCard({ name, icon, color, settings, isActive, onApply }: {
+  name: string; icon?: React.ReactNode; color: string; settings: EditorSettings; isActive: boolean; onApply: (s: EditorSettings) => void;
 }) {
   return (
     <button
       onClick={() => onApply(settings)}
       style={{
-        flex: 1, padding: "14px 16px", borderRadius: "8px", textAlign: "left" as const,
-        border: isActive ? "1.5px solid var(--color-accent)" : "1px solid var(--color-border-light)",
-        background: isActive ? "var(--color-accent-subtle)" : "var(--color-bg-elevated)",
+        flex: 1, padding: "12px 16px", borderRadius: "8px", textAlign: "center" as const,
+        border: isActive ? `1.5px solid ${color}` : "1px solid var(--color-border-light)",
+        background: isActive ? `${color}15` : "var(--color-bg-elevated)",
         cursor: "pointer", transition: "all 0.15s",
+        display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
       }}
     >
-      <div style={{ fontSize: "13px", fontWeight: 600, marginBottom: "4px", color: isActive ? "var(--color-accent)" : "var(--color-text-primary)" }}>
+      {icon && <span style={{ color }}>{icon}</span>}
+      <span style={{ fontSize: "13px", fontWeight: 600, color }}>
         {name}
-      </div>
-      <div style={{ fontSize: "11px", color: "#888", lineHeight: 1.4 }}>{description}</div>
+      </span>
     </button>
   );
 }
@@ -101,6 +152,8 @@ function PresetCard({ name, description, settings, isActive, onApply }: {
 export function SettingsPanel() {
   const { settings, updateSetting, applyPreset, resetToDefault, setShowSettings, themeMode, setThemeMode, accentColor, setAccentColor } =
     useSettingsStore();
+
+  const [showFontPreview, setShowFontPreview] = useState(false);
 
   const isPresetActive = (preset: EditorSettings) =>
     JSON.stringify(settings) === JSON.stringify(preset);
@@ -167,16 +220,8 @@ export function SettingsPanel() {
         }}
       >
         {/* 헤더 */}
-        <div onMouseDown={handleDragStart} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px", borderBottom: "1px solid var(--color-border-light)", cursor: "grab" }}>
+        <div onMouseDown={handleDragStart} style={{ display: "flex", alignItems: "center", padding: "16px 24px", borderBottom: "1px solid var(--color-border-light)", cursor: "grab" }}>
           <span style={{ fontSize: "15px", fontWeight: 600, color: "var(--color-text-heading)" }}>설정</span>
-          <button
-            onClick={() => setShowSettings(false)}
-            style={{ width: "28px", height: "28px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "6px", border: "none", background: "transparent", cursor: "pointer", color: "#999", transition: "all 0.1s" }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-hover)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
-          >
-            <X size={16} />
-          </button>
         </div>
 
         {/* 본문 */}
@@ -184,7 +229,7 @@ export function SettingsPanel() {
 
           {/* 테마 */}
           <SectionTitle>테마</SectionTitle>
-          <SettingRow label="배경">
+          <SettingRow label="배경" onReset={() => setThemeMode("light")} changed={themeMode !== "light"}>
             <ToggleButtons
               options={[
                 { value: "light", label: "라이트", icon: <Sun size={12} /> },
@@ -196,7 +241,7 @@ export function SettingsPanel() {
               onChange={(v) => setThemeMode(v as "light" | "warm" | "charcoal" | "dark")}
             />
           </SettingRow>
-          <SettingRow label="강조 색상">
+          <SettingRow label="강조 색상" onReset={() => setAccentColor("blue")} changed={accentColor !== "blue"}>
             <div style={{ display: "flex", gap: "8px" }}>
               {ACCENT_OPTIONS.map((opt) => (
                 <button
@@ -216,58 +261,87 @@ export function SettingsPanel() {
 
           <div style={{ height: "1px", background: "var(--color-border-light)", margin: "16px 0" }} />
 
-          {/* 프리셋 */}
+          {/* 글꼴 (프리셋 독립) */}
+          <SectionTitle>글꼴</SectionTitle>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <button
+              onClick={() => setShowFontPreview(true)}
+              style={{
+                display: "flex", alignItems: "center", gap: "8px",
+                padding: "10px 16px", fontSize: "13px", fontWeight: 500,
+                fontFamily: getFontFamily(settings.fontFamily),
+                borderRadius: "6px", cursor: "pointer",
+                border: "1px solid var(--color-border-light)",
+                background: "var(--color-bg-elevated)",
+                color: "var(--color-text-primary)",
+                transition: "all 0.15s",
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--color-accent)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--color-border-light)"; }}
+            >
+              <Type size={14} style={{ color: "var(--color-accent)" }} />
+              {FONT_OPTIONS.find((o) => o.value === settings.fontFamily)?.label ?? settings.fontFamily}
+            </button>
+            <ResetButton onClick={() => updateSetting("fontFamily", "system")} visible={settings.fontFamily !== "system"} />
+          </div>
+
+          <div style={{ height: "1px", background: "var(--color-border-light)", margin: "16px 0" }} />
+
+          {/* 프리셋 + 프리셋 항목들 */}
           <SectionTitle>에디터 프리셋</SectionTitle>
-          <div style={{ display: "flex", gap: "10px", marginBottom: "4px" }}>
-            {PRESETS.map((preset) => (
+          <div style={{ display: "flex", gap: "10px", marginBottom: "12px" }}>
+            {PRESETS.map((preset, i) => (
               <PresetCard
                 key={preset.name}
                 name={preset.name}
-                description={preset.description}
+                icon={[<Minimize2 size={14} />, <AlignCenter size={14} />, <Maximize2 size={14} />][i]}
+                color={["#d4845a", "#1a73e8", "#5ab8ad"][i]}
                 settings={preset.settings}
                 isActive={isPresetActive(preset.settings)}
                 onApply={applyPreset}
               />
             ))}
+            {/* 커스텀 — 3개 프리셋에 해당 안 되면 자동 활성화 */}
+            {(() => {
+              const isCustom = !PRESETS.some((p) => isPresetActive(p.settings));
+              return (
+                <div
+                  style={{
+                    flex: 1, padding: "12px 16px", borderRadius: "8px", textAlign: "center",
+                    border: isCustom ? "1.5px solid #7c3aed" : "1px solid var(--color-border-light)",
+                    background: isCustom ? "#7c3aed15" : "var(--color-bg-elevated)",
+                    opacity: isCustom ? 1 : 0.5,
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
+                  }}
+                >
+                  <SlidersHorizontal size={14} style={{ color: "#a78bfa" }} />
+                  <span style={{ fontSize: "13px", fontWeight: 600, color: "#a78bfa" }}>
+                    커스텀
+                  </span>
+                </div>
+              );
+            })()}
           </div>
-
-          <div style={{ height: "1px", background: "var(--color-border-light)", margin: "16px 0" }} />
 
           {/* 타이포그래피 */}
           <SectionTitle>타이포그래피</SectionTitle>
-          <SettingRow label="글꼴">
-            <select
-              value={settings.fontFamily}
-              onChange={(e) => updateSetting("fontFamily", e.target.value)}
-              style={{
-                fontSize: "12px", padding: "5px 10px", borderRadius: "6px",
-                border: "1px solid var(--color-border-input)", background: "var(--color-bg-primary)",
-                color: "var(--color-text-primary)", outline: "none", cursor: "pointer",
-              }}
-            >
-              {FONT_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
-          </SettingRow>
-          <SliderSetting label="글자 크기" value={settings.fontSize} min={11} max={22} step={1} unit="px" onChange={(v) => updateSetting("fontSize", v)} />
-          <SliderSetting label="줄 간격" value={settings.lineHeight} min={1.2} max={2.5} step={0.05} unit="" onChange={(v) => updateSetting("lineHeight", v)} />
-          <SliderSetting label="자간" value={settings.letterSpacing} min={-0.5} max={1} step={0.1} unit="px" onChange={(v) => updateSetting("letterSpacing", v)} />
-          <SliderSetting label="문단 간격" value={settings.paragraphSpacing} min={0} max={1.5} step={0.1} unit="rem" onChange={(v) => updateSetting("paragraphSpacing", v)} />
-          <SliderSetting label="제목 배율" value={settings.headingScale} min={1.0} max={1.8} step={0.05} unit="x" onChange={(v) => updateSetting("headingScale", v)} />
-
-          <div style={{ height: "1px", background: "var(--color-border-light)", margin: "16px 0" }} />
+          <ChipSetting label="글자 크기" value={settings.fontSize} options={[9, 10, 11, 12, 13, 14, 15, 16]} unit="" defaultValue={DEFAULT_SETTINGS.fontSize} onChange={(v) => updateSetting("fontSize", v)} />
+          <ChipSetting label="줄 간격" value={settings.lineHeight} options={[1.4, 1.6, 1.8, 2.0, 2.2, 2.4]} unit="" decimals={1} defaultValue={DEFAULT_SETTINGS.lineHeight} onChange={(v) => updateSetting("lineHeight", v)} />
+          <ChipSetting label="자간" value={settings.letterSpacing} options={[-0.4, -0.2, 0, 0.2, 0.4, 0.6]} unit="" decimals={1} defaultValue={DEFAULT_SETTINGS.letterSpacing} onChange={(v) => updateSetting("letterSpacing", v)} />
+          <ChipSetting label="문단 간격" value={settings.paragraphSpacing} options={[0, 0.2, 0.4, 0.6, 0.8, 1.0]} unit="" decimals={1} defaultValue={DEFAULT_SETTINGS.paragraphSpacing} onChange={(v) => updateSetting("paragraphSpacing", v)} />
+          <ChipSetting label="제목 배율" value={settings.headingScale} options={[1.1, 1.2, 1.3, 1.4, 1.5, 1.6]} unit="" decimals={1} defaultValue={DEFAULT_SETTINGS.headingScale} onChange={(v) => updateSetting("headingScale", v)} />
 
           {/* 코드 블록 */}
+          <div style={{ marginTop: "16px" }} />
           <SectionTitle>코드 블록</SectionTitle>
-          <SliderSetting label="글자 크기" value={settings.codeFontSize} min={10} max={18} step={1} unit="px" onChange={(v) => updateSetting("codeFontSize", v)} />
-          <SliderSetting label="줄 간격" value={settings.codeLineHeight} min={1.2} max={2.2} step={0.1} unit="" onChange={(v) => updateSetting("codeLineHeight", v)} />
+          <ChipSetting label="글자 크기" value={settings.codeFontSize} options={[10, 11, 12, 13, 14, 15, 16]} unit="" defaultValue={DEFAULT_SETTINGS.codeFontSize} onChange={(v) => updateSetting("codeFontSize", v)} />
+          <ChipSetting label="줄 간격" value={settings.codeLineHeight} options={[1.2, 1.4, 1.6, 1.8, 2.0, 2.2]} unit="" decimals={1} defaultValue={DEFAULT_SETTINGS.codeLineHeight} onChange={(v) => updateSetting("codeLineHeight", v)} />
 
           <div style={{ height: "1px", background: "var(--color-border-light)", margin: "16px 0" }} />
 
-          {/* 레이아웃 */}
+          {/* 레이아웃 (프리셋 독립) */}
           <SectionTitle>레이아웃</SectionTitle>
-          <SettingRow label="에디터 폭 모드">
+          <SettingRow label="에디터 폭 모드" onReset={() => updateSetting("widthMode", "fluid")} changed={settings.widthMode !== "fluid"}>
             <ToggleButtons
               options={[
                 { value: "fluid", label: "가변폭" },
@@ -277,8 +351,8 @@ export function SettingsPanel() {
               onChange={(v) => updateSetting("widthMode", v as "fixed" | "fluid")}
             />
           </SettingRow>
-          <SliderSetting label={settings.widthMode === "fixed" ? "에디터 폭" : "최대 폭"} value={settings.editorMaxWidth} min={500} max={1200} step={20} unit="px" onChange={(v) => updateSetting("editorMaxWidth", v)} />
-          <SliderSetting label="여백" value={settings.editorPaddingX} min={16} max={96} step={8} unit="px" onChange={(v) => updateSetting("editorPaddingX", v)} />
+          <ChipSetting label={settings.widthMode === "fixed" ? "에디터 폭" : "최대 폭"} value={settings.editorMaxWidth} options={[560, 640, 720, 780, 860, 960, 1080]} unit="" defaultValue={DEFAULT_SETTINGS.editorMaxWidth} onChange={(v) => updateSetting("editorMaxWidth", v)} />
+          <ChipSetting label="여백" value={settings.editorPaddingX} options={[8, 16, 24, 32, 48, 64]} unit="" defaultValue={DEFAULT_SETTINGS.editorPaddingX} onChange={(v) => updateSetting("editorPaddingX", v)} />
         </div>
 
         {/* 푸터 */}
@@ -303,6 +377,14 @@ export function SettingsPanel() {
           </button>
         </div>
       </div>
+
+      {showFontPreview && (
+        <FontPreview
+          currentFont={settings.fontFamily}
+          onApply={(value) => updateSetting("fontFamily", value)}
+          onClose={() => setShowFontPreview(false)}
+        />
+      )}
     </div>
   );
 }
