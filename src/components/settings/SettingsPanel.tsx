@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import {
   useSettingsStore,
   PRESETS,
@@ -114,18 +114,51 @@ export function SettingsPanel() {
     return () => window.removeEventListener("keydown", handler);
   }, [setShowSettings]);
 
+  // 드래그 이동
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
+  const isDragging = useRef(false);
+
+  const handleDragStart = useCallback((e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest("button, select, input")) return;
+    isDragging.current = true;
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startPos = pos ?? { x: (window.innerWidth - 520) / 2, y: 60 };
+
+    const handleMove = (e: MouseEvent) => {
+      if (!isDragging.current) return;
+      const panelW = 520;
+      const panelH = Math.min(window.innerHeight - 120, 700);
+      const newX = Math.max(0, Math.min(window.innerWidth - panelW, startPos.x + (e.clientX - startX)));
+      const newY = Math.max(0, Math.min(window.innerHeight - panelH, startPos.y + (e.clientY - startY)));
+      setPos({ x: newX, y: newY });
+    };
+    const handleUp = () => {
+      isDragging.current = false;
+      document.removeEventListener("mousemove", handleMove);
+      document.removeEventListener("mouseup", handleUp);
+      document.body.style.userSelect = "";
+    };
+    document.body.style.userSelect = "none";
+    document.addEventListener("mousemove", handleMove);
+    document.addEventListener("mouseup", handleUp);
+  }, [pos]);
+
   return (
     <div
       onClick={() => setShowSettings(false)}
       style={{
         position: "fixed", inset: 0, zIndex: 50,
-        display: "flex", alignItems: "flex-start", justifyContent: "center", paddingTop: "60px",
-        background: "rgba(0,0,0,0.35)", animation: "fadeIn 0.15s ease-out",
+        background: "rgba(0,0,0,0.15)", animation: "fadeIn 0.15s ease-out",
       }}
     >
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
+          position: "absolute",
+          left: pos ? `${pos.x}px` : "50%",
+          top: pos ? `${pos.y}px` : "60px",
+          transform: pos ? "none" : "translateX(-50%)",
           width: "520px", maxHeight: "calc(100vh - 120px)",
           background: "var(--color-bg-elevated)", borderRadius: "12px",
           border: "1px solid var(--color-border-medium)",
@@ -134,7 +167,7 @@ export function SettingsPanel() {
         }}
       >
         {/* 헤더 */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px", borderBottom: "1px solid var(--color-border-light)" }}>
+        <div onMouseDown={handleDragStart} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px", borderBottom: "1px solid var(--color-border-light)", cursor: "grab" }}>
           <span style={{ fontSize: "15px", fontWeight: 600, color: "var(--color-text-heading)" }}>설정</span>
           <button
             onClick={() => setShowSettings(false)}
