@@ -128,12 +128,13 @@ export function Sidebar() {
       htmlEl.style.transition = "none";
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          htmlEl.style.transition = "transform 0.25s ease";
+          const dur = Math.min(1.0, Math.max(0.3, Math.abs(delta) * 0.006));
+          htmlEl.style.transition = `transform ${dur}s cubic-bezier(0.25, 0.1, 0.25, 1)`;
           htmlEl.style.transform = "translateY(0)";
           setTimeout(() => {
             htmlEl.style.transition = "";
             htmlEl.style.transform = "";
-          }, 260);
+          }, dur * 1000 + 20);
         });
       });
     });
@@ -462,24 +463,9 @@ export function Sidebar() {
           <div>
             {[...favorites].map((fav, favIdx) => {
               const isBroken = brokenPaths.has(fav.path);
-              const d = dragFav;
-              // 드롭선 위치: 이 폴더 아래에 선 표시
-              const showBottom = d && d.from !== favIdx && (
-                (d.over === favIdx && d.pos === "below") ||
-                (d.over === favIdx + 1 && d.pos === "above" && d.from !== favIdx + 1)
-              );
-              // 맨 위 선: 첫 폴더 위
-              const showTop = favIdx === 0 && d && d.over === 0 && d.pos === "above" && d.from !== 0;
-              // 애니메이션: 선 위쪽은 올라가고, 선 아래쪽은 내려감
-              const pushUp = showBottom;
-              const pushDown = showTop || (d && d.from !== favIdx && (
-                (d.over === favIdx - 1 && d.pos === "below" && d.from !== favIdx - 1) ||
-                (d.over === favIdx && d.pos === "above")
-              ));
-              const isDragged = d?.from === favIdx;
+              const isDragged = dragFav?.from === favIdx;
               return (
                 <div key={fav.path}>
-                {showTop && <div style={{ height: "4px", background: "var(--color-accent)", margin: "0 16px", borderRadius: "2px" }} />}
                 <div
                   data-fav-item
                   data-fav-path={fav.path}
@@ -487,8 +473,7 @@ export function Sidebar() {
                   style={{
                     display: searchQuery && !foldersWithResults.has(fav.path) ? "none" : undefined,
                     opacity: isDragged ? 0.4 : 1,
-                    transform: pushUp ? "translateY(-4px)" : pushDown ? "translateY(4px)" : "translateY(0)",
-                    transition: "transform 0.15s ease, opacity 0.15s ease",
+                    transition: "opacity 0.15s ease",
                   }}
                 >
                   {(
@@ -629,7 +614,6 @@ export function Sidebar() {
                   {/* 파일 트리 */}
                   {!isBroken && (searchQuery || expandedFavs.has(fav.path)) && <FileTree rootPath={fav.path} searchQuery={searchQuery} compact={compactMode} />}
                 </div>
-                {showBottom && <div style={{ height: "4px", background: "var(--color-accent)", margin: "0 16px", borderRadius: "2px" }} />}
                 </div>
               );
             })}

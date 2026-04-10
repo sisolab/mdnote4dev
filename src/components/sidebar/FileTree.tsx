@@ -798,7 +798,7 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
       htmlEl.style.transition = "none";
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          const dur = Math.min(1.5, Math.max(0.5, Math.abs(delta) * 0.01));
+          const dur = Math.min(1.0, Math.max(0.3, Math.abs(delta) * 0.006));
           htmlEl.style.transition = `transform ${dur}s cubic-bezier(0.25, 0.1, 0.25, 1)`;
           htmlEl.style.transform = "translateY(0)";
           setTimeout(() => { htmlEl.style.transition = ""; htmlEl.style.transform = ""; }, dur * 1000 + 20);
