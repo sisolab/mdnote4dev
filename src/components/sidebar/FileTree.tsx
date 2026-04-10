@@ -85,7 +85,8 @@ function FileTreeItem({
   const isExpanded = expandedFolders.has(entry.path);
   const isFocused = selectedFile === entry.path;
   const isOpened = tabs.some((t) => t.filePath === entry.path);
-  const isMultiSelected = selectedPaths.has(entry.path);
+  // 자신이 선택되었거나, 부모 폴더가 선택된 경우 (하위 항목 포함 선택)
+  const isMultiSelected = selectedPaths.has(entry.path) || [...selectedPaths].some((p) => entry.path.startsWith(p + "\\"));
 
   useEffect(() => {
     if (isExpanded && entry.isDirectory) {
