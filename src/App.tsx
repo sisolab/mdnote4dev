@@ -232,12 +232,12 @@ function App() {
     const appWindow = getCurrentWindow();
     const unlisten = appWindow.onCloseRequested(async (event) => {
       const { tabs } = useAppStore.getState();
-      // 열린 탭의 고아 이미지 정리
-      for (const tab of tabs) {
-        if (tab.filePath && tab.content) {
-          await cleanupOrphanedImages(tab.filePath, tab.content).catch(() => {});
-        }
-      }
+      // 고아 이미지 정리 — 경로 변환 안정화 후 활성화
+      // for (const tab of tabs) {
+      //   if (tab.filePath && tab.content) {
+      //     await cleanupOrphanedImages(tab.filePath, tab.content).catch(() => {});
+      //   }
+      // }
 
       const unsaved = tabs.filter((t) => t.type !== "tag-explorer" && !t.filePath && t.content);
       if (unsaved.length > 0) {

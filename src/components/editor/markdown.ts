@@ -25,20 +25,22 @@ turndown.addRule("taskListItem", {
   },
 });
 
-// 이미지 변환 규칙: asset URL → 상대경로 복원
+// 이미지 변환 규칙: asset URL → 상대경로 복원, HTML 태그로 저장
 turndown.addRule("image", {
   filter: "img",
   replacement: (_content, node) => {
     const el = node as HTMLElement;
-    const originalSrc = el.getAttribute("data-original-src");
-    let src = originalSrc || el.getAttribute("src") || "";
+    let src = el.getAttribute("src") || "";
     const alt = el.getAttribute("alt") || "";
-    // asset:// URL에서 .assets 경로 추출하여 상대경로로 변환
-    const assetsMatch = src.match(/[/\\]\.assets[/\\](.+?)(?:\?.*)?$/);
-    if (assetsMatch && !src.startsWith("./")) {
-      src = `./.assets/${assetsMatch[1]}`;
+    const width = el.getAttribute("data-width") || "320";
+    const align = el.getAttribute("data-align") || "left";
+    // asset:// URL에서 .assets 경로 추출
+    const assetsMatch = src.match(/\.assets(?:[/\\]|%5C|%2F)(.+?)(?:\?.*)?$/i);
+    if (assetsMatch) {
+      src = `./.assets/${decodeURIComponent(assetsMatch[1])}`;
     }
-    return `![${alt}](${src})`;
+    const widthAttr = parseInt(width) > 0 ? ` width="${width}"` : "";
+    return `<img src="${src}" alt="${alt}"${widthAttr} align="${align}">`;
   },
 });
 
@@ -152,7 +154,7 @@ export function markdownToHtml(md: string, docFilePath?: string | null): string 
   html = html.replace(/\*(.+?)\*/g, "<em>$1</em>");
   html = html.replace(/~~(.+?)~~/g, "<s>$1</s>");
 
-  // 이미지
+  // 이미지: 표준 마크다운 ![alt](src) → HTML img 변환 (크기/정렬 없음)
   html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_m, alt, src) => {
     let resolvedSrc = src;
     if (docFilePath && src.startsWith("./")) {
@@ -160,8 +162,26 @@ export function markdownToHtml(md: string, docFilePath?: string | null): string 
       const absPath = `${docDir}\\${src.substring(2).replace(/\//g, "\\")}`;
       resolvedSrc = convertFileSrc(absPath);
     }
-    return `<img src="${resolvedSrc}" alt="${alt}" data-original-src="${src}">`;
+    return `<img src="${resolvedSrc}" alt="${alt}">`;
   });
+
+  // HTML img 태그의 상대경로를 asset URL로 변환
+  if (docFilePath) {
+    html = html.replace(/<img\s([^>]*?)src="(\.\/[^"]+)"([^>]*)>/g, (_m, pre, src, post) => {
+      const docDir = docFilePath.substring(0, docFilePath.lastIndexOf("\\"));
+      const absPath = `${docDir}\\${src.substring(2).replace(/\//g, "\\")}`;
+      const resolvedSrc = convertFileSrc(absPath);
+      // width/align 속성 파싱
+      const widthMatch = _m.match(/width="(\d+)"/);
+      const alignMatch = _m.match(/align="(\w+)"/);
+      const width = widthMatch ? parseInt(widthMatch[1]) : 320;
+      const align = alignMatch ? alignMatch[1] : "left";
+      const alt = (_m.match(/alt="([^"]*)"/) || ["", ""])[1];
+      const style = width > 0 ? `width: ${width}px; height: auto; cursor: pointer;` : "cursor: pointer;";
+      const alignClass = align === "center" ? "image-center" : "";
+      return `<img src="${resolvedSrc}" alt="${alt}" data-width="${width}" data-align="${align}" class="${alignClass}" style="${style}">`;
+    });
+  }
 
   // 링크
   html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');

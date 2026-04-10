@@ -7,7 +7,7 @@ import { Table } from "@tiptap/extension-table";
 import { TableRow } from "@tiptap/extension-table-row";
 import { TableCell } from "@tiptap/extension-table-cell";
 import { TableHeader } from "@tiptap/extension-table-header";
-import { Image } from "@tiptap/extension-image";
+import { CustomImage } from "./ImageExtension";
 import { Underline } from "@tiptap/extension-underline";
 import { Typography } from "@tiptap/extension-typography";
 import { useEffect, useCallback, useRef, useState } from "react";
@@ -16,6 +16,7 @@ import { parseFrontmatter } from "@/utils/frontmatter";
 import { saveImageToAssets } from "@/utils/imageUtils";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { Toolbar } from "./Toolbar";
+import { ImageToolbar } from "./ImageToolbar";
 import { useSettingsStore, getFontFamily } from "@/stores/settingsStore";
 
 interface TiptapEditorProps {
@@ -29,6 +30,9 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
   const contentRef = useRef(content);
   contentRef.current = content;
   const { settings } = useSettingsStore();
+
+  const filePathRef = useRef(filePath);
+  filePathRef.current = filePath;
 
   const editor = useEditor({
     extensions: [
@@ -45,7 +49,7 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
       TableRow,
       TableCell,
       TableHeader,
-      Image,
+      CustomImage,
       Underline,
       Typography,
     ],
@@ -54,41 +58,47 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
       attributes: {
         class: "outline-none prose prose-sm max-w-none",
       },
-      handlePaste: (view, event) => {
-        const items = event.clipboardData?.items;
-        if (!items) return false;
-
-        for (const item of Array.from(items)) {
-          if (item.type.startsWith("image/")) {
-            event.preventDefault();
-            const blob = item.getAsFile();
-            if (!blob) return true;
-            if (!filePath) {
-              console.warn("[Marknote] 이미지 붙여넣기: 먼저 문서를 저장하세요");
-              return true;
-            }
-            saveImageToAssets(filePath, blob).then((relativePath) => {
-              // 렌더링용 asset URL 생성
-              const docDir = filePath.substring(0, filePath.lastIndexOf("\\"));
-              const absPath = `${docDir}\\${relativePath.substring(2).replace(/\//g, "\\")}`;
-              const assetUrl = convertFileSrc(absPath);
-              view.dispatch(view.state.tr.replaceSelectionWith(
-                view.state.schema.nodes.image.create({ src: assetUrl })
-              ));
-            }).catch((err) => {
-              console.error("[Marknote] 이미지 저장 실패:", err);
-            });
-            return true;
-          }
-        }
-        return false;
-      },
     },
     onTransaction: (_props) => setTick((t) => t + 1),
   });
 
   // 툴바 active 상태 즉시 반영용
   const [, setTick] = useState(0);
+
+  // 이미지 붙여넣기 핸들러
+  useEffect(() => {
+    if (!editor) return;
+    const el = editor.view.dom;
+    const handler = async (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (const item of Array.from(items)) {
+        if (item.type.startsWith("image/")) {
+          e.preventDefault();
+          e.stopPropagation();
+          const blob = item.getAsFile();
+          if (!blob) return;
+          const fp = filePathRef.current;
+          if (!fp) {
+            console.warn("[Marknote] 이미지 붙여넣기: 먼저 문서를 저장하세요");
+            return;
+          }
+          try {
+            const relativePath = await saveImageToAssets(fp, blob);
+            const docDir = fp.substring(0, fp.lastIndexOf("\\"));
+            const absPath = `${docDir}\\${relativePath.substring(2).replace(/\//g, "\\")}`;
+            const assetUrl = convertFileSrc(absPath);
+            editor.chain().focus().setImage({ src: assetUrl, width: 320, align: "left" } as any).run();
+          } catch (err) {
+            console.error("[Marknote] 이미지 저장 실패:", err);
+          }
+          return;
+        }
+      }
+    };
+    el.addEventListener("paste", handler);
+    return () => el.removeEventListener("paste", handler);
+  }, [editor]);
 
   useEffect(() => {
     if (!editor) return;
@@ -158,6 +168,7 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
   return (
     <div className="flex flex-col h-full">
       <Toolbar editor={editor} />
+      <ImageToolbar editor={editor} />
       <div
         className={`flex-1 overflow-auto ${s.pageAlign === "center" ? "flex justify-center" : ""}`}
         style={{ padding: "24px 48px" }}

@@ -93,6 +93,30 @@ body {
   background: var(--color-text-tertiary);
 }
 
+/* 이미지 */
+.tiptap img {
+  border-radius: 3px;
+}
+
+.tiptap img[src=""],
+.tiptap img:not([src]) {
+  display: inline-block;
+  min-width: 120px;
+  min-height: 32px;
+  background: var(--color-bg-hover);
+  border: 1px dashed var(--color-border-medium);
+  border-radius: 3px;
+}
+
+.tiptap img.image-center {
+  display: block;
+  margin: 0 auto;
+}
+
+.tiptap img.ProseMirror-selectednode {
+  outline: 2px solid var(--color-accent);
+}
+
 /* TipTap 에디터 스타일 — CSS 변수 기반 */
 .tiptap {
   min-height: 100%;
