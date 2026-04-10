@@ -7,7 +7,7 @@ import { useAppStore } from "@/stores/appStore";
 import { FileTree } from "./FileTree";
 import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
 import { Tooltip } from "@/components/ui/Tooltip";
-import { Unlink, ChevronRight, Folder, Pin, Tag, Search } from "lucide-react";
+import { Unlink, ChevronRight, Folder, Pin, Tag, Search, ChevronsDownUp, ChevronsUpDown } from "lucide-react";
 
 function shortenPath(path: string): string {
   const userHome = path.match(/^([A-Z]:\\Users\\[^\\]+)/i);
@@ -262,33 +262,29 @@ export function Sidebar() {
       {sidebarTab === "files" ? (
       <>
       {/* 검색창 */}
-      <div style={{ padding: "8px 12px" }}>
-        <div style={{
-          display: "flex", alignItems: "center", gap: "8px",
-          padding: "6px 10px", borderRadius: "6px",
-          border: "1px solid var(--color-border-input)",
-          background: "var(--color-bg-primary)",
-          transition: "border-color 0.15s",
-        }}>
-          <Search size={13} style={{ color: "var(--color-text-light)", flexShrink: 0 }} />
-          <input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="파일 검색..."
-            style={{
-              flex: 1, border: "none", outline: "none", background: "transparent",
-              fontSize: "12px", color: "var(--color-text-primary)",
-            }}
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery("")}
-              style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--color-text-muted)", fontSize: "14px", lineHeight: 1 }}
-            >
-              ×
-            </button>
-          )}
-        </div>
+      <div style={{
+        display: "flex", alignItems: "center", gap: "8px",
+        padding: "0 16px", height: "36px",
+        borderBottom: "1px solid var(--color-border-light)",
+      }}>
+        <Search size={13} style={{ color: "var(--color-text-light)", flexShrink: 0 }} />
+        <input
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="파일 검색"
+          style={{
+            flex: 1, border: "none", outline: "none", background: "transparent",
+            fontSize: "12px", color: "var(--color-text-primary)",
+          }}
+        />
+        {searchQuery && (
+          <button
+            onClick={() => setSearchQuery("")}
+            style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--color-text-muted)", fontSize: "14px", lineHeight: 1 }}
+          >
+            ×
+          </button>
+        )}
       </div>
       <div className="flex-1 overflow-y-auto" style={{ padding: "0" }} onContextMenu={handleSidebarContextMenu}>
         {favorites.length === 0 ? (
@@ -392,6 +388,40 @@ export function Sidebar() {
             })}
           </div>
         )}
+      </div>
+
+      {/* 하단 액션 바 */}
+      <div style={{
+        display: "flex", alignItems: "center", gap: "0",
+        padding: "0 16px", height: "40px",
+        borderTop: "1px solid var(--color-border-light)",
+        shrinkFlex: 0,
+      }}>
+        <button
+          onClick={() => {
+            const allExpanded = favorites.every((f) => expandedFavs.has(f.path));
+            if (allExpanded) {
+              setExpandedFavs(new Set());
+            } else {
+              setExpandedFavs(new Set(favorites.map((f) => f.path)));
+            }
+          }}
+          title={favorites.every((f) => expandedFavs.has(f.path)) ? "모두 접기" : "모두 펼치기"}
+          style={{
+            width: "34px", height: "34px",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            border: "none", background: "transparent", cursor: "pointer",
+            color: "var(--color-text-tertiary)", borderRadius: "3px",
+            transition: "all 0.1s",
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-hover)"; e.currentTarget.style.color = "var(--color-text-secondary)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--color-text-tertiary)"; }}
+        >
+          {favorites.every((f) => expandedFavs.has(f.path))
+            ? <ChevronsDownUp size={15} />
+            : <ChevronsUpDown size={15} />
+          }
+        </button>
       </div>
       </>
       ) : (
