@@ -3,10 +3,11 @@ import { useState, useRef, useCallback } from "react";
 interface TooltipProps {
   text: string;
   delay?: number;
+  position?: "top" | "bottom";
   children: React.ReactNode;
 }
 
-export function Tooltip({ text, delay = 1000, children }: TooltipProps) {
+export function Tooltip({ text, delay = 1000, position = "top", children }: TooltipProps) {
   const [visible, setVisible] = useState(false);
   const [pos, setPos] = useState({ x: 0, y: 0 });
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -15,9 +16,12 @@ export function Tooltip({ text, delay = 1000, children }: TooltipProps) {
     clearTimeout(timer.current);
     setVisible(false);
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    setPos({ x: rect.left, y: rect.top - 28 });
+    setPos({
+      x: rect.left,
+      y: position === "bottom" ? rect.bottom + 4 : rect.top - 28,
+    });
     timer.current = setTimeout(() => setVisible(true), delay);
-  }, [delay]);
+  }, [delay, position]);
 
   const handleMouseEnter = useCallback((e: React.MouseEvent) => {
     resetTimer(e);

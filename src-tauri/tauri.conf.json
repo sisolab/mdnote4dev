@@ -15,7 +15,7 @@
         "title": "Marknote",
         "width": 1200,
         "height": 800,
-        "minWidth": 800,
+        "minWidth": 720,
         "minHeight": 500,
         "decorations": true,
         "resizable": true,

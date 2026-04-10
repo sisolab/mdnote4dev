@@ -389,10 +389,11 @@ export function Sidebar() {
               const isMultiSelected = selectedPaths.has(filePath);
               const isBrokenFile = brokenFavoriteFiles.has(filePath);
               return (
+                <Tooltip key={filePath} text={filePath}>
                 <button
-                  key={filePath}
                   data-path={filePath}
-                  onClick={async () => {
+                  onClick={() => {}}
+                  onDoubleClick={async () => {
                     if (isBrokenFile) return;
                     try {
                       const valid = await exists(filePath);
@@ -450,6 +451,7 @@ export function Sidebar() {
                   <div style={{ position: "absolute", left: "4px", top: "50%", transform: "translateY(-50%)", width: "2px", height: isFocused ? "16px" : "0px", borderRadius: "1px", background: "var(--color-accent)", transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)" }} />
                   )}
                 </button>
+                </Tooltip>
               );
             })
           }

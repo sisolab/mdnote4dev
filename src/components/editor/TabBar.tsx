@@ -1,9 +1,11 @@
 import { useState, useRef, useCallback, useEffect } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { rename, readTextFile } from "@tauri-apps/plugin-fs";
 import { open } from "@tauri-apps/plugin-dialog";
 import { useAppStore } from "@/stores/appStore";
 import { Save, FolderOpen, PanelLeft, Settings } from "lucide-react";
 import { useSettingsStore } from "@/stores/settingsStore";
+import { Tooltip } from "@/components/ui/Tooltip";
 
 export function TabBar() {
   const { tabs, activeTabId, setActiveTab, closeTab, updateTabTitle, newTab, reorderTabs, toggleSidebar } = useAppStore();
@@ -12,6 +14,36 @@ export function TabBar() {
   const [highlight, setHighlight] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [closeConfirmId, setCloseConfirmId] = useState<string | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const updateScrollButtons = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 0);
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
+  }, []);
+
+  useEffect(() => {
+    updateScrollButtons();
+    const el = scrollRef.current;
+    if (el) el.addEventListener("scroll", updateScrollButtons);
+    return () => { if (el) el.removeEventListener("scroll", updateScrollButtons); };
+  }, [updateScrollButtons, tabs.length]);
+
+  useEffect(() => {
+    const observer = new ResizeObserver(updateScrollButtons);
+    if (scrollRef.current) observer.observe(scrollRef.current);
+    return () => observer.disconnect();
+  }, [updateScrollButtons]);
+
+  const scrollTabs = (direction: "left" | "right") => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const amount = 360; // ~3 tabs
+    el.scrollBy({ left: direction === "left" ? -amount : amount, behavior: "smooth" });
+  };
   const [editValue, setEditValue] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -22,11 +54,11 @@ export function TabBar() {
 
   const handleHover = useCallback((el: HTMLElement | null) => {
     if (dragIndex !== null) return; // 드래그 중에는 호버 비활성
-    if (!el || !containerRef.current) {
+    if (!el || !scrollRef.current) {
       setHighlight(null);
       return;
     }
-    const cr = containerRef.current.getBoundingClientRect();
+    const cr = scrollRef.current.getBoundingClientRect();
     const br = el.getBoundingClientRect();
     setHighlight({ left: br.left - cr.left, top: br.top - cr.top, width: br.width, height: br.height });
   }, [dragIndex]);
@@ -116,7 +148,7 @@ export function TabBar() {
       onMouseLeave={() => { if (dragIndex === null) setHighlight(null); }}
       onDragEnd={handleDragEnd}
       style={{ position: "relative", padding: "0 8px" }}
-      className="flex items-center border-b border-border-light bg-bg-primary shrink-0 overflow-x-auto"
+      className="flex items-center border-b border-border-light bg-bg-primary shrink-0 overflow-hidden"
     >
       {/* 사이드바 토글 */}
       <button
@@ -137,6 +169,12 @@ export function TabBar() {
 
       <div style={{ width: "1px", height: "14px", background: "var(--color-border-light)", flexShrink: 0, alignSelf: "center" }} />
 
+      {/* 스크롤 가능한 탭 영역 */}
+      <div
+        ref={scrollRef}
+        className="hide-scrollbar"
+        style={{ display: "flex", alignItems: "center", overflowX: "auto", overflowY: "hidden", flex: 1, minWidth: 0, position: "relative" }}
+      >
       {/* 슬라이딩 호버 하이라이트 */}
       <div style={{
         position: "absolute",
@@ -260,6 +298,7 @@ export function TabBar() {
                       }}
                     />
                   ) : (
+                    <Tooltip text={tab.filePath ?? "임시 문서 (저장되지 않음)"} position="bottom">
                     <span
                       onDoubleClick={(e) => {
                         e.stopPropagation();
@@ -270,6 +309,7 @@ export function TabBar() {
                     >
                       {tab.title.replace(/\.(md|markdown)$/i, "")}
                     </span>
+                    </Tooltip>
                   )}
                 </div>
 
@@ -339,6 +379,40 @@ export function TabBar() {
         );
       })}
 
+      </div>
+
+      {/* 스크롤 버튼 */}
+      {(canScrollLeft || canScrollRight) && (
+        <>
+          <button
+            onClick={() => scrollTabs("left")}
+            disabled={!canScrollLeft}
+            style={{
+              width: "24px", height: "40px",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              border: "none", background: "transparent", cursor: canScrollLeft ? "pointer" : "default",
+              color: canScrollLeft ? "var(--color-text-secondary)" : "var(--color-text-muted)",
+              flexShrink: 0, transition: "color 0.1s",
+            }}
+          >
+            <ChevronLeft size={14} />
+          </button>
+          <button
+            onClick={() => scrollTabs("right")}
+            disabled={!canScrollRight}
+            style={{
+              width: "24px", height: "40px",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              border: "none", background: "transparent", cursor: canScrollRight ? "pointer" : "default",
+              color: canScrollRight ? "var(--color-text-secondary)" : "var(--color-text-muted)",
+              flexShrink: 0, transition: "color 0.1s",
+            }}
+          >
+            <ChevronRight size={14} />
+          </button>
+        </>
+      )}
+
       {/* 새 탭 버튼 */}
       <button
         onClick={() => newTab()}
@@ -379,7 +453,6 @@ export function TabBar() {
       </button>
 
       {/* 오른쪽: 설정 */}
-      <div style={{ flex: 1 }} />
       <button
         onClick={() => setShowSettings(true)}
         title="설정"

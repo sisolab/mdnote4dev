@@ -37,6 +37,7 @@ function ToolbarButton({
       style={{
         width: "34px",
         height: "40px",
+        flexShrink: 0,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -70,7 +71,7 @@ function ToolbarButton({
 }
 
 function Divider() {
-  return <div style={{ width: "1px", height: "24px", background: "var(--color-border-light)", margin: "0 10px" }} />;
+  return <div style={{ width: "1px", height: "24px", background: "var(--color-border-light)", margin: "0 10px", flexShrink: 0 }} />;
 }
 
 export function Toolbar({ editor }: ToolbarProps) {
@@ -95,7 +96,7 @@ export function Toolbar({ editor }: ToolbarProps) {
       ref={containerRef}
       onMouseLeave={() => setHighlight(null)}
       style={{ padding: "0 16px", position: "relative" }}
-      className="flex items-center gap-0 border-b border-border-light bg-bg-frosted backdrop-blur-[8px] shrink-0"
+      className="flex items-center gap-0 border-b border-border-light bg-bg-frosted backdrop-blur-[8px] shrink-0 overflow-hidden"
     >
       <div style={{
         position: "absolute",
@@ -167,7 +168,7 @@ export function Toolbar({ editor }: ToolbarProps) {
       </ToolbarButton>
 
       {/* 오른쪽: 레이아웃 토글 */}
-      <div style={{ flex: 1 }} />
+      <div style={{ flex: 1, minWidth: "8px" }} />
 
       <ToolbarButton
         onClick={() => updateSetting("widthMode", settings.widthMode === "fluid" ? "fixed" : "fluid")}
