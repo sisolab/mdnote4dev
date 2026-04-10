@@ -125,7 +125,7 @@ function FileTreeItem({
         data-is-dir={String(!!entry.isDirectory)}
         onClick={handleClick}
         onDoubleClick={handleDoubleClick}
-        onMouseEnter={(e) => { onHover(e.currentTarget); if (entry.isDirectory && onDragOverFolder) onDragOverFolder(e, entry.path); }}
+        onMouseEnter={(e) => { if (!document.body.hasAttribute("data-dragging")) onHover(e.currentTarget); if (entry.isDirectory && onDragOverFolder) onDragOverFolder(e, entry.path); }}
         onMouseMove={(e) => { if (entry.isDirectory && onDragOverFolder) onDragOverFolder(e, entry.path); }}
         onMouseDown={(e) => { if (onDragStart && !renamingPath) onDragStart(e, entry); }}
         onContextMenu={(e) => onContextMenu(e, entry)}

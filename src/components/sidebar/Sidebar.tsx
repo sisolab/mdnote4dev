@@ -44,6 +44,7 @@ export function Sidebar() {
         setDragFav({ from: idx, over: -1, pos: "below" });
         document.body.style.userSelect = "none";
         document.body.style.cursor = "grabbing";
+        document.body.setAttribute("data-dragging", "true");
         // 고스트 생성
         const srcEl = document.querySelector(`[data-fav-path="${CSS.escape(favPath)}"] [data-path]`) as HTMLElement | null;
         if (srcEl) {
@@ -72,6 +73,7 @@ export function Sidebar() {
       window.removeEventListener("mouseup", onUp);
       document.body.style.userSelect = "";
       document.body.style.cursor = "";
+      document.body.removeAttribute("data-dragging");
       // 고스트 페이드아웃
       if (favGhostRef.current) {
         const g = favGhostRef.current;
