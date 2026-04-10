@@ -390,20 +390,32 @@ export function Sidebar() {
           <div>
             {[...favorites].map((fav, favIdx) => {
               const isBroken = brokenPaths.has(fav.path);
-              const isDragTarget = dragFav && dragFav.over === favIdx && dragFav.from !== favIdx;
+              const d = dragFav;
+              // 드롭선 위치: 이 폴더 아래에 선 표시
+              const showBottom = d && d.from !== favIdx && (
+                (d.over === favIdx && d.pos === "below") ||
+                (d.over === favIdx + 1 && d.pos === "above" && d.from !== favIdx + 1)
+              );
+              // 맨 위 선: 첫 폴더 위
+              const showTop = favIdx === 0 && d && d.over === 0 && d.pos === "above" && d.from !== 0;
+              // 애니메이션: 선 위쪽은 올라가고, 선 아래쪽은 내려감
+              const pushUp = showBottom;
+              const pushDown = showTop || (d && d.from !== favIdx && (
+                (d.over === favIdx - 1 && d.pos === "below" && d.from !== favIdx - 1) ||
+                (d.over === favIdx && d.pos === "above")
+              ));
               return (
+                <div key={fav.path}>
+                {showTop && <div style={{ height: "4px", background: "var(--color-accent)", margin: "0 16px", borderRadius: "2px" }} />}
                 <div
-                  key={fav.path}
                   data-fav-item
                   onMouseMove={(e) => updateFavDragTarget(e, favIdx)}
                   style={{
                     display: searchQuery && !foldersWithResults.has(fav.path) ? "none" : undefined,
-                    borderTop: isDragTarget && dragFav?.pos === "above" ? "2px solid var(--color-accent)" : "2px solid transparent",
-                    borderBottom: isDragTarget && dragFav?.pos === "below" ? "2px solid var(--color-accent)" : "2px solid transparent",
-                    opacity: dragFav?.from === favIdx ? 0.4 : 1,
-                    transform: dragFav && dragFav.from !== favIdx && isDragTarget
-                      ? `translateY(${dragFav.pos === "above" ? "3px" : "-3px"})`
-                      : "translateY(0)",
+                    borderTop: "2px solid transparent",
+                    borderBottom: "2px solid transparent",
+                    opacity: d?.from === favIdx ? 0.4 : 1,
+                    transform: pushUp ? "translateY(-4px)" : pushDown ? "translateY(4px)" : "translateY(0)",
                     transition: "transform 0.15s ease, opacity 0.15s ease",
                   }}
                 >
@@ -542,6 +554,8 @@ export function Sidebar() {
 
                   {/* 파일 트리 */}
                   {!isBroken && (searchQuery || expandedFavs.has(fav.path)) && <FileTree rootPath={fav.path} searchQuery={searchQuery} compact={compactMode} />}
+                </div>
+                {showBottom && <div style={{ height: "4px", background: "var(--color-accent)", margin: "0 16px", borderRadius: "2px" }} />}
                 </div>
               );
             })}
