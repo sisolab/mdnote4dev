@@ -348,7 +348,8 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
         const itemPaths = s.paths;
         if (!itemPaths.includes(target)) {
           // 고스트를 대상 폴더로 날리는 애니메이션
-          const targetEl = document.querySelector(`[data-path="${CSS.escape(target)}"]`) as HTMLElement
+          const targetEl = document.querySelector(`[data-path="${CSS.escape(target)}"][data-is-dir="true"]`) as HTMLElement
+            ?? document.querySelector(`[data-fav-path="${CSS.escape(target)}"] [data-path]`) as HTMLElement
             ?? document.querySelector(`[data-tree-root="${CSS.escape(target)}"]`) as HTMLElement;
           const ghost = dragGhostRef.current;
 
