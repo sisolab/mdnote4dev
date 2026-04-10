@@ -21,8 +21,62 @@ export function Sidebar() {
   const [aliasValue, setAliasValue] = useState("");
   const [folderRenaming, setFolderRenaming] = useState<string | null>(null);
   const [folderRenameValue, setFolderRenameValue] = useState("");
-  const [dragFavIndex, setDragFavIndex] = useState<number | null>(null);
-  const [dragFavOverIndex, setDragFavOverIndex] = useState<number | null>(null);
+  // ── 최상위 폴더 드래그 순서 변경 ──
+  const [dragFav, setDragFav] = useState<{ from: number; over: number; pos: "above" | "below" } | null>(null);
+  const dragFavState = useRef<{ startY: number; from: number; to: number; pos: "above" | "below"; active: boolean }>({ startY: 0, from: -1, to: -1, pos: "below", active: false });
+
+  const startFavDrag = (e: React.MouseEvent, idx: number) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    const startY = e.clientY;
+    dragFavState.current = { startY, from: idx, to: -1, pos: "below", active: false };
+
+    const onMove = (me: MouseEvent) => {
+      me.preventDefault();
+      const s = dragFavState.current;
+      if (!s.active && Math.abs(me.clientY - s.startY) > 5) {
+        s.active = true;
+        setDragFav({ from: idx, over: -1, pos: "below" });
+        document.body.style.userSelect = "none";
+        document.body.style.cursor = "grabbing";
+      }
+    };
+
+    const onUp = () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+      document.body.style.userSelect = "";
+      document.body.style.cursor = "";
+      const s = dragFavState.current;
+      if (s.active && s.to >= 0 && s.from !== s.to) {
+        const rawInsert = s.pos === "above" ? s.to : s.to + 1;
+        const insertAt = rawInsert > s.from ? rawInsert - 1 : rawInsert;
+        if (insertAt !== s.from) {
+          const f = s.from, t = insertAt;
+          executeUndoable({
+            type: "reorder-favorites",
+            description: "즐겨찾기 폴더 순서 변경",
+            execute: async () => reorderFavorites(f, t),
+            undo: async () => reorderFavorites(t, f),
+          });
+        }
+      }
+      dragFavState.current = { startY: 0, from: -1, to: -1, pos: "below", active: false };
+      setDragFav(null);
+    };
+
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+  };
+
+  const updateFavDragTarget = (e: React.MouseEvent, favIdx: number) => {
+    if (!dragFavState.current.active) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const pos = e.clientY < rect.top + rect.height / 2 ? "above" : "below";
+    dragFavState.current.to = favIdx;
+    dragFavState.current.pos = pos;
+    setDragFav({ from: dragFavState.current.from, over: favIdx, pos });
+  };
   const [iconPickerPath, setIconPickerPath] = useState<string | null>(null);
   const [sidebarWidth, setSidebarWidth] = useState(280);
   const isResizing = useRef(false);
@@ -336,38 +390,27 @@ export function Sidebar() {
           <div>
             {[...favorites].map((fav, favIdx) => {
               const isBroken = brokenPaths.has(fav.path);
+              const isDragTarget = dragFav && dragFav.over === favIdx && dragFav.from !== favIdx;
               return (
                 <div
                   key={fav.path}
                   data-fav-item
-                  draggable
-                  onDragStart={() => setDragFavIndex(favIdx)}
-                  onDragOver={(e) => { e.preventDefault(); setDragFavOverIndex(favIdx); }}
-                  onDragEnd={() => {
-                    if (dragFavIndex !== null && dragFavOverIndex !== null && dragFavIndex !== dragFavOverIndex) {
-                      const from = dragFavIndex;
-                      const to = dragFavOverIndex;
-                      executeUndoable({
-                        type: "reorder-favorites",
-                        description: "즐겨찾기 폴더 순서 변경",
-                        execute: async () => reorderFavorites(from, to),
-                        undo: async () => reorderFavorites(to, from),
-                      });
-                    }
-                    setDragFavIndex(null);
-                    setDragFavOverIndex(null);
-                  }}
+                  onMouseMove={(e) => updateFavDragTarget(e, favIdx)}
                   style={{
                     display: searchQuery && !foldersWithResults.has(fav.path) ? "none" : undefined,
-                    borderTop: dragFavOverIndex === favIdx && dragFavIndex !== null && dragFavIndex !== favIdx ? "2px solid var(--color-accent)" : "2px solid transparent",
-                    opacity: dragFavIndex === favIdx ? 0.5 : 1,
+                    borderTop: isDragTarget && dragFav?.pos === "above" ? "2px solid var(--color-accent)" : "2px solid transparent",
+                    borderBottom: isDragTarget && dragFav?.pos === "below" ? "2px solid var(--color-accent)" : "2px solid transparent",
+                    opacity: dragFav?.from === favIdx ? 0.4 : 1,
+                    transform: dragFav && dragFav.from !== favIdx && isDragTarget
+                      ? `translateY(${dragFav.pos === "above" ? "3px" : "-3px"})`
+                      : "translateY(0)",
+                    transition: "transform 0.15s ease, opacity 0.15s ease",
                   }}
                 >
                   {(
-                  <Tooltip text={shortenPath(fav.path)}>
-                  <button
-                    draggable={false}
-                    onClick={() => toggleFav(fav.path)}
+                  <div
+                    onMouseDown={(e) => startFavDrag(e, favIdx)}
+                    onClick={() => { if (!dragFavState.current.active) toggleFav(fav.path); }}
                     onContextMenu={(e) => handleContextMenu(e, fav.path)}
                     className={`group w-full flex items-center gap-2 font-semibold transition-all duration-[0.15s]`}
                     style={{
@@ -494,8 +537,7 @@ export function Sidebar() {
                         </div>
                       </div>
                     )}
-                  </button>
-                  </Tooltip>
+                  </div>
                   )}
 
                   {/* 파일 트리 */}
