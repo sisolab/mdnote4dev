@@ -103,7 +103,7 @@ function FileTreeItem({
         onContextMenu={(e) => onContextMenu(e, entry)}
         className={`w-full flex items-center gap-2 text-[14px] relative z-10 ${
           isOpened
-            ? "text-accent font-semibold"
+            ? "text-accent"
             : "text-text-primary"
         } ${!entry.isDirectory && !isMarkdown ? "opacity-30" : ""}`}
         style={{

@@ -432,7 +432,7 @@ export function Sidebar() {
             onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setContextMenu({ x: e.clientX, y: e.clientY, path: "__favorites_section__" }); }}
             style={{
               display: "flex", alignItems: "center", justifyContent: "space-between",
-              padding: "0 16px", height: "28px", cursor: "pointer",
+              padding: "0 16px", height: "40px", cursor: "pointer",
               borderTop: "1px solid var(--color-border-light)",
               borderBottom: "1px solid var(--color-border-light)",
             }}
@@ -484,7 +484,7 @@ export function Sidebar() {
                     } catch { setBrokenFavoriteFiles((prev) => new Set([...prev, filePath])); }
                   }}
                   className={`group w-full flex items-center gap-2 text-[14px] text-left relative z-10 ${
-                    isBrokenFile ? "" : isOpened ? "text-accent font-semibold" : "text-text-primary"
+                    isBrokenFile ? "" : isOpened ? "text-accent" : "text-text-primary"
                   }`}
                   style={{
                     paddingLeft: "32px", paddingRight: "16px", height: compactMode ? "36px" : "44px",
@@ -544,7 +544,7 @@ export function Sidebar() {
           onClick={() => setFolderSectionExpanded(!folderSectionExpanded)}
           style={{
             display: "flex", alignItems: "center", justifyContent: "space-between",
-            padding: "0 16px", height: "28px", cursor: "pointer",
+            padding: "0 16px", height: "40px", cursor: "pointer",
             borderTop: "1px solid var(--color-border-light)",
             borderBottom: "1px solid var(--color-border-light)",
           }}
