@@ -26,10 +26,6 @@ export interface Tab {
 let tabCounter = 0;
 
 interface AppState {
-  // 작업 폴더
-  workspace: string | null;
-  setWorkspace: (path: string | null) => void;
-
   // 즐겨찾기
   favorites: FavoriteFolder[];
   addFavorite: (folder: FavoriteFolder) => void;
@@ -82,11 +78,10 @@ interface AppState {
 }
 
 export const useAppStore = create<AppState>((set) => ({
-  workspace: "C:\\Users\\siu\\Desktop\\Notes",
-  setWorkspace: (path) => set({ workspace: path }),
-
   favorites: [
     { path: "C:\\Users\\siu\\Desktop\\Notes", name: "Notes" },
+    { path: "C:\\Users\\siu\\OneDrive\\문서\\마크다운 노트\\영어 공부", name: "영어 공부" },
+    { path: "C:\\Users\\siu\\OneDrive\\문서\\마크다운 노트\\클로드 이전 계획", name: "클로드 이전 계획" },
   ],
   addFavorite: (folder) =>
     set((state) => ({

@@ -9,7 +9,7 @@ import { FileText } from "lucide-react";
 export function EditorArea() {
   const {
     tabs, activeTabId, updateTabContent, markTabClean,
-    updateTabFilePath, workspace,
+    updateTabFilePath,
   } = useAppStore();
 
   const activeTab = tabs.find((t) => t.id === activeTabId);
@@ -40,7 +40,7 @@ export function EditorArea() {
         if (!activeTab || activeTab.filePath) return; // 저장된 파일은 TiptapEditor에서 처리
         e.preventDefault();
         const selected = await save({
-          defaultPath: workspace ? `${workspace}\\${activeTab.title}` : undefined,
+          defaultPath: undefined,
           filters: [{ name: "Markdown", extensions: ["md"] }],
         });
         if (!selected) return;
@@ -57,7 +57,7 @@ export function EditorArea() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [activeTab, workspace, updateTabFilePath, markTabClean]);
+  }, [activeTab, updateTabFilePath, markTabClean]);
 
   return (
     <main className="flex-1 flex flex-col min-w-0 bg-bg-primary">

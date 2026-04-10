@@ -7,7 +7,7 @@ import { useAppStore } from "@/stores/appStore";
 import { FileTree } from "./FileTree";
 import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
 import { Tooltip } from "@/components/ui/Tooltip";
-import { Unlink, ChevronRight, Folder, Pin, Tag, Search, ChevronsDownUp, ChevronsUpDown, ArrowUpDown, FilePlus, FolderPlus, FileText, FolderOpen } from "lucide-react";
+import { Unlink, ChevronRight, Folder, Tag, Search, ChevronsDownUp, ChevronsUpDown, ArrowUpDown, FilePlus, FolderPlus, FileText, FolderOpen, ListCollapse } from "lucide-react";
 
 function shortenPath(path: string): string {
   const userHome = path.match(/^([A-Z]:\\Users\\[^\\]+)/i);
@@ -18,11 +18,12 @@ function shortenPath(path: string): string {
 }
 
 export function Sidebar() {
-  const { favorites, sidebarCollapsed, removeFavorite, addFavorite, workspace, setWorkspace, openTab, refreshFileTree, fileTreeVersion, setFavoriteAlias, folderSort, fileSort, setFolderSort, setFileSort, favoriteFiles, addFavoriteFile, removeFavoriteFile, selectedPaths } = useAppStore();
+  const { favorites, sidebarCollapsed, removeFavorite, addFavorite, openTab, refreshFileTree, fileTreeVersion, setFavoriteAlias, folderSort, fileSort, setFolderSort, setFileSort, favoriteFiles, addFavoriteFile, removeFavoriteFile, selectedPaths } = useAppStore();
   const [sidebarTab, setSidebarTab] = useState("files");
   const [searchQuery, setSearchQuery] = useState("");
   const [favoritesExpanded, setStandaloneExpanded] = useState(true);
   const [folderSectionExpanded, setFolderSectionExpanded] = useState(true);
+  const [compactMode, setCompactMode] = useState(false);
   const [brokenFavoriteFiles, setBrokenFavoriteFiles] = useState<Set<string>>(new Set());
   const [foldersWithResults, setFoldersWithResults] = useState<Set<string>>(new Set());
   const [sortMenu, setSortMenu] = useState<{ x: number; y: number } | null>(null);
@@ -281,7 +282,6 @@ export function Sidebar() {
         { label: "즐겨찾기에서 제거", onClick: () => removeFavorite(path), danger: true },
       ];
     }
-    const isCurrentWorkspace = path === workspace;
     const fav = favorites.find((f) => f.path === path);
     const hasAlias = !!fav?.alias;
     return [
@@ -293,11 +293,6 @@ export function Sidebar() {
         setAliasValue(fav?.alias ?? fav?.name ?? "");
       }},
       ...(hasAlias ? [{ label: "별칭 제거", onClick: () => setFavoriteAlias(path, undefined) }] : []),
-      { divider: true, label: "", onClick: () => {} },
-      ...(isCurrentWorkspace
-        ? [{ label: "기본 폴더 해제", onClick: () => setWorkspace(null) }]
-        : [{ label: "기본 폴더로 지정", onClick: () => setWorkspace(path) }]
-      ),
       { divider: true, label: "", onClick: () => {} },
       { label: "탐색기에서 열기", onClick: () => { invoke("open_in_explorer", { path }); } },
       { divider: true, label: "", onClick: () => {} },
@@ -346,7 +341,7 @@ export function Sidebar() {
           </button>
         )}
       </div>
-      <div className="flex-1 overflow-y-auto" style={{ padding: "0" }} onContextMenu={handleSidebarContextMenu}>
+      <div className="flex-1 overflow-y-auto" style={{ padding: "0", fontSize: compactMode ? "12px" : "14px" }} onContextMenu={handleSidebarContextMenu}>
 
         {/* ── 즐겨찾기 섹션 ── */}
         {(!searchQuery || favoriteFiles.some((f) => f.split("\\").pop()?.toLowerCase().includes(searchQuery.toLowerCase()))) && (
@@ -411,7 +406,7 @@ export function Sidebar() {
                     isBrokenFile ? "" : isOpened ? "text-accent font-semibold" : "text-text-primary"
                   }`}
                   style={{
-                    paddingLeft: "32px", paddingRight: "16px", height: "44px",
+                    paddingLeft: "32px", paddingRight: "16px", height: compactMode ? "36px" : "44px",
                     background: isMultiSelected ? "var(--color-accent-subtle)" : "transparent",
                     color: isBrokenFile ? "var(--color-text-muted)" : undefined,
                     cursor: isBrokenFile ? "default" : "pointer",
@@ -429,7 +424,7 @@ export function Sidebar() {
                     <FileText size={13} className="shrink-0 text-text-light" style={{ marginTop: "-2px" }} />
                   )}
                   <div style={{ overflow: "hidden", flex: 1, minWidth: 0 }}>
-                    <div className="truncate" style={{ fontSize: "14px", fontWeight: isBrokenFile ? 400 : undefined }}>{name}</div>
+                    <div className="truncate" style={{ fontSize: compactMode ? "12px" : "14px", fontWeight: isBrokenFile ? 400 : undefined }}>{name}</div>
                     <div className="truncate" style={{ fontSize: "10px", color: "var(--color-text-light)", fontWeight: 400, marginTop: "-1px" }}>
                       {(() => { const dir = filePath.substring(0, filePath.lastIndexOf("\\")); const m = dir.match(/^([A-Z]:\\Users\\[^\\]+)/i); return m ? dir.replace(m[1], "~") : dir; })()}
                     </div>
@@ -498,13 +493,8 @@ export function Sidebar() {
           </div>
         ) : (
           <div>
-            {[...favorites].sort((a, b) => {
-              if (a.path === workspace) return -1;
-              if (b.path === workspace) return 1;
-              return 0;
-            }).map((fav) => {
+            {[...favorites].map((fav) => {
               const isBroken = brokenPaths.has(fav.path);
-              const isWorkspace = fav.path === workspace;
               return (
                 <div key={fav.path} data-fav-item style={{ display: searchQuery && !foldersWithResults.has(fav.path) ? "none" : undefined }}>
                   {(
@@ -579,9 +569,6 @@ export function Sidebar() {
                     {fav.alias && aliasEditing !== fav.path && (
                       <Tag size={11} className="shrink-0" style={{ color: "var(--color-text-muted)" }} />
                     )}
-                    {isWorkspace && (
-                      <Pin size={13} className="shrink-0" style={{ color: "var(--color-accent)" }} />
-                    )}
 
                     {/* 끊긴 체인 아이콘 */}
                     {isBroken && (
@@ -625,7 +612,7 @@ export function Sidebar() {
                   )}
 
                   {/* 파일 트리 */}
-                  {!isBroken && (searchQuery || expandedFavs.has(fav.path)) && <FileTree rootPath={fav.path} searchQuery={searchQuery} />}
+                  {!isBroken && (searchQuery || expandedFavs.has(fav.path)) && <FileTree rootPath={fav.path} searchQuery={searchQuery} compact={compactMode} />}
                 </div>
               );
             })}
@@ -668,38 +655,19 @@ export function Sidebar() {
         </button>
 
         <button
-          onClick={() => {
-            const ws = workspace ?? favorites[0]?.path;
-            if (ws) handleNewFile(ws);
-          }}
-          title="새 문서"
+          onClick={() => setCompactMode(!compactMode)}
+          title={compactMode ? "일반 보기" : "컴팩트 보기"}
           style={{
             width: "34px", height: "34px",
             display: "flex", alignItems: "center", justifyContent: "center",
             border: "none", background: "transparent", cursor: "pointer",
-            color: "var(--color-text-tertiary)", borderRadius: "3px",
+            color: compactMode ? "var(--color-accent)" : "var(--color-text-tertiary)", borderRadius: "3px",
             transition: "all 0.1s",
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-hover)"; e.currentTarget.style.color = "var(--color-text-secondary)"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--color-text-tertiary)"; }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-hover)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
         >
-          <FilePlus size={15} />
-        </button>
-
-        <button
-          onClick={handleAddFolder}
-          title="폴더 추가"
-          style={{
-            width: "34px", height: "34px",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            border: "none", background: "transparent", cursor: "pointer",
-            color: "var(--color-text-tertiary)", borderRadius: "3px",
-            transition: "all 0.1s",
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-hover)"; e.currentTarget.style.color = "var(--color-text-secondary)"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--color-text-tertiary)"; }}
-        >
-          <FolderPlus size={15} />
+          <ListCollapse size={15} />
         </button>
 
         <button

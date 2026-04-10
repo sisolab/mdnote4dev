@@ -39,6 +39,7 @@ function FileTreeItem({
   setRenameValue,
   onFinishRename,
   searchMode,
+  compact,
 }: {
   entry: FileEntry;
   depth: number;
@@ -50,6 +51,7 @@ function FileTreeItem({
   setRenameValue: (v: string) => void;
   onFinishRename: (entry: FileEntry) => void;
   searchMode?: boolean;
+  compact?: boolean;
 }) {
   const { expandedFolders, toggleFolder, selectedFile, openTab, fileTreeVersion, selectedPaths, tabs, favoriteFiles } =
     useAppStore();
@@ -105,7 +107,8 @@ function FileTreeItem({
             : "text-text-primary"
         } ${!entry.isDirectory && !isMarkdown ? "opacity-30" : ""}`}
         style={{
-          paddingLeft: `${depth * 16 + 32}px`, paddingRight: "16px", height: "36px",
+          paddingLeft: `${depth * 16 + 32}px`, paddingRight: "16px", height: compact ? "26px" : "36px",
+          fontSize: compact ? "12px" : "14px",
           background: isMultiSelected ? "var(--color-accent-subtle)" : "transparent",
         }}
       >
@@ -155,7 +158,7 @@ function FileTreeItem({
 
       {(searchMode ? entry.isDirectory : isExpanded) &&
         (searchMode ? entry.children ?? [] : children).map((child) => (
-          <FileTreeItem key={child.path} entry={child} depth={depth + 1} onHover={onHover} onItemClick={onItemClick} onContextMenu={onContextMenu} renamingPath={renamingPath} renameValue={renameValue} setRenameValue={setRenameValue} onFinishRename={onFinishRename} searchMode={searchMode} />
+          <FileTreeItem key={child.path} entry={child} depth={depth + 1} onHover={onHover} onItemClick={onItemClick} onContextMenu={onContextMenu} renamingPath={renamingPath} renameValue={renameValue} setRenameValue={setRenameValue} onFinishRename={onFinishRename} searchMode={searchMode} compact={compact} />
         ))}
     </div>
   );
@@ -177,7 +180,7 @@ async function filterTree(path: string, query: string): Promise<FileEntry[]> {
   return results;
 }
 
-export function FileTree({ rootPath, searchQuery = "" }: { rootPath: string; searchQuery?: string }) {
+export function FileTree({ rootPath, searchQuery = "", compact = false }: { rootPath: string; searchQuery?: string; compact?: boolean }) {
   const [entries, setEntries] = useState<FileEntry[]>([]);
   const [searchResults, setSearchResults] = useState<FileEntry[]>([]);
   const { fileTreeVersion, refreshFileTree, closeTab, tabs, selectedPaths, setSelectedPaths, toggleSelectedPath, clearSelectedPaths, openTab, expandedFolders, toggleFolder } = useAppStore();
@@ -419,7 +422,7 @@ export function FileTree({ rootPath, searchQuery = "" }: { rootPath: string; sea
           <p className="text-[11px] text-text-light px-3 py-2">빈 폴더</p>
         ) : (
           items.map((entry) => (
-            <FileTreeItem key={entry.path} entry={entry} depth={0} onHover={handleHover} onItemClick={handleItemClick} onContextMenu={handleContextMenu} renamingPath={renamingPath} renameValue={renameValue} setRenameValue={setRenameValue} onFinishRename={finishRename} searchMode={!!searchQuery} />
+            <FileTreeItem key={entry.path} entry={entry} depth={0} onHover={handleHover} onItemClick={handleItemClick} onContextMenu={handleContextMenu} renamingPath={renamingPath} renameValue={renameValue} setRenameValue={setRenameValue} onFinishRename={finishRename} searchMode={!!searchQuery} compact={compact} />
           ))
         );
       })()}
