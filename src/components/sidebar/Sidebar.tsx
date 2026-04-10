@@ -6,7 +6,7 @@ import { useAppStore } from "@/stores/appStore";
 import { FileTree } from "./FileTree";
 import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
 import { Tooltip } from "@/components/ui/Tooltip";
-import { Unlink, ChevronRight, Folder, Tag, ChevronsDownUp, ChevronsUpDown, ArrowUpDown, FilePlus, FolderPlus, FileText, FolderOpen, ListCollapse, Eye, EyeOff, icons } from "lucide-react";
+import { Unlink, ChevronRight, Folder, Tag, ChevronsDownUp, ChevronsUpDown, ArrowUpDown, FilePlus, FolderPlus, FileText, FolderOpen, ListCollapse, icons } from "lucide-react";
 import { IconPicker } from "@/components/settings/IconPicker";
 
 function shortenPath(path: string): string {
@@ -20,11 +20,7 @@ function shortenPath(path: string): string {
 export function Sidebar() {
   const { favorites, sidebarCollapsed, removeFavorite, addFavorite, openTab, refreshFileTree, fileTreeVersion, setFavoriteAlias, updateFavoritePath, setFavoriteIcon, folderSort, fileSort, setFolderSort, setFileSort, favoriteFiles, addFavoriteFile, removeFavoriteFile, selectedPaths } = useAppStore();
   const [searchQuery] = useState("");
-  const [favoritesExpanded, setStandaloneExpanded] = useState(true);
-  const [folderSectionExpanded, setFolderSectionExpanded] = useState(true);
   const [compactMode, setCompactMode] = useState(false);
-  const [showFavPaths, setShowFavPaths] = useState(true);
-  const [brokenFavoriteFiles, setBrokenFavoriteFiles] = useState<Set<string>>(new Set());
   const [foldersWithResults, setFoldersWithResults] = useState<Set<string>>(new Set());
   const [sortMenu, setSortMenu] = useState<{ x: number; y: number } | null>(null);
   const [docCounts, setDocCounts] = useState<Record<string, number>>({});
@@ -271,43 +267,6 @@ export function Sidebar() {
   };
 
   const getContextMenuItems = (path: string): ContextMenuItem[] => {
-    if (path === "__favorites_section__") {
-      return [
-        { label: "파일 열기...", onClick: async () => {
-          const p = await open({ filters: [{ name: "Markdown", extensions: ["md"] }], multiple: false });
-          if (p && typeof p === "string") {
-            const content = await readTextFile(p);
-            const name = p.split("\\").pop() ?? "문서";
-            openTab(p, name, content);
-            addFavoriteFile(p);
-          }
-        }},
-      ];
-    }
-    if (path.startsWith("__favorite_broken__")) {
-      const filePath = path.replace("__favorite_broken__", "");
-      return [
-        { label: "경로 다시 지정...", onClick: async () => {
-          const p = await open({ filters: [{ name: "Markdown", extensions: ["md"] }], multiple: false });
-          if (p && typeof p === "string") {
-            removeFavoriteFile(filePath);
-            addFavoriteFile(p);
-            setBrokenFavoriteFiles((prev) => { const n = new Set(prev); n.delete(filePath); return n; });
-          }
-        }},
-        { divider: true, label: "", onClick: () => {} },
-        { label: "즐겨찾기 해제", onClick: () => { removeFavoriteFile(filePath); setBrokenFavoriteFiles((prev) => { const n = new Set(prev); n.delete(filePath); return n; }); }, danger: true },
-      ];
-    }
-    if (path.startsWith("__favorite__")) {
-      const filePath = path.replace("__favorite__", "");
-      return [
-        { label: "경로 복사", onClick: () => navigator.clipboard.writeText(filePath) },
-        { label: "탐색기에서 열기", onClick: () => { const dir = filePath.substring(0, filePath.lastIndexOf("\\")); invoke("open_in_explorer", { path: dir }); } },
-        { divider: true, label: "", onClick: () => {} },
-        { label: "즐겨찾기 해제", onClick: () => removeFavoriteFile(filePath), danger: true },
-      ];
-    }
     const isBroken = brokenPaths.has(path);
     if (isBroken) {
       return [
@@ -357,164 +316,24 @@ export function Sidebar() {
 
       <div className="flex-1 overflow-y-auto hide-scrollbar" style={{ padding: "0", fontSize: compactMode ? "11px" : "13px" }} onContextMenu={handleSidebarContextMenu}>
 
-        {/* ── 즐겨찾기 섹션 ── */}
-        {(!searchQuery || favoriteFiles.some((f) => f.split("\\").pop()?.toLowerCase().includes(searchQuery.toLowerCase()))) && (
-        <div>
-          {!searchQuery && (
-          <div
-            onClick={() => setStandaloneExpanded(!favoritesExpanded)}
-            onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setContextMenu({ x: e.clientX, y: e.clientY, path: "__favorites_section__" }); }}
-            style={{
-              display: "flex", alignItems: "center", justifyContent: "space-between",
-              padding: "0 16px", height: "32px", cursor: "pointer",
-              borderTop: "1px solid var(--color-border-light)",
-              borderBottom: "1px solid var(--color-border-light)",
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-hover)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = ""; }}
-          >
-            <Tooltip text="즐겨찾기 파일을 관리합니다. 파일의 실제 위치는 바뀌지 않습니다." delay={0}>
-            <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-              <ChevronRight size={10} className={`shrink-0 text-text-light transition-transform duration-[0.15s] ${favoritesExpanded ? "rotate-90" : ""}`} />
-              <span style={{ fontSize: "11px", fontWeight: 600, color: "var(--color-text-tertiary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                즐겨찾기
-              </span>
-              {favoriteFiles.length > 0 && (
-                <span style={{ fontSize: "10px", color: "var(--color-text-light)", fontWeight: 400 }}>
-                  ({favoriteFiles.length})
-                </span>
-              )}
-            </div>
-            </Tooltip>
-            <button
-              onClick={(e) => { e.stopPropagation(); setShowFavPaths(!showFavPaths); }}
-              title={showFavPaths ? "경로 숨기기" : "경로 표시"}
-              style={{ width: "20px", height: "20px", display: "flex", alignItems: "center", justifyContent: "center", border: "none", background: "transparent", cursor: "pointer", color: "var(--color-text-light)", borderRadius: "3px", transition: "all 0.1s" }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-active)"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
-            >
-              {showFavPaths ? <Eye size={11} /> : <EyeOff size={11} />}
-            </button>
-          </div>
-          )}
-
-          {(searchQuery || favoritesExpanded) && [...favoriteFiles]
-            .filter((f) => !searchQuery || f.split("\\").pop()?.toLowerCase().includes(searchQuery.toLowerCase()))
-            .sort((a, b) => {
-              if (fileSort === "name") return (a.split("\\").pop() ?? "").localeCompare(b.split("\\").pop() ?? "");
-              return 0; // date-added = 추가 순서 유지, custom = 드래그 순서 유지
-            })
-            .map((filePath) => {
-              const name = filePath.split("\\").pop() ?? "";
-              const { selectedFile, tabs } = useAppStore.getState();
-              const isFocused = selectedFile === filePath;
-              const isOpened = tabs.some((t) => t.filePath === filePath);
-              const isMultiSelected = selectedPaths.has(filePath);
-              const isBrokenFile = brokenFavoriteFiles.has(filePath);
-              return (
-                <Tooltip key={filePath} text={filePath}>
-                <button
-                  data-path={filePath}
-                  onClick={() => {}}
-                  onDoubleClick={async () => {
-                    if (isBrokenFile) return;
-                    try {
-                      const valid = await exists(filePath);
-                      if (!valid) { setBrokenFavoriteFiles((prev) => new Set([...prev, filePath])); return; }
-                      setBrokenFavoriteFiles((prev) => { const n = new Set(prev); n.delete(filePath); return n; });
-                      const content = await readTextFile(filePath);
-                      openTab(filePath, name, content);
-                    } catch { setBrokenFavoriteFiles((prev) => new Set([...prev, filePath])); }
-                  }}
-                  className={`group w-full flex items-center gap-2 text-[14px] text-left relative z-10 ${
-                    isBrokenFile ? "" : isOpened ? "text-accent" : "text-text-primary"
-                  }`}
-                  style={{
-                    paddingLeft: "32px", paddingRight: "16px", height: showFavPaths ? (compactMode ? "30px" : "44px") : (compactMode ? "22px" : "30px"),
-                    background: isMultiSelected ? "var(--color-accent-subtle)" : "transparent",
-                    color: isBrokenFile ? "var(--color-text-muted)" : undefined,
-                    cursor: isBrokenFile ? "default" : "pointer",
-                  }}
-                  onMouseEnter={(e) => { if (!isMultiSelected && !isBrokenFile) e.currentTarget.style.background = "var(--color-bg-hover)"; }}
-                  onMouseLeave={(e) => { if (!isMultiSelected) e.currentTarget.style.background = isMultiSelected ? "var(--color-accent-subtle)" : "transparent"; }}
-                  onContextMenu={(e) => {
-                    e.preventDefault(); e.stopPropagation();
-                    setContextMenu({ x: e.clientX, y: e.clientY, path: isBrokenFile ? `__favorite_broken__${filePath}` : `__favorite__${filePath}` });
-                  }}
-                >
-                  {isBrokenFile ? (
-                    <Unlink size={13} className="shrink-0" style={{ color: "var(--color-text-muted)", marginTop: "-2px" }} />
-                  ) : (
-                    <FileText size={13} className="shrink-0 text-text-light" style={{ marginTop: "-2px" }} />
-                  )}
-                  <div style={{ overflow: "hidden", flex: 1, minWidth: 0 }}>
-                    <div className="truncate" style={{ fontSize: compactMode ? "11px" : "13px", fontWeight: isBrokenFile ? 400 : undefined }}>{name}</div>
-                    {showFavPaths && (
-                    <div className="truncate" style={{ fontSize: "10px", color: "var(--color-text-light)", fontWeight: 400, marginTop: "-1px" }}>
-                      {(() => { const dir = filePath.substring(0, filePath.lastIndexOf("\\")); const m = dir.match(/^([A-Z]:\\Users\\[^\\]+)/i); return m ? dir.replace(m[1], "~") : dir; })()}
-                    </div>
-                    )}
-                  </div>
-                  {/* 폴더 열기 아이콘 */}
-                  {!isBrokenFile && (
-                  <div
-                    className="shrink-0 opacity-0 group-hover:opacity-100"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      const dir = filePath.substring(0, filePath.lastIndexOf("\\"));
-                      invoke("open_in_explorer", { path: dir });
-                    }}
-                    title="폴더 열기"
-                    style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "20px", height: "20px", borderRadius: "3px", cursor: "pointer", color: "var(--color-text-light)", transition: "opacity 0.1s" }}
-                    onMouseEnter={(e) => { e.currentTarget.style.color = "var(--color-text-secondary)"; e.currentTarget.style.background = "var(--color-bg-active)"; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.color = "var(--color-text-light)"; e.currentTarget.style.background = "transparent"; }}
-                  >
-                    <FolderOpen size={13} />
-                  </div>
-                  )}
-                  {!isBrokenFile && (
-                  <div style={{ position: "absolute", left: "4px", top: "50%", transform: "translateY(-50%)", width: "2px", height: isFocused ? "16px" : "0px", borderRadius: "1px", background: "var(--color-accent)", transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)" }} />
-                  )}
-                </button>
-                </Tooltip>
-              );
-            })
-          }
-        </div>
-        )}
 
         {/* ── 폴더 섹션 ── */}
         {!searchQuery && (
         <div
-          onClick={() => setFolderSectionExpanded(!folderSectionExpanded)}
           style={{
             display: "flex", alignItems: "center", justifyContent: "space-between",
-            padding: "0 16px", height: "32px", cursor: "pointer",
-            borderTop: "1px solid var(--color-border-light)",
+            padding: "0 16px", height: "40px",
             borderBottom: "1px solid var(--color-border-light)",
+            flexShrink: 0,
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-hover)"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = ""; }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-            <ChevronRight size={10} className={`shrink-0 text-text-light transition-transform duration-[0.15s] ${folderSectionExpanded ? "rotate-90" : ""}`} />
-            <span style={{ fontSize: "11px", fontWeight: 600, color: "var(--color-text-tertiary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-              폴더
-            </span>
-          </div>
-          <button
-            onClick={(e) => { e.stopPropagation(); handleAddFolder(); }}
-            title="폴더 열기"
-            style={{ width: "20px", height: "20px", display: "flex", alignItems: "center", justifyContent: "center", border: "none", background: "transparent", cursor: "pointer", color: "var(--color-text-light)", borderRadius: "3px", transition: "all 0.1s" }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = "var(--color-text-secondary)"; e.currentTarget.style.background = "var(--color-bg-active)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = "var(--color-text-light)"; e.currentTarget.style.background = "transparent"; }}
-          >
-            <FolderOpen size={12} />
-          </button>
+          <span style={{ fontSize: "11px", fontWeight: 600, color: "var(--color-text-tertiary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            Files Explorer
+          </span>
         </div>
         )}
 
-        {(searchQuery || folderSectionExpanded) && (favorites.length === 0 && !searchQuery ? (
+        {(searchQuery || true) && (favorites.length === 0 && !searchQuery ? (
           <div className="flex flex-col items-center justify-center" style={{ padding: "24px 0" }}>
             <p style={{ fontSize: "12px", color: "var(--color-text-light)" }}>하단에서 폴더를 추가하세요</p>
           </div>
@@ -767,6 +586,22 @@ export function Sidebar() {
           onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--color-text-tertiary)"; }}
         >
           <ArrowUpDown size={14} />
+        </button>
+
+        <button
+          onClick={handleAddFolder}
+          title="폴더 추가"
+          style={{
+            width: "30px", height: "30px",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            border: "none", background: "transparent", cursor: "pointer",
+            color: "var(--color-text-tertiary)", borderRadius: "3px",
+            transition: "all 0.1s",
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-hover)"; e.currentTarget.style.color = "var(--color-text-secondary)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--color-text-tertiary)"; }}
+        >
+          <FolderPlus size={14} />
         </button>
       </div>
 

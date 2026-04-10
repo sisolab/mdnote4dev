@@ -2,13 +2,16 @@ import { useState } from "react";
 import { useAppStore } from "@/stores/appStore";
 import { getTagColor } from "@/utils/frontmatter";
 import { readTextFile } from "@tauri-apps/plugin-fs";
-import { FileText, Search, X } from "lucide-react";
+import { FileText, Search, X, Star, ChevronRight, Clock } from "lucide-react";
 
 export function TagExplorer() {
-  const { allTags, openTab, tabs, activeTabId, recentFiles, filePreviews, fileContents } = useAppStore();
+  const { allTags, openTab, tabs, activeTabId, recentFiles, filePreviews, fileContents, favoriteFiles, removeFavoriteFile } = useAppStore();
   const activeTab = tabs.find((t) => t.id === activeTabId);
   const selectedTags = activeTab?.tagFilters ?? [];
   const [searchQuery, setSearchQuery] = useState("");
+  const [favExpanded, setFavExpanded] = useState(true);
+  const [recentExpanded, setRecentExpanded] = useState(true);
+  const isFavorite = (fp: string) => favoriteFiles.includes(fp);
 
   const tagNames = Object.keys(allTags).sort();
 
@@ -93,6 +96,52 @@ export function TagExplorer() {
     } catch {}
   };
 
+  // 공통 파일 항목 렌더링
+  const renderFileItem = (filePath: string) => {
+    const name = filePath.split("\\").pop() ?? "";
+    const path = shortenPath(filePath.substring(0, filePath.lastIndexOf("\\")));
+    const fileTags = Object.keys(allTags).filter((t) => allTags[t]?.includes(filePath));
+    const preview = filePreviews[filePath] ?? "";
+    const contentSnippet = searchQuery ? getContentSnippet(filePath, searchQuery) : null;
+    return (
+      <button
+        key={filePath}
+        onClick={() => handleOpenFile(filePath)}
+        style={{
+          display: "flex", alignItems: "flex-start", gap: "10px", width: "100%",
+          padding: "8px 16px", border: "none", background: "transparent",
+          cursor: "pointer", textAlign: "left", transition: "background 0.1s",
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-hover)"; }}
+        onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+      >
+        {isFavorite(filePath)
+          ? <Star size={14} style={{ color: "#f5c518", fill: "#f5c518", flexShrink: 0, marginTop: "2px" }} />
+          : <FileText size={14} style={{ color: "var(--color-text-light)", flexShrink: 0, marginTop: "2px" }} />
+        }
+        <div style={{ overflow: "hidden", minWidth: 0, flex: 1 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <span style={{ fontSize: "13px", color: "var(--color-text-primary)", fontWeight: 500, flexShrink: 0, whiteSpace: "nowrap" }}>{searchQuery ? highlightText(name, searchQuery) : name}</span>
+            <span className="truncate" style={{ fontSize: "10px", color: "var(--color-text-light)", flexShrink: 1, minWidth: 0 }}>{path}</span>
+            {fileTags.length > 0 && (
+              <div style={{ display: "flex", gap: "3px", flexShrink: 0 }}>
+                {fileTags.map((t) => {
+                  const c = getTagColor(t);
+                  return <span key={t} style={{ fontSize: "10px", padding: "1px 5px", borderRadius: "3px", background: c.bg, color: c.text, fontWeight: 500 }}>{t}</span>;
+                })}
+              </div>
+            )}
+          </div>
+          {searchQuery && contentSnippet ? (
+            <div className="truncate" style={{ fontSize: "11px", color: "var(--color-text-secondary)", marginTop: "3px" }}>{highlightText(contentSnippet, searchQuery)}</div>
+          ) : !searchQuery && preview ? (
+            <div className="truncate" style={{ fontSize: "11px", color: "var(--color-text-secondary)", marginTop: "3px" }}>{preview}</div>
+          ) : null}
+        </div>
+      </button>
+    );
+  };
+
   const shortenPath = (path: string) => {
     const m = path.match(/^([A-Z]:\\Users\\[^\\]+)/i);
     return m ? path.replace(m[1], "~") : path;
@@ -136,17 +185,16 @@ export function TagExplorer() {
       <div style={{
         display: "flex", alignItems: "center", gap: "8px",
         padding: "0 16px", height: "40px",
-        borderBottom: "1px solid var(--color-border-light)",
         flexShrink: 0,
       }}>
-        <Search size={13} style={{ color: "var(--color-text-light)", flexShrink: 0 }} />
+        <Search size={13} style={{ color: "var(--color-text-light)", flexShrink: 0 }} strokeWidth={2.5} />
         <input
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="파일 검색"
+          placeholder="파일 및 내용 검색"
           style={{
             flex: 1, border: "none", outline: "none", background: "transparent",
-            fontSize: "12px", color: "var(--color-text-primary)",
+            fontSize: "13px", fontWeight: 600, color: "var(--color-text-primary)",
           }}
         />
         {searchQuery && (
@@ -196,59 +244,56 @@ export function TagExplorer() {
       </div>
       )}
 
-      {/* 문서 목록 */}
+      {/* 문서 목록 (즐겨찾기 + 최근 문서 / 검색 결과) */}
       <div className="flex-1 overflow-auto hide-scrollbar" style={{ padding: "4px 0" }}>
-        {!selectedTags.length && !searchQuery && (
-          <div style={{ padding: "6px 16px", fontSize: "10px", color: "var(--color-text-light)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-            최근 문서
-          </div>
+
+        {/* 즐겨찾기 섹션 (검색 중에는 숨김) */}
+        {!searchQuery && !selectedTags.length && favoriteFiles.length > 0 && (
+          <>
+            <div
+              onClick={() => setFavExpanded(!favExpanded)}
+              style={{ display: "flex", alignItems: "center", gap: "4px", padding: "6px 16px", cursor: "pointer" }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-hover)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = ""; }}
+            >
+              <ChevronRight size={10} style={{ color: "var(--color-text-light)", transition: "transform 0.15s", transform: favExpanded ? "rotate(90deg)" : "" }} />
+              <Star size={12} style={{ color: "#f5c518", fill: "#f5c518" }} />
+              <span style={{ fontSize: "11px", fontWeight: 600, color: "var(--color-text-tertiary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                즐겨찾기
+              </span>
+              <span style={{ fontSize: "10px", color: "var(--color-text-light)" }}>({favoriteFiles.length})</span>
+            </div>
+            {favExpanded && favoriteFiles.map((fp) => renderFileItem(fp))}
+          </>
         )}
-        {displayFiles.length > 0 ? (
-          displayFiles.map((filePath) => {
-            const name = filePath.split("\\").pop() ?? "";
-            const path = shortenPath(filePath.substring(0, filePath.lastIndexOf("\\")));
-            const fileTags = Object.keys(allTags).filter((t) => allTags[t]?.includes(filePath));
-            const preview = filePreviews[filePath] ?? "";
-            const contentSnippet = searchQuery ? getContentSnippet(filePath, searchQuery) : null;
-            return (
-              <button
-                key={filePath}
-                onClick={() => handleOpenFile(filePath)}
-                style={{
-                  display: "flex", alignItems: "flex-start", gap: "10px", width: "100%",
-                  padding: "10px 16px", border: "none", background: "transparent",
-                  cursor: "pointer", textAlign: "left", transition: "background 0.1s",
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-hover)"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
-              >
-                <FileText size={14} style={{ color: "var(--color-text-light)", flexShrink: 0, marginTop: "2px" }} />
-                <div style={{ overflow: "hidden", minWidth: 0, flex: 1 }}>
-                  <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
-                    <span className="truncate" style={{ fontSize: "13px", color: "var(--color-text-primary)", fontWeight: 500 }}>{searchQuery ? highlightText(name, searchQuery) : name}</span>
-                    <span className="truncate" style={{ fontSize: "10px", color: "var(--color-text-light)", flexShrink: 1, minWidth: 0 }}>{path}</span>
-                  </div>
-                  {searchQuery && contentSnippet ? (
-                    <div className="truncate" style={{ fontSize: "11px", color: "var(--color-text-secondary)", marginTop: "3px" }}>{highlightText(contentSnippet, searchQuery)}</div>
-                  ) : !searchQuery && preview ? (
-                    <div className="truncate" style={{ fontSize: "11px", color: "var(--color-text-secondary)", marginTop: "3px" }}>{preview}</div>
-                  ) : null}
-                  {fileTags.length > 0 && (
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", marginTop: "5px" }}>
-                      {fileTags.map((t) => {
-                        const c = getTagColor(t);
-                        return <span key={t} style={{ fontSize: "11px", padding: "2px 8px", borderRadius: "3px", background: c.bg, color: c.text, fontWeight: 500 }}>{t}</span>;
-                      })}
-                    </div>
-                  )}
-                </div>
-              </button>
-            );
-          })
-        ) : (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "80px", color: "var(--color-text-light)", fontSize: "12px" }}>
-            {searchQuery || selectedTags.length > 0 ? "검색 결과 없음" : "태그된 문서 없음"}
-          </div>
+
+        {/* 최근 문서 섹션 (검색/태그 필터 없을 때) */}
+        {!selectedTags.length && !searchQuery && (
+          <>
+            {favoriteFiles.length > 0 && <div style={{ height: "1px", background: "var(--color-border-light)", margin: "4px 16px" }} />}
+            <div
+              onClick={() => setRecentExpanded(!recentExpanded)}
+              style={{ display: "flex", alignItems: "center", gap: "4px", padding: "6px 16px", cursor: "pointer" }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-hover)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = ""; }}
+            >
+              <ChevronRight size={10} style={{ color: "var(--color-text-light)", transition: "transform 0.15s", transform: recentExpanded ? "rotate(90deg)" : "" }} />
+              <Clock size={12} style={{ color: "var(--color-text-light)" }} />
+              <span style={{ fontSize: "11px", fontWeight: 600, color: "var(--color-text-tertiary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                최근 문서
+              </span>
+            </div>
+          </>
+        )}
+        {/* 최근 문서 / 검색 결과 / 태그 필터 결과 */}
+        {(!selectedTags.length && !searchQuery ? recentExpanded : true) && (
+          displayFiles.length > 0 ? (
+            displayFiles.map((fp) => renderFileItem(fp))
+          ) : (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "80px", color: "var(--color-text-light)", fontSize: "12px" }}>
+              {searchQuery || selectedTags.length > 0 ? "검색 결과 없음" : "문서 없음"}
+            </div>
+          )
         )}
       </div>
 
