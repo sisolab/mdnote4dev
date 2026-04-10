@@ -494,7 +494,7 @@ export function Sidebar() {
                       cursor: isBroken ? "default" : "pointer",
                     }}
                     onMouseEnter={(e) => {
-                      if (!isBroken) e.currentTarget.style.background = "var(--color-bg-hover)";
+                      if (!isBroken && !dragFavState.current.active) e.currentTarget.style.background = "var(--color-bg-hover)";
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.background = "";
