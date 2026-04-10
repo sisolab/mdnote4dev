@@ -118,14 +118,8 @@ function FileTreeItem({
   };
 
   const isMarkdown = entry.name.endsWith(".md");
-  const rt = reorderTargetProp;
-  const isRtTarget = rt?.path === entry.path && !dragPaths?.includes(entry.path);
-  const showReorderTop = isRtTarget && rt?.pos === "above";
-  const showReorderLine = isRtTarget && rt?.pos === "below";
-
   return (
     <div>
-      {showReorderTop && <div style={{ height: "3px", background: "var(--color-accent)", margin: "0 16px", borderRadius: "2px" }} />}
       <button
         data-path={entry.path}
         data-is-dir={String(!!entry.isDirectory)}
@@ -193,7 +187,6 @@ function FileTreeItem({
           transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
         }} />
       </button>
-      {showReorderLine && <div style={{ height: "3px", background: "var(--color-accent)", margin: "0 16px", borderRadius: "2px" }} />}
 
       {(searchMode ? entry.isDirectory : isExpanded) &&
         (searchMode ? entry.children ?? [] : children).map((child) => (
