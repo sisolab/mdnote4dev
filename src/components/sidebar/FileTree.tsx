@@ -7,6 +7,7 @@ import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
 
 async function loadDirectory(path: string): Promise<FileEntry[]> {
   try {
+    const { folderSort } = useAppStore.getState();
     const entries = await readDir(path);
     const result: FileEntry[] = entries
       .map((entry) => ({
@@ -17,7 +18,8 @@ async function loadDirectory(path: string): Promise<FileEntry[]> {
       .filter((e) => e.name && !e.name.startsWith("."))
       .sort((a, b) => {
         if (a.isDirectory !== b.isDirectory) return a.isDirectory ? -1 : 1;
-        return a.name.localeCompare(b.name);
+        if (folderSort === "name") return a.name.localeCompare(b.name);
+        return 0; // date-added/custom = 파일시스템 순서
       });
     return result;
   } catch {
@@ -205,11 +207,16 @@ export function FileTree({ rootPath, searchQuery = "" }: { rootPath: string; sea
 
     try {
       await rename(entry.path, newPath);
+      const state = useAppStore.getState();
       // 열려있는 탭 경로 업데이트
       const openTab = tabs.find((t) => t.filePath === entry.path);
       if (openTab) {
-        const { updateTabFilePath } = useAppStore.getState();
-        updateTabFilePath(openTab.id, newPath, newName);
+        state.updateTabFilePath(openTab.id, newPath, newName);
+      }
+      // 문서 섹션 경로 업데이트
+      if (state.standaloneFiles.includes(entry.path)) {
+        state.removeStandaloneFile(entry.path);
+        state.addStandaloneFile(newPath);
       }
       refreshFileTree();
     } catch (err) {
@@ -279,10 +286,12 @@ export function FileTree({ rootPath, searchQuery = "" }: { rootPath: string; sea
 
   const handleDelete = async (items: FileEntry[]) => {
     try {
+      const { removeStandaloneFile } = useAppStore.getState();
       for (const item of items) {
         await invoke("move_to_trash", { path: item.path });
         const openTab = tabs.find((t) => t.filePath === item.path);
         if (openTab) closeTab(openTab.id);
+        removeStandaloneFile(item.path);
       }
       clearSelectedPaths();
       refreshFileTree();

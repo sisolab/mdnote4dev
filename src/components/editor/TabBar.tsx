@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
+import { rename } from "@tauri-apps/plugin-fs";
 import { useAppStore } from "@/stores/appStore";
 
 export function TabBar() {
@@ -31,10 +32,31 @@ export function TabBar() {
     setTimeout(() => inputRef.current?.select(), 0);
   };
 
-  const finishRename = (id: string) => {
+  const finishRename = async (id: string) => {
     if (editValue.trim()) {
       const newTitle = editValue.trim().endsWith(".md") ? editValue.trim() : editValue.trim() + ".md";
-      updateTabTitle(id, newTitle);
+      const tab = tabs.find((t) => t.id === id);
+      if (tab?.filePath) {
+        const parentPath = tab.filePath.substring(0, tab.filePath.lastIndexOf("\\"));
+        const newPath = `${parentPath}\\${newTitle}`;
+        if (newPath !== tab.filePath) {
+          try {
+            await rename(tab.filePath, newPath);
+            const state = useAppStore.getState();
+            state.updateTabFilePath(id, newPath, newTitle);
+            // 문서 섹션 경로 업데이트
+            if (state.standaloneFiles.includes(tab.filePath)) {
+              state.removeStandaloneFile(tab.filePath);
+              state.addStandaloneFile(newPath);
+            }
+            state.refreshFileTree();
+          } catch (err) {
+            console.error("파일 이름 변경 실패:", err);
+          }
+        }
+      } else {
+        updateTabTitle(id, newTitle);
+      }
     }
     setEditingId(null);
   };

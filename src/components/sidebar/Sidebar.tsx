@@ -7,7 +7,7 @@ import { useAppStore } from "@/stores/appStore";
 import { FileTree } from "./FileTree";
 import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
 import { Tooltip } from "@/components/ui/Tooltip";
-import { Unlink, ChevronRight, Folder, Pin, Tag, Search, ChevronsDownUp, ChevronsUpDown, ArrowUpDown, FilePlus, FolderPlus, FileText } from "lucide-react";
+import { Unlink, ChevronRight, Folder, Pin, Tag, Search, ChevronsDownUp, ChevronsUpDown, ArrowUpDown, FilePlus, FolderPlus, FileText, Plus } from "lucide-react";
 
 function shortenPath(path: string): string {
   const userHome = path.match(/^([A-Z]:\\Users\\[^\\]+)/i);
@@ -22,6 +22,7 @@ export function Sidebar() {
   const [sidebarTab, setSidebarTab] = useState("files");
   const [searchQuery, setSearchQuery] = useState("");
   const [standaloneExpanded, setStandaloneExpanded] = useState(true);
+  const [folderSectionExpanded, setFolderSectionExpanded] = useState(true);
   const [brokenStandaloneFiles, setBrokenStandaloneFiles] = useState<Set<string>>(new Set());
   const [foldersWithResults, setFoldersWithResults] = useState<Set<string>>(new Set());
   const [sortMenu, setSortMenu] = useState<{ x: number; y: number } | null>(null);
@@ -353,16 +354,159 @@ export function Sidebar() {
         )}
       </div>
       <div className="flex-1 overflow-y-auto" style={{ padding: "0" }} onContextMenu={handleSidebarContextMenu}>
-        {favorites.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-text-tertiary">
-            <p className="text-[12px]">상단 메뉴에서 폴더를 추가하세요</p>
+
+        {/* ── 문서 섹션 ── */}
+        {(!searchQuery || standaloneFiles.some((f) => f.split("\\").pop()?.toLowerCase().includes(searchQuery.toLowerCase()))) && (
+        <div>
+          {!searchQuery && (
+          <div
+            onClick={() => setStandaloneExpanded(!standaloneExpanded)}
+            onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setContextMenu({ x: e.clientX, y: e.clientY, path: "__standalone_folder__" }); }}
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              padding: "0 16px", height: "28px", cursor: "pointer",
+              borderBottom: "1px solid var(--color-border-light)",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-hover)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = ""; }}
+          >
+            <Tooltip text="개별 문서를 등록합니다. 파일의 실제 위치는 바뀌지 않습니다." delay={0}>
+            <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+              <ChevronRight size={10} className={`shrink-0 text-text-light transition-transform duration-[0.15s] ${standaloneExpanded ? "rotate-90" : ""}`} />
+              <span style={{ fontSize: "11px", fontWeight: 600, color: "var(--color-text-tertiary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                문서
+              </span>
+              {standaloneFiles.length > 0 && (
+                <span style={{ fontSize: "10px", color: "var(--color-text-light)", fontWeight: 400 }}>
+                  ({standaloneFiles.length})
+                </span>
+              )}
+            </div>
+            </Tooltip>
+            <button
+              onClick={async (e) => {
+                e.stopPropagation();
+                const p = await open({ filters: [{ name: "Markdown", extensions: ["md"] }], multiple: false });
+                if (p && typeof p === "string") {
+                  const content = await readTextFile(p);
+                  const name = p.split("\\").pop() ?? "문서";
+                  openTab(p, name, content);
+                  addStandaloneFile(p);
+                }
+              }}
+              title="문서 추가"
+              style={{ width: "20px", height: "20px", display: "flex", alignItems: "center", justifyContent: "center", border: "none", background: "transparent", cursor: "pointer", color: "var(--color-text-light)", borderRadius: "3px", transition: "all 0.1s" }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = "var(--color-text-secondary)"; e.currentTarget.style.background = "var(--color-bg-active)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = "var(--color-text-light)"; e.currentTarget.style.background = "transparent"; }}
+            >
+              <Plus size={12} />
+            </button>
+          </div>
+          )}
+
+          {(searchQuery || standaloneExpanded) && [...standaloneFiles]
+            .filter((f) => !searchQuery || f.split("\\").pop()?.toLowerCase().includes(searchQuery.toLowerCase()))
+            .sort((a, b) => {
+              if (fileSort === "name") return (a.split("\\").pop() ?? "").localeCompare(b.split("\\").pop() ?? "");
+              return 0; // date-added = 추가 순서 유지, custom = 드래그 순서 유지
+            })
+            .map((filePath) => {
+              const name = filePath.split("\\").pop() ?? "";
+              const { selectedFile, tabs } = useAppStore.getState();
+              const isFocused = selectedFile === filePath;
+              const isOpened = tabs.some((t) => t.filePath === filePath);
+              const isMultiSelected = selectedPaths.has(filePath);
+              const isBrokenFile = brokenStandaloneFiles.has(filePath);
+              return (
+                <button
+                  key={filePath}
+                  data-path={filePath}
+                  onClick={async () => {
+                    if (isBrokenFile) return;
+                    try {
+                      const valid = await exists(filePath);
+                      if (!valid) { setBrokenStandaloneFiles((prev) => new Set([...prev, filePath])); return; }
+                      setBrokenStandaloneFiles((prev) => { const n = new Set(prev); n.delete(filePath); return n; });
+                      const content = await readTextFile(filePath);
+                      openTab(filePath, name, content);
+                    } catch { setBrokenStandaloneFiles((prev) => new Set([...prev, filePath])); }
+                  }}
+                  className={`w-full flex items-center gap-2 text-[14px] text-left relative z-10 ${
+                    isBrokenFile ? "" : isOpened ? "text-accent font-semibold" : "text-text-primary"
+                  }`}
+                  style={{
+                    paddingLeft: "32px", paddingRight: "16px", height: "44px",
+                    background: isMultiSelected ? "var(--color-accent-subtle)" : "transparent",
+                    color: isBrokenFile ? "var(--color-text-muted)" : undefined,
+                    cursor: isBrokenFile ? "default" : "pointer",
+                  }}
+                  onMouseEnter={(e) => { if (!isMultiSelected && !isBrokenFile) e.currentTarget.style.background = "var(--color-bg-hover)"; }}
+                  onMouseLeave={(e) => { if (!isMultiSelected) e.currentTarget.style.background = isMultiSelected ? "var(--color-accent-subtle)" : "transparent"; }}
+                  onContextMenu={(e) => {
+                    e.preventDefault(); e.stopPropagation();
+                    setContextMenu({ x: e.clientX, y: e.clientY, path: isBrokenFile ? `__standalone_broken__${filePath}` : `__standalone__${filePath}` });
+                  }}
+                >
+                  {isBrokenFile ? (
+                    <Unlink size={13} className="shrink-0" style={{ color: "var(--color-text-muted)", marginTop: "-2px" }} />
+                  ) : (
+                    <FileText size={13} className="shrink-0 text-text-light" style={{ marginTop: "-2px" }} />
+                  )}
+                  <div style={{ overflow: "hidden", flex: 1, minWidth: 0 }}>
+                    <div className="truncate" style={{ fontSize: "14px", fontWeight: isBrokenFile ? 400 : undefined }}>{name}</div>
+                    <div className="truncate" style={{ fontSize: "10px", color: "var(--color-text-light)", fontWeight: 400, marginTop: "-1px" }}>
+                      {(() => { const dir = filePath.substring(0, filePath.lastIndexOf("\\")); const m = dir.match(/^([A-Z]:\\Users\\[^\\]+)/i); return m ? dir.replace(m[1], "~") : dir; })()}
+                    </div>
+                  </div>
+                  {!isBrokenFile && (
+                  <div style={{ position: "absolute", left: "4px", top: "50%", transform: "translateY(-50%)", width: "2px", height: isFocused ? "16px" : "0px", borderRadius: "1px", background: "var(--color-accent)", transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)" }} />
+                  )}
+                </button>
+              );
+            })
+          }
+        </div>
+        )}
+
+        {/* ── 폴더 섹션 ── */}
+        {!searchQuery && (
+        <div
+          onClick={() => setFolderSectionExpanded(!folderSectionExpanded)}
+          style={{
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            padding: "0 16px", height: "28px", cursor: "pointer",
+            borderBottom: "1px solid var(--color-border-light)",
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-hover)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = ""; }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+            <ChevronRight size={10} className={`shrink-0 text-text-light transition-transform duration-[0.15s] ${folderSectionExpanded ? "rotate-90" : ""}`} />
+            <span style={{ fontSize: "11px", fontWeight: 600, color: "var(--color-text-tertiary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+              폴더
+            </span>
+          </div>
+          <button
+            onClick={(e) => { e.stopPropagation(); handleAddFolder(); }}
+            title="폴더 추가"
+            style={{ width: "20px", height: "20px", display: "flex", alignItems: "center", justifyContent: "center", border: "none", background: "transparent", cursor: "pointer", color: "var(--color-text-light)", borderRadius: "3px", transition: "all 0.1s" }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = "var(--color-text-secondary)"; e.currentTarget.style.background = "var(--color-bg-active)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = "var(--color-text-light)"; e.currentTarget.style.background = "transparent"; }}
+          >
+            <Plus size={12} />
+          </button>
+        </div>
+        )}
+
+        {(searchQuery || folderSectionExpanded) && (favorites.length === 0 && !searchQuery ? (
+          <div className="flex flex-col items-center justify-center" style={{ padding: "24px 0" }}>
+            <p style={{ fontSize: "12px", color: "var(--color-text-light)" }}>하단에서 폴더를 추가하세요</p>
           </div>
         ) : (
           <div>
             {[...favorites].sort((a, b) => {
               if (a.path === workspace) return -1;
               if (b.path === workspace) return 1;
-              if (folderSort === "name") return (a.alias ?? a.name).localeCompare(b.alias ?? b.name);
               return 0;
             }).map((fav) => {
               const isBroken = brokenPaths.has(fav.path);
@@ -461,117 +605,8 @@ export function Sidebar() {
               );
             })}
           </div>
-        )}
+        ))}
 
-        {/* 단일 파일 특수 폴더 */}
-        {(!searchQuery || standaloneFiles.some((f) => f.split("\\").pop()?.toLowerCase().includes(searchQuery.toLowerCase()))) && (
-          <div data-fav-item>
-            {!searchQuery && (
-            <Tooltip text="개별 파일을 등록할 수 있습니다. 파일의 실제 위치는 바뀌지 않습니다." delay={0}>
-            <button
-              onClick={() => setStandaloneExpanded(!standaloneExpanded)}
-              onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setContextMenu({ x: e.clientX, y: e.clientY, path: "__standalone_folder__" }); }}
-              className="w-full flex items-center gap-2 text-[14px] font-semibold transition-all duration-[0.15s]"
-              style={{
-                height: "36px",
-                padding: "0 16px",
-                color: "var(--color-text-secondary)",
-                cursor: "pointer",
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-hover)"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = ""; }}
-            >
-              <ChevronRight
-                size={12}
-                className={`shrink-0 transition-transform duration-[0.15s] text-text-light ${standaloneExpanded ? "rotate-90" : ""}`}
-              />
-              <FileText size={14} className="shrink-0" style={{ color: "var(--color-text-tertiary)" }} />
-              <span className="truncate">단일 파일</span>
-              <span style={{ fontSize: "10px", color: "var(--color-text-light)", fontWeight: 400, marginLeft: "4px", flexShrink: 0 }}>
-                ({standaloneFiles.length})
-              </span>
-            </button>
-            </Tooltip>
-            )}
-
-            {(searchQuery || standaloneExpanded) && (
-              <div>
-                {standaloneFiles
-                  .filter((f) => !searchQuery || f.split("\\").pop()?.toLowerCase().includes(searchQuery.toLowerCase()))
-                  .map((filePath) => {
-                    const name = filePath.split("\\").pop() ?? "";
-                    const { selectedFile, tabs } = useAppStore.getState();
-                    const isFocused = selectedFile === filePath;
-                    const isOpened = tabs.some((t) => t.filePath === filePath);
-                    const isMultiSelected = selectedPaths.has(filePath);
-                    const isBrokenFile = brokenStandaloneFiles.has(filePath);
-                    return (
-                      <button
-                        key={filePath}
-                        data-path={filePath}
-                        onClick={async () => {
-                          if (isBrokenFile) return;
-                          try {
-                            const valid = await exists(filePath);
-                            if (!valid) {
-                              setBrokenStandaloneFiles((prev) => new Set([...prev, filePath]));
-                              return;
-                            }
-                            setBrokenStandaloneFiles((prev) => { const n = new Set(prev); n.delete(filePath); return n; });
-                            const content = await readTextFile(filePath);
-                            openTab(filePath, name, content);
-                          } catch {
-                            setBrokenStandaloneFiles((prev) => new Set([...prev, filePath]));
-                          }
-                        }}
-                        className={`w-full flex items-center gap-2 text-[14px] text-left relative z-10 ${
-                          isBrokenFile ? "" : isOpened ? "text-accent font-semibold" : "text-text-primary"
-                        }`}
-                        style={{
-                          paddingLeft: "32px", paddingRight: "16px", height: "54px",
-                          background: isMultiSelected ? "var(--color-accent-subtle)" : "transparent",
-                          color: isBrokenFile ? "var(--color-text-muted)" : undefined,
-                          cursor: isBrokenFile ? "default" : "pointer",
-                        }}
-                        onMouseEnter={(e) => { if (!isMultiSelected && !isBrokenFile) e.currentTarget.style.background = "var(--color-bg-hover)"; }}
-                        onMouseLeave={(e) => { if (!isMultiSelected) e.currentTarget.style.background = isMultiSelected ? "var(--color-accent-subtle)" : "transparent"; }}
-                        onContextMenu={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setContextMenu({ x: e.clientX, y: e.clientY, path: isBrokenFile ? `__standalone_broken__${filePath}` : `__standalone__${filePath}` });
-                        }}
-                      >
-                        {isBrokenFile ? (
-                          <Unlink size={13} className="shrink-0" style={{ color: "var(--color-text-muted)", marginTop: "-2px" }} />
-                        ) : (
-                          <FileText size={13} className="shrink-0 text-text-light" style={{ marginTop: "-2px" }} />
-                        )}
-                        <div style={{ overflow: "hidden", flex: 1, minWidth: 0 }}>
-                          <div className="truncate" style={{ fontSize: "14px", fontWeight: isBrokenFile ? 400 : undefined }}>{name}</div>
-                          <div style={{ fontSize: "10px", color: "var(--color-text-light)", fontWeight: 400, marginTop: "-1px", lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", wordBreak: "break-all" }}>
-                            {(() => {
-                              const dir = filePath.substring(0, filePath.lastIndexOf("\\"));
-                              const userHome = dir.match(/^([A-Z]:\\Users\\[^\\]+)/i);
-                              return userHome ? dir.replace(userHome[1], "~") : dir;
-                            })()}
-                          </div>
-                        </div>
-                        {/* 포커스 인디케이터 */}
-                        {!isBrokenFile && (
-                        <div style={{
-                          position: "absolute", left: "4px", top: "50%", transform: "translateY(-50%)",
-                          width: "2px", height: isFocused ? "16px" : "0px",
-                          borderRadius: "1px", background: "var(--color-accent)",
-                          transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
-                        }} />
-                        )}
-                      </button>
-                    );
-                  })}
-              </div>
-            )}
-          </div>
-        )}
       </div>
 
       {/* 하단 액션 바 */}
@@ -669,15 +704,15 @@ export function Sidebar() {
           y={sortMenu.y}
           anchorBottom
           items={[
-            { label: "폴더", header: true, onClick: () => {} },
-            { label: `${folderSort === "name" ? "✓  " : "    "}이름순`, onClick: () => setFolderSort("name") },
-            { label: `${folderSort === "date-added" ? "✓  " : "    "}추가 날짜순`, onClick: () => setFolderSort("date-added") },
-            { label: `${folderSort === "custom" ? "✓  " : "    "}사용자 지정`, onClick: () => setFolderSort("custom") },
+            { label: "폴더 내 정렬", header: true, onClick: () => {} },
+            { label: `${folderSort === "name" ? "✓  " : "    "}이름순`, onClick: () => { setFolderSort("name"); refreshFileTree(); } },
+            { label: `${folderSort === "date-added" ? "✓  " : "    "}추가 날짜순`, onClick: () => { setFolderSort("date-added"); refreshFileTree(); } },
+            { label: `${folderSort === "custom" ? "✓  " : "    "}사용자 지정`, onClick: () => { setFolderSort("custom"); refreshFileTree(); } },
             { divider: true, label: "", onClick: () => {} },
-            { label: "문서", header: true, onClick: () => {} },
-            { label: `${fileSort === "name" ? "✓  " : "    "}이름순`, onClick: () => { setFileSort("name"); refreshFileTree(); } },
-            { label: `${fileSort === "date-added" ? "✓  " : "    "}추가 날짜순`, onClick: () => { setFileSort("date-added"); refreshFileTree(); } },
-            { label: `${fileSort === "custom" ? "✓  " : "    "}사용자 지정`, onClick: () => { setFileSort("custom"); refreshFileTree(); } },
+            { label: "문서 섹션 정렬", header: true, onClick: () => {} },
+            { label: `${fileSort === "name" ? "✓  " : "    "}이름순`, onClick: () => setFileSort("name") },
+            { label: `${fileSort === "date-added" ? "✓  " : "    "}추가 날짜순`, onClick: () => setFileSort("date-added") },
+            { label: `${fileSort === "custom" ? "✓  " : "    "}사용자 지정`, onClick: () => setFileSort("custom") },
           ]}
           onClose={() => setSortMenu(null)}
         />
