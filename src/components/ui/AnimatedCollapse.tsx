@@ -6,59 +6,39 @@ interface AnimatedCollapseProps {
   duration?: number;
 }
 
-export function AnimatedCollapse({ open, children, duration = 200 }: AnimatedCollapseProps) {
-  const contentRef = useRef<HTMLDivElement>(null);
+export function AnimatedCollapse({ open, children, duration = 250 }: AnimatedCollapseProps) {
   const [shouldRender, setShouldRender] = useState(open);
-  const [animStyle, setAnimStyle] = useState<React.CSSProperties>({});
+  const [phase, setPhase] = useState<"idle" | "entering" | "exiting">("idle");
+  const timerRef = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
-    const el = contentRef.current;
+    clearTimeout(timerRef.current);
 
     if (open) {
-      // 펼치기
       setShouldRender(true);
-      setAnimStyle({ height: "0px", opacity: 0, overflow: "hidden" });
+      setPhase("entering");
+      // 다음 프레임에서 entering → idle (트랜지션 트리거)
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          if (!contentRef.current) return;
-          const h = contentRef.current.scrollHeight;
-          setAnimStyle({
-            height: `${h}px`,
-            opacity: 1,
-            overflow: "hidden",
-            transition: `height ${duration}ms ease, opacity ${duration}ms ease`,
-          });
-          setTimeout(() => {
-            setAnimStyle({}); // 애니메이션 완료 후 스타일 제거 (자연스러운 높이)
-          }, duration);
+          setPhase("idle");
         });
       });
-    } else if (el) {
-      // 접기
-      const h = el.scrollHeight;
-      setAnimStyle({ height: `${h}px`, opacity: 1, overflow: "hidden" });
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          setAnimStyle({
-            height: "0px",
-            opacity: 0,
-            overflow: "hidden",
-            transition: `height ${duration}ms ease, opacity ${duration}ms ease`,
-          });
-          setTimeout(() => {
-            setShouldRender(false);
-            setAnimStyle({});
-          }, duration);
-        });
-      });
+    } else if (shouldRender) {
+      setPhase("exiting");
+      timerRef.current = setTimeout(() => {
+        setShouldRender(false);
+        setPhase("idle");
+      }, duration);
     }
-  }, [open, duration]);
+  }, [open]);
 
   if (!shouldRender) return null;
 
-  return (
-    <div ref={contentRef} style={animStyle}>
-      {children}
-    </div>
-  );
+  const style: React.CSSProperties = phase === "entering"
+    ? { opacity: 0, transform: "translateY(-8px)", overflow: "hidden" }
+    : phase === "exiting"
+    ? { opacity: 0, transform: "translateY(-8px)", overflow: "hidden", transition: `opacity ${duration}ms ease, transform ${duration}ms ease` }
+    : { opacity: 1, transform: "translateY(0)", transition: `opacity ${duration}ms ease, transform ${duration}ms ease` };
+
+  return <div style={style}>{children}</div>;
 }
