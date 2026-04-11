@@ -6,7 +6,6 @@ import { useAppStore } from "@/stores/appStore";
 import { Save, FolderOpen, Maximize2, Minimize2, Settings, Search } from "lucide-react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useSettingsStore } from "@/stores/settingsStore";
-import { useSettingsStore } from "@/stores/settingsStore";
 
 export function TabBar() {
   const { tabs, activeTabId, setActiveTab, closeTab, updateTabTitle, newTab, reorderTabs, toggleSidebar, sidebarCollapsed } = useAppStore();
