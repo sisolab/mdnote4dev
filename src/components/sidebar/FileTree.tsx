@@ -454,14 +454,14 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
       if (target) {
         const itemPaths = s.paths;
         if (!itemPaths.includes(target)) {
-          // 고스트 부드럽게 사라짐
+          // 고스트 페이드아웃 시작 (비동기로 제거)
           const ghost = dragGhostRef.current;
           if (ghost) {
             ghost.style.transition = "opacity 0.15s ease";
             ghost.style.opacity = "0";
-            await new Promise((r) => setTimeout(r, 150));
+            dragGhostRef.current = null;
+            setTimeout(() => ghost.remove(), 150);
           }
-          removeDragGhost();
           document.querySelectorAll("[data-drop-active]").forEach((el) => {
             (el as HTMLElement).removeAttribute("data-drop-active");
           });
