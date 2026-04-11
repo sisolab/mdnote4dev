@@ -473,22 +473,38 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
             setMoveConfirm({ paths: itemPaths, target });
           } else {
             await doMove(itemPaths, target);
-            // 이동 후 새 위치 하이라이트
-            setTimeout(() => {
+            // 이동 후 밀어내며 등장 애니메이션
+            requestAnimationFrame(() => {
               for (const p of itemPaths) {
                 const name = p.split("\\").pop() ?? "";
                 const newPath = `${target}\\${name}`;
                 const el = document.querySelector(`[data-path="${CSS.escape(newPath)}"]`) as HTMLElement;
-                if (el) {
+                if (!el) continue;
+                const wrapper = el.parentElement;
+                if (!wrapper) continue;
+                // 높이 0 → 실제 높이 (주변 밀어내기)
+                const h = wrapper.scrollHeight;
+                wrapper.style.height = "0px";
+                wrapper.style.overflow = "hidden";
+                wrapper.style.opacity = "0";
+                requestAnimationFrame(() => {
+                  wrapper.style.transition = "height 0.3s ease-out, opacity 0.25s ease";
+                  wrapper.style.height = `${h}px`;
+                  wrapper.style.opacity = "1";
+                  // 하이라이트
                   el.style.transition = "none";
                   el.style.background = "var(--color-accent-subtle)";
-                  requestAnimationFrame(() => {
+                  setTimeout(() => {
+                    wrapper.style.transition = "";
+                    wrapper.style.height = "";
+                    wrapper.style.overflow = "";
+                    wrapper.style.opacity = "";
                     el.style.transition = "background 1.5s ease";
                     el.style.background = "";
-                  });
-                }
+                  }, 300);
+                });
               }
-            }, 100);
+            });
           }
           dragMoveState.current = { startY: 0, active: false, paths: [] };
           return;
