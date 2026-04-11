@@ -29,7 +29,7 @@ export const DEFAULT_SETTINGS: EditorSettings = {
   lineHeight: 1.8,
   paragraphSpacing: 0.4,
   fontFamily: "system",
-  editorMaxWidth: 780,
+  editorMaxWidth: 720,
   headingScale: 1.3,
   codeFontSize: 13,
   codeLineHeight: 1.6,

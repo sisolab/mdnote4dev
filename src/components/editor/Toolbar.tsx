@@ -204,7 +204,7 @@ function PageWidthButton({ settings, updateSetting, onHover }: { settings: any; 
                 color: settings.editorMaxWidth === w ? "var(--color-accent)" : "var(--color-text-secondary)",
               }}
             >
-              {w}px
+              {w}px{w === 720 && <span style={{ marginLeft: "4px", fontSize: "9px", opacity: 0.6 }}>●</span>}
             </button>
           ))}
         </div>
