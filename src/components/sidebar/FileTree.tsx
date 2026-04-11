@@ -388,11 +388,14 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
 
       // 같은 폴더 내 리오더
       const rt = reorderTargetRef.current;
-      if (s.active && rt && s.paths.length === 1) {
+      const dragDir = s.paths[0]?.substring(0, s.paths[0].lastIndexOf("\\"));
+      const rtDir = rt?.path.substring(0, rt.path.lastIndexOf("\\"));
+      if (s.active && rt && s.paths.length === 1 && dragDir === rtDir) {
+        // 같은 폴더 내 리오더
         const dragPath = s.paths[0];
         const dragName = dragPath.split("\\").pop() ?? "";
         const targetName = rt.path.split("\\").pop() ?? "";
-        const folderPath = dragPath.substring(0, dragPath.lastIndexOf("\\"));
+        const folderPath = dragDir;
         const { customFileOrder, setCustomFileOrder } = useAppStore.getState();
 
         // 현재 순서 가져오기 (없으면 현재 표시 순서로 초기화)
