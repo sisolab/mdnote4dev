@@ -229,6 +229,7 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
   const reorderTargetRef = useRef<{ path: string; pos: "above" | "below" } | null>(null);
   const fileFlipPositions = useRef<Record<string, number>>({});
   const flipSpeedMultiplier = useRef(1);
+  const insertAnimPaths = useRef<string[]>([]);
 
   /** 현재 파일 트리의 위치를 FLIP용으로 캡처 */
   const captureFlipPositions = () => {
@@ -472,39 +473,9 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
           if (itemPaths.length > 1) {
             setMoveConfirm({ paths: itemPaths, target });
           } else {
+            // 삽입 애니메이션 경로 등록 (entries 변경 시 useEffect에서 실행)
+            insertAnimPaths.current = itemPaths.map((p) => `${target}\\${p.split("\\").pop()}`);
             await doMove(itemPaths, target);
-            // 이동 후 밀어내며 등장 애니메이션
-            requestAnimationFrame(() => {
-              for (const p of itemPaths) {
-                const name = p.split("\\").pop() ?? "";
-                const newPath = `${target}\\${name}`;
-                const el = document.querySelector(`[data-path="${CSS.escape(newPath)}"]`) as HTMLElement;
-                if (!el) continue;
-                const wrapper = el.parentElement;
-                if (!wrapper) continue;
-                // 높이 0 → 실제 높이 (주변 밀어내기)
-                const h = wrapper.scrollHeight;
-                wrapper.style.height = "0px";
-                wrapper.style.overflow = "hidden";
-                wrapper.style.opacity = "0";
-                requestAnimationFrame(() => {
-                  wrapper.style.transition = "height 0.3s ease-out, opacity 0.25s ease";
-                  wrapper.style.height = `${h}px`;
-                  wrapper.style.opacity = "1";
-                  // 하이라이트
-                  el.style.transition = "none";
-                  el.style.background = "var(--color-accent-subtle)";
-                  setTimeout(() => {
-                    wrapper.style.transition = "";
-                    wrapper.style.height = "";
-                    wrapper.style.overflow = "";
-                    wrapper.style.opacity = "";
-                    el.style.transition = "background 1.5s ease";
-                    el.style.background = "";
-                  }, 300);
-                });
-              }
-            });
           }
           dragMoveState.current = { startY: 0, active: false, paths: [] };
           return;
@@ -874,6 +845,38 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
         });
       });
     });
+  }, [entries]);
+
+  // 삽입 애니메이션: 파일 이동 후 밀어내며 등장
+  useEffect(() => {
+    const paths = insertAnimPaths.current;
+    if (paths.length === 0 || !containerRef.current) return;
+    insertAnimPaths.current = [];
+    for (const newPath of paths) {
+      const el = containerRef.current.querySelector(`[data-path="${CSS.escape(newPath)}"]`) as HTMLElement;
+      if (!el) continue;
+      const wrapper = el.parentElement;
+      if (!wrapper) continue;
+      const h = wrapper.scrollHeight;
+      wrapper.style.height = "0px";
+      wrapper.style.overflow = "hidden";
+      wrapper.style.opacity = "0";
+      requestAnimationFrame(() => {
+        wrapper.style.transition = "height 0.3s ease-out, opacity 0.25s ease";
+        wrapper.style.height = `${h}px`;
+        wrapper.style.opacity = "1";
+        el.style.transition = "none";
+        el.style.background = "var(--color-accent-subtle)";
+        setTimeout(() => {
+          wrapper.style.transition = "";
+          wrapper.style.height = "";
+          wrapper.style.overflow = "";
+          wrapper.style.opacity = "";
+          el.style.transition = "background 1.5s ease";
+          el.style.background = "";
+        }, 300);
+      });
+    }
   }, [entries]);
 
   useEffect(() => {
