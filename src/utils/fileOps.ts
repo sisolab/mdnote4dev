@@ -44,8 +44,18 @@ export async function moveItems(
 
     await rename(srcPath, destPath);
 
-    // 열린 탭 경로 업데이트 (폴더 이동 시 하위 파일 포함)
     const state = useAppStore.getState();
+
+    // 폴더 펼침 상태 이전 (하위 폴더 포함)
+    const { expandedFolders, toggleFolder } = state;
+    for (const expanded of [...expandedFolders]) {
+      if (expanded === srcPath || expanded.startsWith(srcPath + "\\")) {
+        const newExpandedPath = destPath + expanded.substring(srcPath.length);
+        if (!expandedFolders.has(newExpandedPath)) toggleFolder(newExpandedPath);
+      }
+    }
+
+    // 열린 탭 경로 업데이트 (폴더 이동 시 하위 파일 포함)
     for (const tab of state.tabs) {
       if (!tab.filePath) continue;
       if (tab.filePath === srcPath || tab.filePath.startsWith(srcPath + "\\")) {
