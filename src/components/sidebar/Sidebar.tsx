@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { exists, mkdir, create, readDir, readTextFile, rename } from "@tauri-apps/plugin-fs";
+import { exists, mkdir, create, readDir, readTextFile, rename, stat } from "@tauri-apps/plugin-fs";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { useAppStore } from "@/stores/appStore";
@@ -439,6 +439,9 @@ export function Sidebar() {
               const isDragged = dragFavFrom === favIdx;
               return (
                 <div key={fav.path}>
+                {favIdx > 0 && (
+                  <div style={{ height: "1px", background: "var(--color-border-light)", margin: "6px 16px" }} />
+                )}
                 <div
                   data-fav-item
                   data-fav-path={fav.path}
@@ -624,7 +627,42 @@ export function Sidebar() {
             { label: "폴더 내 정렬", header: true, onClick: () => {} },
             { label: `${folderSort === "name" ? "✓  " : "    "}이름순`, onClick: () => { setFolderSort("name"); refreshFileTree(); } },
             { label: `${folderSort === "date-added" ? "✓  " : "    "}추가 날짜순`, onClick: () => { setFolderSort("date-added"); refreshFileTree(); } },
-            { label: `${folderSort === "custom" ? "✓  " : "    "}사용자 지정`, onClick: () => { setFolderSort("custom"); refreshFileTree(); } },
+            { label: `${folderSort === "date-modified" ? "✓  " : "    "}수정 날짜순`, onClick: () => { setFolderSort("date-modified"); refreshFileTree(); } },
+            { label: `${folderSort === "custom" ? "✓  " : "    "}사용자 지정`, onClick: async () => {
+              if (folderSort !== "custom") {
+                // 현재 정렬 결과를 customFileOrder에 스냅샷
+                const { setCustomFileOrder } = useAppStore.getState();
+                const snapshot = async (dirPath: string) => {
+                  try {
+                    const entries = await readDir(dirPath);
+                    let items = entries
+                      .map((e) => ({ name: e.name ?? "", path: `${dirPath}\\${e.name}`, isDir: e.isDirectory }))
+                      .filter((e) => e.name && !e.name.startsWith("."));
+                    if (folderSort === "date-modified") {
+                      const mtimes = new Map<string, number>();
+                      await Promise.all(items.map(async (e) => {
+                        try { const s = await stat(e.path); mtimes.set(e.path, s.mtime ? new Date(s.mtime).getTime() : 0); } catch { mtimes.set(e.path, 0); }
+                      }));
+                      items.sort((a, b) => {
+                        if (a.isDir !== b.isDir) return a.isDir ? -1 : 1;
+                        return (mtimes.get(b.path) ?? 0) - (mtimes.get(a.path) ?? 0);
+                      });
+                    } else {
+                      items.sort((a, b) => {
+                        if (a.isDir !== b.isDir) return a.isDir ? -1 : 1;
+                        return a.name.localeCompare(b.name);
+                      });
+                    }
+                    setCustomFileOrder(dirPath, items.map((e) => e.name));
+                  } catch { /* skip broken dirs */ }
+                };
+                const { expandedFolders } = useAppStore.getState();
+                const dirs = [...favorites.map((f) => f.path), ...expandedFolders];
+                const unique = [...new Set(dirs)];
+                await Promise.all(unique.map((d) => snapshot(d)));
+              }
+              setFolderSort("custom"); refreshFileTree();
+            } },
           ]}
           onClose={() => setSortMenu(null)}
           anchorBottom

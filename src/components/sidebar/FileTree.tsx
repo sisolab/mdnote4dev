@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { readDir, readTextFile, rename, mkdir, create } from "@tauri-apps/plugin-fs";
+import { readDir, readTextFile, rename, mkdir, create, stat } from "@tauri-apps/plugin-fs";
 import { deleteDocImages, renameDocImages } from "@/utils/imageUtils";
 import { invoke } from "@tauri-apps/api/core";
 import { executeUndoable, useUndoStore } from "@/stores/undoStore";
@@ -18,16 +18,34 @@ async function loadDirectory(path: string): Promise<FileEntry[]> {
   try {
     const { folderSort, customFileOrder } = useAppStore.getState();
     const entries = await readDir(path);
-    const result: FileEntry[] = entries
+    let result: FileEntry[] = entries
       .map((entry) => ({
         name: entry.name ?? "",
         path: `${path}\\${entry.name}`,
         isDirectory: entry.isDirectory,
       }))
-      .filter((e) => e.name && !e.name.startsWith("."))
-      .sort((a, b) => {
+      .filter((e) => e.name && !e.name.startsWith("."));
+
+    // date-modified 정렬: stat()으로 mtime 조회
+    if (folderSort === "date-modified") {
+      const mtimes = new Map<string, number>();
+      await Promise.all(
+        result.map(async (e) => {
+          try {
+            const s = await stat(e.path);
+            mtimes.set(e.path, s.mtime ? new Date(s.mtime).getTime() : 0);
+          } catch {
+            mtimes.set(e.path, 0);
+          }
+        }),
+      );
+      result.sort((a, b) => {
         if (a.isDirectory !== b.isDirectory) return a.isDirectory ? -1 : 1;
-        // 임시 커스텀 폴더이거나 custom 정렬일 때 customFileOrder 적용
+        return (mtimes.get(b.path) ?? 0) - (mtimes.get(a.path) ?? 0);
+      });
+    } else {
+      result.sort((a, b) => {
+        if (a.isDirectory !== b.isDirectory) return a.isDirectory ? -1 : 1;
         const useCustom = folderSort === "custom" || tempCustomFolders.has(path);
         if (useCustom) {
           const order = customFileOrder[path];
@@ -38,12 +56,13 @@ async function loadDirectory(path: string): Promise<FileEntry[]> {
             const bIdx = bi >= 0 ? bi : 9999;
             return aIdx - bIdx;
           }
-          // customFileOrder 없으면 이름순 유지 (전환 시 순서 보존)
           return a.name.localeCompare(b.name);
         }
         if (folderSort === "name") return a.name.localeCompare(b.name);
         return 0;
       });
+    }
+
     return result;
   } catch {
     return [];
