@@ -500,7 +500,7 @@ export function Sidebar() {
                       if (!isBroken && !dragFavState.current.active) e.currentTarget.style.background = "var(--color-bg-hover)";
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.background = "";
+                      e.currentTarget.style.background = selectedPaths.has(fav.path) ? "var(--color-accent-subtle)" : "";
                     }}
                   >
                     {/* 펼침 화살표 */}
