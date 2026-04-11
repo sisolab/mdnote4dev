@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useLayoutEffect } from "react";
+import { useRef, useEffect } from "react";
 
 interface AnimatedCollapseProps {
   open: boolean;
@@ -10,66 +10,54 @@ const DURATION = 400;
 
 export function AnimatedCollapse({ open, children, duration = DURATION }: AnimatedCollapseProps) {
   const outerRef = useRef<HTMLDivElement>(null);
-  const innerRef = useRef<HTMLDivElement>(null);
-  const [render, setRender] = useState(open);
   const mounted = useRef(false);
 
   useEffect(() => {
+    const el = outerRef.current;
+    if (!el) return;
+
     if (!mounted.current) {
+      // 첫 렌더링: 애니메이션 없이 초기 상태 설정
       mounted.current = true;
+      if (!open) {
+        el.style.height = "0px";
+        el.style.overflow = "hidden";
+      }
       return;
     }
 
     if (open) {
-      setRender(true);
+      // 펼치기
+      el.style.overflow = "hidden";
+      const h = el.scrollHeight;
+      el.style.height = "0px";
+      requestAnimationFrame(() => {
+        el.style.transition = `height ${duration}ms ease-out`;
+        el.style.height = `${h}px`;
+        setTimeout(() => {
+          el.style.height = "";
+          el.style.overflow = "";
+          el.style.transition = "";
+        }, duration);
+      });
     } else {
       // 접기
-      const outer = outerRef.current;
-      if (!outer) return;
-      const h = outer.scrollHeight;
-      outer.style.height = `${h}px`;
-      outer.style.overflow = "hidden";
+      const h = el.scrollHeight;
+      el.style.height = `${h}px`;
+      el.style.overflow = "hidden";
       requestAnimationFrame(() => {
-        outer.style.transition = `height ${duration}ms ease-out`;
-        outer.style.height = "0px";
+        el.style.transition = `height ${duration}ms ease-out`;
+        el.style.height = "0px";
         setTimeout(() => {
-          setRender(false);
-          outer.style.transition = "";
-          outer.style.height = "";
-          outer.style.overflow = "";
+          el.style.transition = "";
         }, duration);
       });
     }
   }, [open, duration]);
 
-  // 펼치기: render 직후 바로 애니메이션 (접기와 동일한 패턴)
-  useLayoutEffect(() => {
-    if (!render || !open || !mounted.current) return;
-    const outer = outerRef.current;
-    const inner = innerRef.current;
-    if (!outer || !inner) return;
-
-    const h = inner.scrollHeight;
-    outer.style.height = "0px";
-    outer.style.overflow = "hidden";
-    outer.style.transition = "none";
-
-    requestAnimationFrame(() => {
-      outer.style.transition = `height ${duration}ms ease-out`;
-      outer.style.height = `${h}px`;
-      setTimeout(() => {
-        outer.style.height = "";
-        outer.style.overflow = "";
-        outer.style.transition = "";
-      }, duration);
-    });
-  }, [render]);
-
-  if (!render) return null;
-
   return (
     <div ref={outerRef}>
-      <div ref={innerRef}>{children}</div>
+      {children}
     </div>
   );
 }
