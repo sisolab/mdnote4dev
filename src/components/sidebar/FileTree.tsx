@@ -11,6 +11,9 @@ import { ChevronRight, FileText, Star, Folder } from "lucide-react";
 import { AnimatedCollapse } from "@/components/ui/AnimatedCollapse";
 import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
 
+// 임시 커스텀 정렬 폴더 (스냅백 리오더용)
+const tempCustomFolders = new Set<string>();
+
 async function loadDirectory(path: string): Promise<FileEntry[]> {
   try {
     const { folderSort, customFileOrder } = useAppStore.getState();
@@ -24,18 +27,21 @@ async function loadDirectory(path: string): Promise<FileEntry[]> {
       .filter((e) => e.name && !e.name.startsWith("."))
       .sort((a, b) => {
         if (a.isDirectory !== b.isDirectory) return a.isDirectory ? -1 : 1;
-        // customFileOrder가 있으면 정렬 모드와 무관하게 우선 적용 (임시 리오더용)
-        const order = customFileOrder[path];
-        if (order) {
-          const ai = order.indexOf(a.name);
-          const bi = order.indexOf(b.name);
-          const aIdx = ai >= 0 ? ai : 9999;
-          const bIdx = bi >= 0 ? bi : 9999;
-          if (aIdx !== bIdx) return aIdx - bIdx;
+        // 임시 커스텀 폴더이거나 custom 정렬일 때 customFileOrder 적용
+        const useCustom = folderSort === "custom" || tempCustomFolders.has(path);
+        if (useCustom) {
+          const order = customFileOrder[path];
+          if (order) {
+            const ai = order.indexOf(a.name);
+            const bi = order.indexOf(b.name);
+            const aIdx = ai >= 0 ? ai : 9999;
+            const bIdx = bi >= 0 ? bi : 9999;
+            return aIdx - bIdx;
+          }
+          // customFileOrder 없으면 이름순 유지 (전환 시 순서 보존)
+          return a.name.localeCompare(b.name);
         }
         if (folderSort === "name") return a.name.localeCompare(b.name);
-        if (folderSort === "custom") {
-        }
         return 0;
       });
     return result;
@@ -436,11 +442,13 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
             undo: async () => { setCustomFileOrder(folderPath, oldOrder); refreshFileTree(); },
           });
         } else {
-          // 다른 정렬: customFileOrder로 임시 이동 → 원래 정렬로 복귀
+          // 다른 정렬: 임시 커스텀으로 이동 → 원래 정렬로 복귀
+          tempCustomFolders.add(folderPath);
           setCustomFileOrder(folderPath, newOrder);
           refreshFileTree();
           setTimeout(() => {
             insertAnimPaths.current = [`${folderPath}\\${dragName}`];
+            tempCustomFolders.delete(folderPath);
             const updated = { ...useAppStore.getState().customFileOrder };
             delete updated[folderPath];
             useAppStore.setState({ customFileOrder: updated });
