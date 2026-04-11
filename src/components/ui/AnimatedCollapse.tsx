@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useLayoutEffect } from "react";
 
 interface AnimatedCollapseProps {
   open: boolean;
@@ -6,39 +6,69 @@ interface AnimatedCollapseProps {
   duration?: number;
 }
 
-export function AnimatedCollapse({ open, children, duration = 250 }: AnimatedCollapseProps) {
-  const [shouldRender, setShouldRender] = useState(open);
-  const [phase, setPhase] = useState<"idle" | "entering" | "exiting">("idle");
-  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+export function AnimatedCollapse({ open, children, duration = 200 }: AnimatedCollapseProps) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(open);
+  const prevOpen = useRef(open);
+  const isFirstRender = useRef(true);
 
   useEffect(() => {
-    clearTimeout(timerRef.current);
-
-    if (open) {
-      setShouldRender(true);
-      setPhase("entering");
-      // 다음 프레임에서 entering → idle (트랜지션 트리거)
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          setPhase("idle");
-        });
-      });
-    } else if (shouldRender) {
-      setPhase("exiting");
-      timerRef.current = setTimeout(() => {
-        setShouldRender(false);
-        setPhase("idle");
-      }, duration);
+    // 첫 렌더링은 애니메이션 없이
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
     }
+
+    const el = ref.current;
+    if (!el) return;
+
+    if (open && !prevOpen.current) {
+      // 펼치기
+      setVisible(true);
+      el.style.overflow = "hidden";
+      el.style.opacity = "0";
+      el.style.height = "0px";
+      requestAnimationFrame(() => {
+        const h = el.scrollHeight;
+        el.style.transition = `height ${duration}ms ease, opacity ${duration}ms ease`;
+        el.style.height = `${h}px`;
+        el.style.opacity = "1";
+        setTimeout(() => {
+          el.style.height = "";
+          el.style.overflow = "";
+          el.style.transition = "";
+          el.style.opacity = "";
+        }, duration + 10);
+      });
+    } else if (!open && prevOpen.current) {
+      // 접기
+      const h = el.scrollHeight;
+      el.style.overflow = "hidden";
+      el.style.height = `${h}px`;
+      el.style.opacity = "1";
+      requestAnimationFrame(() => {
+        el.style.transition = `height ${duration}ms ease, opacity ${duration}ms ease`;
+        el.style.height = "0px";
+        el.style.opacity = "0";
+        setTimeout(() => {
+          setVisible(false);
+          el.style.transition = "";
+          el.style.overflow = "";
+          el.style.height = "";
+          el.style.opacity = "";
+        }, duration + 10);
+      });
+    }
+
+    prevOpen.current = open;
+  }, [open, duration]);
+
+  // open이 true인데 visible이 false인 경우 (초기 상태)
+  useLayoutEffect(() => {
+    if (open && !visible) setVisible(true);
   }, [open]);
 
-  if (!shouldRender) return null;
+  if (!visible && !open) return null;
 
-  const style: React.CSSProperties = phase === "entering"
-    ? { opacity: 0, transform: "translateY(-8px)", overflow: "hidden" }
-    : phase === "exiting"
-    ? { opacity: 0, transform: "translateY(-8px)", overflow: "hidden", transition: `opacity ${duration}ms ease, transform ${duration}ms ease` }
-    : { opacity: 1, transform: "translateY(0)", transition: `opacity ${duration}ms ease, transform ${duration}ms ease` };
-
-  return <div style={style}>{children}</div>;
+  return <div ref={ref}>{children}</div>;
 }
