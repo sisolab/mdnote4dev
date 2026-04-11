@@ -34,6 +34,9 @@ interface TiptapEditorProps {
   onSave: (markdown: string) => void;
 }
 
+// 모듈 레벨: 탭 전환/리마운트해도 유지
+const globalTrashMap = new Map<string, string>(); // assetName → trashPath
+
 export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
   const lastMarkdown = useRef(content);
   const contentRef = useRef(content);
@@ -200,12 +203,26 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
             const docDir = fp.substring(0, fp.lastIndexOf("\\"));
             const absPath = `${docDir}\\${relativePath.substring(2).replace(/\//g, "\\")}`;
             const assetUrl = convertFileSrc(absPath);
-            // 원본 크기 확인: 320보다 작으면 원본, 아니면 320
-            const img = new Image();
-            img.src = assetUrl;
-            await new Promise((resolve) => { img.onload = resolve; img.onerror = resolve; });
-            const width = img.naturalWidth > 0 && img.naturalWidth < 320 ? null : 320;
-            editor.chain().focus().setImage({ src: assetUrl, width, align: "left" } as any).run();
+            // 이미지 로드 확인 후 삽입 (로드 실패 시 재시도)
+            const tryInsert = (url: string, retries = 2): Promise<void> => new Promise((resolve) => {
+              const img = new Image();
+              img.onload = () => {
+                const width = img.naturalWidth > 0 && img.naturalWidth < 320 ? null : 320;
+                editor.chain().focus().setImage({ src: url, width, align: "left" } as any).run();
+                resolve();
+              };
+              img.onerror = () => {
+                if (retries > 0) {
+                  setTimeout(() => tryInsert(url, retries - 1).then(resolve), 200);
+                } else {
+                  // 최종 실패해도 삽입
+                  editor.chain().focus().setImage({ src: url, width: 320, align: "left" } as any).run();
+                  resolve();
+                }
+              };
+              img.src = url;
+            });
+            await tryInsert(assetUrl);
           } catch {}
           return;
         }
@@ -235,7 +252,6 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
 
   // 에셋(이미지/첨부파일) 삭제/복원 추적
   const prevAssetsRef = useRef<Set<string>>(new Set());
-  const trashMapRef = useRef<Map<string, string>>(new Map()); // assetsPath → trashPath
 
   const collectAssetPaths = useCallback((doc: any): Set<string> => {
     const paths = new Set<string>();
@@ -277,7 +293,7 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
           try {
             if (favRoot && await exists(assetPath)) {
               const result = await moveToTrash(assetPath, favRoot);
-              trashMapRef.current.set(name, result.trashPath);
+              globalTrashMap.set(name, result.trashPath);
             }
           } catch {}
         }
@@ -287,7 +303,7 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
       let restored = false;
       for (const name of current) {
         if (!prev.has(name)) {
-          const trashPath = trashMapRef.current.get(name);
+          const trashPath = globalTrashMap.get(name);
           const assetPath = `${assetsDir}\\${name}`;
           if (trashPath) {
             try {
@@ -295,7 +311,7 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
                 await rename(trashPath, assetPath);
                 restored = true;
               }
-              trashMapRef.current.delete(name);
+              globalTrashMap.delete(name);
             } catch {}
           }
         }

@@ -80,41 +80,41 @@ function FileAttachmentView({ node }: NodeViewProps) {
       <div
         onDoubleClick={handleDoubleClick}
         contentEditable={false}
+        title={`${filename}\n${formatSize(size)} · ${node.attrs.relativePath || filepath}`}
         style={{
-          display: "inline-flex",
+          display: "flex",
           alignItems: "center",
-          gap: "12px",
-          padding: "12px 18px",
+          gap: "10px",
+          padding: "8px 12px",
           margin: "4px 0",
           borderRadius: "6px",
           border: "1px solid var(--color-border-medium)",
           background: "var(--color-bg-secondary)",
           cursor: "pointer",
-          maxWidth: "520px",
+          width: "600px",
+          maxWidth: "100%",
           transition: "all 0.15s",
           userSelect: "none",
-          position: "relative",
         }}
         onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-hover)"; }}
         onMouseLeave={(e) => { e.currentTarget.style.background = "var(--color-bg-secondary)"; }}
       >
-        <Icon size={24} style={{ color: "var(--color-accent)", flexShrink: 0 }} />
+        <Icon size={18} style={{ color: "var(--color-accent)", flexShrink: 0 }} />
         <div style={{ minWidth: 0, flex: 1 }}>
           <div style={{
             fontSize: "13px", fontWeight: 600, color: "var(--color-text-primary)",
             overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
           }}>
-            {filename}{size > 0 && <span style={{ fontWeight: 400, color: "var(--color-text-tertiary)", marginLeft: "8px" }}>({formatSize(size)})</span>}
+            {filename}
           </div>
           <div style={{
-            fontSize: "10px", color: "var(--color-text-tertiary)", marginTop: "2px",
-            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+            fontSize: "11px", color: "var(--color-text-tertiary)", marginTop: "2px",
           }}>
-            {node.attrs.relativePath || filepath}
+            {formatSize(size)} · {node.attrs.relativePath || filepath}
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: "6px", flexShrink: 0 }}>
+        <div style={{ display: "flex", gap: "4px", flexShrink: 0, marginLeft: "auto" }}>
           <button onClick={(e) => { e.stopPropagation(); const folder = filepath.substring(0, filepath.lastIndexOf("\\")); invoke("open_in_explorer", { path: folder }); }}
             title="파일 위치 열기" style={{ ...actionBtnStyle, color: "var(--color-text-tertiary)" }}
             onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-active)"; }}
