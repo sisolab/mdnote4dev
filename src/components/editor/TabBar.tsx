@@ -61,10 +61,12 @@ export function TabBar() {
   // 드래그 상태
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
-  const dragNodeRef = useRef<HTMLDivElement | null>(null);
+  const dragState = useRef<{ startX: number; active: boolean; index: number }>({ startX: 0, active: false, index: -1 });
+  const dragOverRef = useRef<number | null>(null);
+  const wasDragging = useRef(false);
 
   const handleHover = useCallback((el: HTMLElement | null) => {
-    if (dragIndex !== null) return; // 드래그 중에는 호버 비활성
+    if (dragIndex !== null) return;
     if (!el || !containerRef.current) {
       setHighlight(null);
       return;
@@ -121,53 +123,79 @@ export function TabBar() {
     setEditingId(null);
   };
 
-  // 드래그 핸들러
-  const handleDragStart = (e: React.DragEvent, index: number) => {
-    setDragIndex(index);
-    setHighlight(null);
-    dragNodeRef.current = e.currentTarget as HTMLDivElement;
-    e.dataTransfer.effectAllowed = "move";
-    // 드래그 이미지를 투명하게 (커스텀 표시용)
-    const ghost = document.createElement("div");
-    ghost.style.opacity = "0";
-    document.body.appendChild(ghost);
-    e.dataTransfer.setDragImage(ghost, 0, 0);
-    setTimeout(() => document.body.removeChild(ghost), 0);
-  };
+  // 탭 드래그 (mouse event 기반 — HTML5 Drag API는 Tauri WebView에서 안 됨)
+  const startTabDrag = (e: React.MouseEvent, index: number) => {
+    if (e.button !== 0) return;
+    if ((e.target as HTMLElement).closest("button, input")) return;
+    dragState.current = { startX: e.clientX, active: false, index };
+    wasDragging.current = false;
 
-  const handleDragOver = (e: React.DragEvent, index: number) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-    if (dragOverIndex !== index) {
-      setDragOverIndex(index);
-    }
-  };
+    const onMove = (me: MouseEvent) => {
+      if (!dragState.current.active) {
+        if (Math.abs(me.clientX - dragState.current.startX) < 5) return;
+        dragState.current.active = true;
+        wasDragging.current = true;
+        setDragIndex(dragState.current.index);
+        setHighlight(null);
+        document.body.style.cursor = "grabbing";
+        document.body.style.userSelect = "none";
+      }
 
-  const handleDragEnd = () => {
-    if (dragIndex !== null && dragOverIndex !== null && dragIndex !== dragOverIndex) {
-      reorderTabs(dragIndex, dragOverIndex);
-    }
-    setDragIndex(null);
-    setDragOverIndex(null);
-  };
-
-  // ESC로 드래그 취소
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && dragIndex !== null) {
-        setDragIndex(null);
-        setDragOverIndex(null);
+      // 마우스 아래 탭 찾기
+      const scrollEl = scrollRef.current;
+      if (!scrollEl) return;
+      const tabEls = scrollEl.querySelectorAll("[data-tab-id]");
+      for (let i = 0; i < tabEls.length; i++) {
+        const rect = tabEls[i].getBoundingClientRect();
+        if (me.clientX >= rect.left && me.clientX <= rect.right) {
+          // filtered 탭 목록에서의 인덱스를 원래 tabs 배열 인덱스로 변환
+          const tabId = tabEls[i].getAttribute("data-tab-id");
+          const originalIndex = tabs.findIndex((t) => t.id === tabId);
+          if (originalIndex >= 0) {
+            setDragOverIndex(originalIndex);
+            dragOverRef.current = originalIndex;
+          }
+          break;
+        }
       }
     };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [dragIndex]);
+
+    const cleanupAll = () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", handleUp);
+      window.removeEventListener("keydown", handleEsc);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      setDragIndex(null);
+      setDragOverIndex(null);
+      dragOverRef.current = null;
+      dragState.current.active = false;
+    };
+
+    function handleUp() {
+      if (dragState.current.active) {
+        const from = dragState.current.index;
+        const to = dragOverRef.current;
+        if (to !== null && from !== to) {
+          reorderTabs(from, to);
+        }
+      }
+      cleanupAll();
+    }
+
+    function handleEsc(ke: KeyboardEvent) {
+      if (ke.key === "Escape") cleanupAll();
+    }
+
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", handleUp);
+    window.addEventListener("keydown", handleEsc);
+  };
 
   return (
     <div
       ref={containerRef}
       onMouseLeave={() => { if (dragIndex === null) setHighlight(null); }}
-      onDragEnd={handleDragEnd}
       style={{ position: "relative", padding: "0 8px" }}
       className="flex items-center border-b border-border-light bg-bg-primary shrink-0 overflow-hidden"
     >
@@ -264,11 +292,9 @@ export function TabBar() {
             )}
 
             <div
-              draggable={editingId !== tab.id}
-              onDragStart={(e) => handleDragStart(e, index)}
-              onDragOver={(e) => handleDragOver(e, index)}
+              onMouseDown={(e) => { if (editingId !== tab.id) startTabDrag(e, index); }}
               onMouseEnter={(e) => handleHover(e.currentTarget.querySelector("[data-tab-inner]") as HTMLElement || e.currentTarget)}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => { if (!wasDragging.current) setActiveTab(tab.id); }}
               style={{
                 transform: isDragging
                   ? "scale(1.03)"

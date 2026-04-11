@@ -116,7 +116,7 @@ export function StylePanelContent({ spacingStyle, setSpacingStyle }: { spacingSt
               textAlign: "left",
             }}
           >
-            <div style={{ fontSize: "11px", fontWeight: 600, color: isCustom ? "#a78bfa" : "var(--color-text-primary)" }}>Custom</div>
+            <div style={{ fontSize: "11px", fontWeight: 600, color: isCustom ? "#7c3aed" : "var(--color-text-primary)" }}>Custom</div>
             <div style={{ fontSize: "9px", color: "var(--color-text-tertiary)", marginTop: "2px" }}>슬라이더로 직접 조절</div>
           </div>
         </div>
