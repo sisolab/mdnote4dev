@@ -199,7 +199,7 @@ export function TagExplorer() {
       }}>
         <div style={{
           display: "flex", alignItems: "center", gap: "8px",
-          width: "400px", maxWidth: "100%", padding: "8px 12px",
+          width: "480px", maxWidth: "100%", padding: "8px 12px",
           border: "1px solid var(--color-border-medium)",
           borderRadius: "6px", background: "var(--color-bg-secondary)",
         }}>
