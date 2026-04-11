@@ -191,28 +191,35 @@ export function TagExplorer() {
     <div className="flex flex-col h-full">
       {/* 검색창 */}
       <div style={{
-        display: "flex", alignItems: "center", gap: "8px",
-        padding: "0 16px", height: "40px",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        padding: "16px 16px",
         flexShrink: 0,
       }}>
-        <Search size={13} style={{ color: "var(--color-text-light)", flexShrink: 0 }} strokeWidth={2.5} />
-        <input
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="파일 및 내용 검색"
-          style={{
-            flex: 1, border: "none", outline: "none", background: "transparent",
-            fontSize: "13px", fontWeight: 600, color: "var(--color-text-primary)",
-          }}
-        />
-        {searchQuery && (
-          <button
-            onClick={() => setSearchQuery("")}
-            style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--color-text-muted)", fontSize: "14px", lineHeight: 1 }}
-          >
-            ×
-          </button>
-        )}
+        <div style={{
+          display: "flex", alignItems: "center", gap: "8px",
+          width: "100%", padding: "8px 12px",
+          border: "1px solid var(--color-border-medium)",
+          borderRadius: "6px", background: "var(--color-bg-secondary)",
+        }}>
+          <Search size={14} style={{ color: "var(--color-text-light)", flexShrink: 0 }} strokeWidth={2.5} />
+          <input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="파일 및 내용 검색"
+            style={{
+              flex: 1, border: "none", outline: "none", background: "transparent",
+              fontSize: "13px", fontWeight: 500, color: "var(--color-text-primary)",
+            }}
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--color-text-muted)", fontSize: "14px", lineHeight: 1 }}
+            >
+              ×
+            </button>
+          )}
+        </div>
       </div>
 
       {/* 태그 버튼들 */}
