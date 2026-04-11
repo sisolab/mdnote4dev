@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useLayoutEffect } from "react";
+import { useRef, useState, useEffect } from "react";
 
 interface AnimatedCollapseProps {
   open: boolean;
@@ -6,69 +6,69 @@ interface AnimatedCollapseProps {
   duration?: number;
 }
 
-export function AnimatedCollapse({ open, children, duration = 200 }: AnimatedCollapseProps) {
+const DURATION = 300; // 고정 duration으로 일관된 속도감
+
+export function AnimatedCollapse({ open, children, duration = DURATION }: AnimatedCollapseProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(open);
-  const prevOpen = useRef(open);
-  const isFirstRender = useRef(true);
+  const [render, setRender] = useState(open);
+  const mounted = useRef(false);
 
   useEffect(() => {
-    // 첫 렌더링은 애니메이션 없이
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
+    if (!mounted.current) {
+      mounted.current = true;
       return;
     }
 
     const el = ref.current;
-    if (!el) return;
 
-    if (open && !prevOpen.current) {
-      // 펼치기
-      setVisible(true);
-      el.style.overflow = "hidden";
-      el.style.opacity = "0";
-      el.style.height = "0px";
-      requestAnimationFrame(() => {
-        const h = el.scrollHeight;
-        el.style.transition = `height ${duration}ms ease, opacity ${duration}ms ease`;
-        el.style.height = `${h}px`;
-        el.style.opacity = "1";
-        setTimeout(() => {
-          el.style.height = "";
-          el.style.overflow = "";
+    if (open) {
+      setRender(true);
+    } else if (el) {
+      // 접기: clip-path로 위에서부터 숨기기
+      el.style.transition = `clip-path ${duration}ms ease, opacity ${duration}ms ease`;
+      el.style.clipPath = "inset(0 0 100% 0)";
+      el.style.opacity = "0.3";
+      const timer = setTimeout(() => {
+        setRender(false);
+        if (el) {
           el.style.transition = "";
+          el.style.clipPath = "";
           el.style.opacity = "";
-        }, duration + 10);
-      });
-    } else if (!open && prevOpen.current) {
-      // 접기
-      const h = el.scrollHeight;
-      el.style.overflow = "hidden";
-      el.style.height = `${h}px`;
-      el.style.opacity = "1";
-      requestAnimationFrame(() => {
-        el.style.transition = `height ${duration}ms ease, opacity ${duration}ms ease`;
-        el.style.height = "0px";
-        el.style.opacity = "0";
-        setTimeout(() => {
-          setVisible(false);
-          el.style.transition = "";
-          el.style.overflow = "";
-          el.style.height = "";
-          el.style.opacity = "";
-        }, duration + 10);
-      });
+        }
+      }, duration);
+      return () => clearTimeout(timer);
     }
-
-    prevOpen.current = open;
   }, [open, duration]);
 
-  // open이 true인데 visible이 false인 경우 (초기 상태)
-  useLayoutEffect(() => {
-    if (open && !visible) setVisible(true);
-  }, [open]);
+  // 펼치기: render 된 직후 애니메이션
+  useEffect(() => {
+    if (!render || !open) return;
+    const el = ref.current;
+    if (!el || !mounted.current) return;
 
-  if (!visible && !open) return null;
+    // 초기 상태: 숨김
+    el.style.clipPath = "inset(0 0 100% 0)";
+    el.style.opacity = "0.3";
+    el.style.transition = "none";
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (!el) return;
+        el.style.transition = `clip-path ${duration}ms ease, opacity ${duration}ms ease`;
+        el.style.clipPath = "inset(0 0 0 0)";
+        el.style.opacity = "1";
+        setTimeout(() => {
+          if (el) {
+            el.style.transition = "";
+            el.style.clipPath = "";
+            el.style.opacity = "";
+          }
+        }, duration + 10);
+      });
+    });
+  }, [render, open, duration]);
+
+  if (!render) return null;
 
   return <div ref={ref}>{children}</div>;
 }
