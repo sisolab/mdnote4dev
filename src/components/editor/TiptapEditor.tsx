@@ -151,7 +151,21 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
         return true;
       },
     },
-    onTransaction: (_props) => setTick((t) => t + 1),
+    onTransaction: ({ editor: e }) => {
+      setTick((t) => t + 1);
+      // 범위 선택에 포함된 이미지 하이라이트
+      const imgs = e.view.dom.querySelectorAll("img");
+      const { from, to } = e.state.selection;
+      const isRange = to - from > 0;
+      imgs.forEach((img) => {
+        const pos = e.view.posAtDOM(img, 0);
+        if (isRange && pos >= from && pos <= to) {
+          img.classList.add("in-selection");
+        } else {
+          img.classList.remove("in-selection");
+        }
+      });
+    },
   });
 
   // 툴바 active 상태 즉시 반영용
@@ -282,14 +296,36 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
             const pos = editor.view.posAtCoords({ left: x, top: e.clientY });
             if (pos) {
               editor.commands.focus();
-              if (isLeft) {
-                // 줄의 맨 앞으로
-                const resolved = editor.state.doc.resolve(pos.pos);
-                editor.commands.setTextSelection(resolved.start());
-              } else if (isRight) {
-                // 줄의 맨 뒤로
-                const resolved = editor.state.doc.resolve(pos.pos);
-                editor.commands.setTextSelection(resolved.end());
+              if (isLeft || isRight) {
+                const resolvePos = pos.inside >= 0 ? pos.inside : pos.pos;
+                const resolved = editor.state.doc.resolve(resolvePos);
+
+                // 현재 위치의 노드가 이미지인지 확인
+                const nodeAt = editor.state.doc.nodeAt(resolvePos);
+                const nodeBefore = resolved.nodeBefore;
+
+                if (isLeft && (nodeAt?.type.name === "image" || nodeBefore?.type.name === "image")) {
+                  // 왼쪽 클릭 + 이미지 → 이전 블록의 끝으로
+                  const blockStart = resolved.before(Math.max(resolved.depth, 1));
+                  if (blockStart > 0) {
+                    const prevEnd = blockStart - 1;
+                    const prevResolved = editor.state.doc.resolve(prevEnd);
+                    editor.commands.setTextSelection(prevResolved.end(prevResolved.depth));
+                  } else {
+                    editor.commands.setTextSelection(resolvePos);
+                  }
+                } else {
+                  // 텍스트 블록을 찾아 올라감
+                  let depth = resolved.depth;
+                  while (depth > 0 && !resolved.node(depth).isTextblock) depth--;
+                  if (depth > 0) {
+                    const start = resolved.start(depth);
+                    const end = resolved.end(depth);
+                    editor.commands.setTextSelection(isLeft ? start : end);
+                  } else {
+                    editor.commands.setTextSelection(isLeft ? resolvePos : resolvePos + 1);
+                  }
+                }
               } else {
                 editor.commands.setTextSelection(pos.pos);
               }

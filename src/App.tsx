@@ -6,7 +6,7 @@ import { cleanupOrphanedImages } from "./utils/imageUtils";
 import { Sidebar } from "./components/sidebar/Sidebar";
 import { EditorArea } from "./components/editor/EditorArea";
 import { SettingsPanel } from "./components/settings/SettingsPanel";
-import { useSettingsStore, getAccentColors } from "./stores/settingsStore";
+import { useSettingsStore, getAccentColors, SPACING_STYLES } from "./stores/settingsStore";
 import { useAppStore } from "./stores/appStore";
 import { THEMES } from "./stores/themeData";
 import { useUndoStore } from "./stores/undoStore";
@@ -14,7 +14,7 @@ import { emptyTrash } from "./utils/trashUtils";
 import { useFsWatcher } from "./hooks/useFsWatcher";
 
 function App() {
-  const { showSettings, themeMode, accentColor } = useSettingsStore();
+  const { showSettings, themeMode, accentColor, spacingStyle } = useSettingsStore();
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   useFsWatcher();
 
@@ -33,6 +33,25 @@ function App() {
       root.style.setProperty(key, value);
     });
   }, [themeMode, accentColor]);
+
+  // 스페이싱 스타일 CSS 변수 적용
+  useEffect(() => {
+    const root = document.documentElement;
+    const style = SPACING_STYLES[spacingStyle]?.values ?? SPACING_STYLES.default.values;
+    root.style.setProperty("--style-h1-mt", style.h1Mt);
+    root.style.setProperty("--style-h1-mb", style.h1Mb);
+    root.style.setProperty("--style-h2-mt", style.h2Mt);
+    root.style.setProperty("--style-h2-mb", style.h2Mb);
+    root.style.setProperty("--style-h3-mt", style.h3Mt);
+    root.style.setProperty("--style-h3-mb", style.h3Mb);
+    root.style.setProperty("--style-h4-mt", style.h4Mt);
+    root.style.setProperty("--style-h4-mb", style.h4Mb);
+    root.style.setProperty("--style-p", style.p);
+    root.style.setProperty("--style-li", style.li);
+    root.style.setProperty("--style-pre", style.pre);
+    root.style.setProperty("--style-bq", style.bq);
+    root.style.setProperty("--style-hr", style.hr);
+  }, [spacingStyle]);
 
   // 앱 시작 시 즐겨찾기 폴더의 .md 파일 태그 + 최근 문서 스캔
   // persist hydration 완료 후 실행

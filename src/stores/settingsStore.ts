@@ -134,12 +134,51 @@ export const FONT_OPTIONS = [
   { value: "mono", label: "Monospace" },
 ];
 
+export type SpacingStyleName = "default" | "general";
+
+export interface SpacingStyle {
+  h1Mt: string; h1Mb: string;
+  h2Mt: string; h2Mb: string;
+  h3Mt: string; h3Mb: string;
+  h4Mt: string; h4Mb: string;
+  p: string; li: string;
+  pre: string; bq: string; hr: string;
+}
+
+export const SPACING_STYLES: Record<SpacingStyleName, { label: string; desc: string; values: SpacingStyle }> = {
+  default: {
+    label: "Default",
+    desc: "간결한 간격. 문단 간격 없음, 헤딩 위주로 구분",
+    values: {
+      h1Mt: "1rem", h1Mb: "0.5rem",
+      h2Mt: "1rem", h2Mb: "0.5rem",
+      h3Mt: "1rem", h3Mb: "0.5rem",
+      h4Mt: "1rem", h4Mb: "0.25rem",
+      p: "0rem", li: "0rem",
+      pre: "0.5rem", bq: "0.5rem", hr: "1rem",
+    },
+  },
+  general: {
+    label: "General",
+    desc: "넉넉한 간격. 문단 사이 여백으로 읽기 편한 스타일",
+    values: {
+      h1Mt: "1.5rem", h1Mb: "0.75rem",
+      h2Mt: "1.25rem", h2Mb: "0.5rem",
+      h3Mt: "1rem", h3Mb: "0.5rem",
+      h4Mt: "0.75rem", h4Mb: "0.5rem",
+      p: "0.5rem", li: "0.2rem",
+      pre: "0.75rem", bq: "0.75rem", hr: "1.5rem",
+    },
+  },
+};
+
 interface SettingsState {
   settings: EditorSettings;
   showSettings: boolean;
   themeMode: ThemeMode;
   accentColor: AccentColor;
   tabSize: 2 | 4;
+  spacingStyle: SpacingStyleName;
   updateSetting: <K extends keyof EditorSettings>(key: K, value: EditorSettings[K]) => void;
   applyPreset: (preset: EditorSettings) => void;
   resetToDefault: () => void;
@@ -147,6 +186,7 @@ interface SettingsState {
   setThemeMode: (mode: ThemeMode) => void;
   setAccentColor: (color: AccentColor) => void;
   setTabSize: (size: 2 | 4) => void;
+  setSpacingStyle: (name: SpacingStyleName) => void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -157,6 +197,7 @@ export const useSettingsStore = create<SettingsState>()(
       themeMode: "newspaper" as ThemeMode,
       accentColor: "blue" as AccentColor,
       tabSize: 2 as 2 | 4,
+      spacingStyle: "default" as SpacingStyleName,
 
       updateSetting: (key, value) =>
         set((state) => ({
@@ -175,6 +216,7 @@ export const useSettingsStore = create<SettingsState>()(
       setThemeMode: (mode) => set({ themeMode: mode }),
       setAccentColor: (color) => set({ accentColor: color }),
       setTabSize: (size) => set({ tabSize: size }),
+      setSpacingStyle: (name) => set({ spacingStyle: name }),
     }),
     {
       name: "marknote-settings",
@@ -183,6 +225,7 @@ export const useSettingsStore = create<SettingsState>()(
         themeMode: state.themeMode,
         accentColor: state.accentColor,
         tabSize: state.tabSize,
+        spacingStyle: state.spacingStyle,
       }),
     }
   )

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Editor } from "@tiptap/react";
-import { Plus, Minus, Trash2 } from "lucide-react";
+import { Plus, Minus, Trash2, Copy, Scissors } from "lucide-react";
 
 interface TableToolbarProps {
   editor: Editor;
@@ -69,6 +69,16 @@ export function TableToolbar({ editor }: TableToolbarProps) {
         <Minus size={12} /><span>행</span>
       </button>
       <div style={{ width: "1px", height: "16px", background: "var(--color-border-light)", margin: "0 2px" }} />
+      <button onClick={() => { document.execCommand("copy"); }} style={btnStyle}
+        onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-hover)"; }}
+        onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }} title="복사">
+        <Copy size={12} />
+      </button>
+      <button onClick={() => { document.execCommand("cut"); }} style={btnStyle}
+        onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-hover)"; }}
+        onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }} title="잘라내기">
+        <Scissors size={12} />
+      </button>
       <button onClick={() => editor.chain().focus().deleteTable().run()} style={btnStyle}
         onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-hover)"; e.currentTarget.style.color = "#e53935"; }}
         onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--color-text-secondary)"; }} title="표 삭제">

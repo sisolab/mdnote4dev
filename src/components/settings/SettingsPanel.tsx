@@ -6,7 +6,9 @@ import {
   ACCENT_OPTIONS,
   DEFAULT_SETTINGS,
   getFontFamily,
+  SPACING_STYLES,
   type EditorSettings,
+  type SpacingStyleName,
 } from "@/stores/settingsStore";
 import { Sun, Moon, BookOpen, CloudMoon, Minimize2, AlignCenter, Maximize2, SlidersHorizontal, RotateCcw, Type, X } from "lucide-react";
 import { FontPreview } from "./FontPreview";
@@ -152,7 +154,7 @@ function PresetCard({ name, icon, color, settings, isActive, onApply }: {
 /* ── 메인 패널 ── */
 
 export function SettingsPanel() {
-  const { settings, updateSetting, applyPreset, resetToDefault, setShowSettings, themeMode, setThemeMode, accentColor, setAccentColor, tabSize, setTabSize } =
+  const { settings, updateSetting, applyPreset, resetToDefault, setShowSettings, themeMode, setThemeMode, accentColor, setAccentColor, tabSize, setTabSize, spacingStyle, setSpacingStyle } =
     useSettingsStore();
 
   const [showFontPreview, setShowFontPreview] = useState(false);
@@ -352,6 +354,34 @@ export function SettingsPanel() {
           <div style={{ margin: "16px 0", height: "1px", background: "var(--color-border-light)" }} />
           <SectionTitle>편집</SectionTitle>
           <ChipSetting label="탭 크기" value={tabSize} options={[2, 4]} unit="칸" defaultValue={2} onChange={(v) => setTabSize(v as 2 | 4)} />
+
+          {/* 문서 스타일 */}
+          <div style={{ margin: "16px 0", height: "1px", background: "var(--color-border-light)" }} />
+          <SectionTitle>문서 스타일</SectionTitle>
+          <div style={{ display: "flex", gap: "8px", padding: "4px 0" }}>
+            {(Object.entries(SPACING_STYLES) as [SpacingStyleName, typeof SPACING_STYLES.default][]).map(([key, style]) => (
+              <button
+                key={key}
+                onClick={() => setSpacingStyle(key)}
+                style={{
+                  flex: 1,
+                  padding: "10px 12px",
+                  borderRadius: "6px",
+                  border: spacingStyle === key ? "2px solid var(--color-accent)" : "1px solid var(--color-border-medium)",
+                  background: spacingStyle === key ? "var(--color-accent-subtle)" : "var(--color-bg-primary)",
+                  cursor: "pointer",
+                  textAlign: "left",
+                }}
+              >
+                <div style={{ fontSize: "12px", fontWeight: 600, color: spacingStyle === key ? "var(--color-accent)" : "var(--color-text-primary)", marginBottom: "4px" }}>
+                  {style.label}
+                </div>
+                <div style={{ fontSize: "10px", color: "var(--color-text-tertiary)", lineHeight: 1.4 }}>
+                  {style.desc}
+                </div>
+              </button>
+            ))}
+          </div>
 
         </div>
 

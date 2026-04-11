@@ -1,13 +1,11 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { createPortal } from "react-dom";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { rename, readTextFile } from "@tauri-apps/plugin-fs";
 import { open } from "@tauri-apps/plugin-dialog";
 import { useAppStore } from "@/stores/appStore";
-import { Save, FolderOpen, Maximize2, Minimize2, Settings, Search, SlidersHorizontal } from "lucide-react";
+import { Save, FolderOpen, Maximize2, Minimize2, Settings, Search } from "lucide-react";
 import { getCurrentWindow, LogicalSize } from "@tauri-apps/api/window";
 import { useSettingsStore } from "@/stores/settingsStore";
-import { StyleTuner } from "./StyleTuner";
 
 export function TabBar() {
   const { tabs, activeTabId, setActiveTab, closeTab, updateTabTitle, newTab, reorderTabs, toggleSidebar, sidebarCollapsed, sidebarWidth } = useAppStore();
@@ -20,7 +18,6 @@ export function TabBar() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
-  const [showTuner, setShowTuner] = useState(false);
 
   const updateScrollButtons = useCallback(() => {
     const el = scrollRef.current;
@@ -486,21 +483,7 @@ export function TabBar() {
         <FolderOpen size={15} />
       </button>
 
-      {/* 오른쪽: 튜너 + 설정 + 사이드바 토글 */}
-      <button
-        onClick={() => setShowTuner(!showTuner)}
-        onMouseEnter={(e) => handleHover(e.currentTarget)}
-        title="스타일 튜너"
-        style={{
-          width: "34px", height: "40px",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          border: "none", background: "transparent", cursor: "pointer",
-          color: showTuner ? "var(--color-accent)" : "var(--color-text-secondary)", transition: "color 0.1s",
-          position: "relative", zIndex: 1, flexShrink: 0,
-        }}
-      >
-        <SlidersHorizontal size={15} />
-      </button>
+      {/* 오른쪽: 설정 + 사이드바 토글 */}
       <button
         onClick={() => setShowSettings(true)}
         onMouseEnter={(e) => handleHover(e.currentTarget)}
@@ -622,11 +605,6 @@ export function TabBar() {
             </div>
           </div>
         </div>
-      )}
-
-      {showTuner && createPortal(
-        <StyleTuner onClose={() => setShowTuner(false)} />,
-        document.body,
       )}
     </div>
   );

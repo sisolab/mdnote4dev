@@ -6,7 +6,7 @@ import {
   Bold, Italic, Strikethrough, Code,
   List, ListOrdered, ListChecks,
   AlignLeft, AlignCenter, Columns2, Square, Star, StarOff,
-  Quote, SquareCode, Minus, Table, MoveHorizontal, Home,
+  Quote, SquareCode, Minus, Table, MoveHorizontal, Home, Smile,
 } from "lucide-react";
 
 interface ToolbarProps {
@@ -135,6 +135,80 @@ function TableGridButton({ editor, onHover }: { editor: Editor; onHover: (el: HT
           <div style={{ textAlign: "center", fontSize: "11px", color: "var(--color-text-secondary)", marginTop: "6px", fontWeight: 500 }}>
             {hoverRow + 1} × {hoverCol + 1}
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const ICON_SECTIONS = [
+  { label: "강조", icons: ["⭐", "❗", "‼️", "🔥", "💡", "📌", "🎯", "⚠️", "🚨", "💎"] },
+  { label: "상태", icons: ["✅", "❌", "⭕", "❓", "❔", "🤔", "👀", "👍", "👎", "💯"] },
+  { label: "할 일", icons: ["📝", "📋", "🔲", "▶️", "⏸️", "⏰", "📆", "🔔", "🏁", "🚀"] },
+  { label: "정리", icons: ["📁", "📂", "🏷️", "🔗", "📎", "🔑", "🔒", "📊", "📈", "📉"] },
+  { label: "참고", icons: ["💬", "📢", "✏️", "📖", "🔍", "💻", "🧪", "⚙️", "🛠️", "🔬"] },
+  { label: "반응", icons: ["❤️", "🎉", "💪", "😊", "🤝", "🌟", "✨", "🏆", "🌱", "☀️"] },
+  { label: "숫자", icons: ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"] },
+];
+
+function IconPickerButton({ editor, onHover }: { editor: Editor; onHover: (el: HTMLButtonElement | null) => void }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div
+      style={{ position: "relative" }}
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+    >
+      <button
+        onMouseEnter={(e) => onHover(e.currentTarget)}
+        title="아이콘 삽입"
+        style={{
+          width: "34px", height: "40px", flexShrink: 0,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          border: "none", background: "transparent", cursor: "pointer",
+          position: "relative", zIndex: 1, transition: "color 0.1s",
+          color: open ? "var(--color-accent)" : "var(--color-text-secondary)",
+          borderRadius: "3px",
+        }}
+      >
+        <Smile size={15} />
+      </button>
+      {open && (
+        <div style={{
+          position: "absolute", top: "100%", right: "0", zIndex: 9999,
+          background: "var(--color-bg-elevated)", border: "1px solid var(--color-border-medium)",
+          borderRadius: "6px", boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
+          padding: "10px 12px", width: "auto",
+        }}>
+          {ICON_SECTIONS.map((section) => (
+            <div key={section.label} style={{ display: "flex", alignItems: "center", gap: "4px", marginBottom: "2px" }}>
+              <span style={{ fontSize: "10px", fontWeight: 600, color: "var(--color-text-tertiary)", width: "28px", flexShrink: 0, textAlign: "right", marginRight: "4px" }}>
+                {section.label}
+              </span>
+              {section.icons.map((icon, i) => (
+                <button
+                  key={i}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    editor.chain().focus().insertContent(icon).run();
+                    setOpen(false);
+                  }}
+                  style={{
+                    width: "30px", height: "30px",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    border: "none", background: "transparent", cursor: "pointer",
+                    fontSize: "18px", borderRadius: "4px",
+                    transition: "background 0.1s", flexShrink: 0,
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-hover)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                >
+                  {icon}
+                </button>
+              ))}
+            </div>
+          ))}
         </div>
       )}
     </div>
@@ -373,6 +447,7 @@ export function Toolbar({ editor }: ToolbarProps) {
       <Divider />
 
       <TableGridButton editor={editor} onHover={handleHover} />
+      <IconPickerButton editor={editor} onHover={handleHover} />
 
       {/* 오른쪽: 레이아웃 토글 */}
       <div style={{ flex: 1, minWidth: "8px" }} />

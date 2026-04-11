@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { Editor } from "@tiptap/react";
-import { AlignLeft, AlignCenter } from "lucide-react";
+import { AlignLeft, AlignCenter, Copy, Scissors, Trash2 } from "lucide-react";
 
 interface ImageToolbarProps {
   editor: Editor;
@@ -135,6 +135,18 @@ export function ImageToolbar({ editor }: ImageToolbarProps) {
         }}
       >
         <AlignCenter size={13} />
+      </button>
+
+      <div style={{ width: "1px", height: "16px", background: "var(--color-border-light)", margin: "0 2px" }} />
+
+      <button onClick={() => { document.execCommand("copy"); }} title="복사" style={{ padding: "3px 6px", borderRadius: "4px", border: "none", cursor: "pointer", display: "flex", alignItems: "center", background: "transparent", color: "var(--color-text-secondary)", transition: "all 0.1s" }}>
+        <Copy size={13} />
+      </button>
+      <button onClick={() => { document.execCommand("cut"); }} title="잘라내기" style={{ padding: "3px 6px", borderRadius: "4px", border: "none", cursor: "pointer", display: "flex", alignItems: "center", background: "transparent", color: "var(--color-text-secondary)", transition: "all 0.1s" }}>
+        <Scissors size={13} />
+      </button>
+      <button onClick={() => { editor.chain().focus().deleteSelection().run(); }} title="삭제" style={{ padding: "3px 6px", borderRadius: "4px", border: "none", cursor: "pointer", display: "flex", alignItems: "center", background: "transparent", color: "var(--color-text-secondary)", transition: "all 0.1s" }}>
+        <Trash2 size={13} />
       </button>
     </div>
   );
