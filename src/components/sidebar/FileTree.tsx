@@ -231,12 +231,18 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
   const flipSpeedMultiplier = useRef(1);
   const insertAnimPaths = useRef<string[]>([]);
 
-  /** 현재 파일 트리의 위치를 FLIP용으로 캡처 */
-  const captureFlipPositions = () => {
+  /** 파일 트리 위치를 FLIP용으로 캡처. folderPath가 지정되면 해당 폴더의 직접 자식만 */
+  const captureFlipPositions = (folderPath?: string) => {
     if (!containerRef.current) return;
     const positions: Record<string, number> = {};
     containerRef.current.querySelectorAll("[data-path]").forEach((el) => {
-      positions[(el as HTMLElement).dataset.path!] = el.getBoundingClientRect().top;
+      const p = (el as HTMLElement).dataset.path!;
+      if (folderPath) {
+        // 해당 폴더의 직접 자식만 (서브폴더 내 파일 제외)
+        const parentDir = p.substring(0, p.lastIndexOf("\\"));
+        if (parentDir !== folderPath) return;
+      }
+      positions[p] = el.getBoundingClientRect().top;
     });
     fileFlipPositions.current = positions;
   };
@@ -417,7 +423,7 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
         const oldOrder = customFileOrder[folderPath] ? [...customFileOrder[folderPath]] : entries.map((e) => e.name);
         const newOrder = [...order];
 
-        captureFlipPositions();
+        captureFlipPositions(folderPath);
 
         const { folderSort } = useAppStore.getState();
 
@@ -437,7 +443,7 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
           refreshFileTree();
           // FLIP 이동 후 복귀
           setTimeout(() => {
-            captureFlipPositions();
+            captureFlipPositions(folderPath);
             flipSpeedMultiplier.current = 2;
             const updated = { ...useAppStore.getState().customFileOrder };
             delete updated[folderPath];
