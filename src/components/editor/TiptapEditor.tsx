@@ -283,6 +283,7 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
       }
 
       // 복원된 에셋: current에 있는데 prev에 없는 것 (undo)
+      let restored = false;
       for (const name of current) {
         if (!prev.has(name)) {
           const trashPath = trashMapRef.current.get(name);
@@ -291,11 +292,25 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
             try {
               if (await exists(trashPath)) {
                 await rename(trashPath, assetPath);
+                restored = true;
               }
               trashMapRef.current.delete(name);
             } catch {}
           }
         }
+      }
+
+      // 파일 복원 후 이미지 리로드 (DOM 직접 조작, undo 히스토리에 영향 없음)
+      if (restored) {
+        setTimeout(() => {
+          editor.view.dom.querySelectorAll("img").forEach((img) => {
+            const src = img.getAttribute("src") ?? "";
+            if (src.includes(".assets")) {
+              const clean = src.replace(/\?t=\d+$/, "");
+              img.setAttribute("src", clean + `?t=${Date.now()}`);
+            }
+          });
+        }, 50);
       }
 
       prevAssetsRef.current = current;
