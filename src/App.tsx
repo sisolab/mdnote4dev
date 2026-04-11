@@ -207,18 +207,59 @@ function App() {
     return () => { unlisten.then((fn) => fn()); };
   }, []);
 
-  // 글로벌 Ctrl+Z / Ctrl+Shift+Z (에디터 포커스 아닐 때 사이드바 undo/redo)
+  // 글로벌 단축키
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (!e.ctrlKey || e.key.toLowerCase() !== "z") return;
-      // 에디터 내부에 포커스가 있으면 TipTap undo/redo에 맡김
-      const active = document.activeElement;
-      if (active?.closest(".tiptap")) return;
-      e.preventDefault();
-      if (e.shiftKey) {
-        useUndoStore.getState().redo();
-      } else {
-        useUndoStore.getState().undo();
+      if (!e.ctrlKey) return;
+      const key = e.key.toLowerCase();
+      const store = useAppStore.getState();
+
+      // Ctrl+Z / Ctrl+Shift+Z — 사이드바 undo/redo (에디터 외부)
+      if (key === "z" && !document.activeElement?.closest(".tiptap")) {
+        e.preventDefault();
+        if (e.shiftKey) useUndoStore.getState().redo();
+        else useUndoStore.getState().undo();
+        return;
+      }
+
+      // Ctrl+W — 현재 탭 닫기
+      if (key === "w") {
+        e.preventDefault();
+        if (store.activeTabId) {
+          const tab = store.tabs.find((t) => t.id === store.activeTabId);
+          if (tab && tab.type !== "tag-explorer") store.closeTab(store.activeTabId);
+        }
+        return;
+      }
+
+      // Ctrl+N — 새 탭
+      if (key === "n") {
+        e.preventDefault();
+        store.newTab();
+        return;
+      }
+
+      // Ctrl+Shift+F — 검색 탭
+      if (key === "f" && e.shiftKey) {
+        e.preventDefault();
+        store.openTagExplorer();
+        return;
+      }
+
+      // Ctrl+Tab / Ctrl+Shift+Tab — 탭 전환
+      if (e.key === "Tab") {
+        e.preventDefault();
+        const { tabs, activeTabId, setActiveTab } = store;
+        if (tabs.length <= 1) return;
+        const idx = tabs.findIndex((t) => t.id === activeTabId);
+        if (e.shiftKey) {
+          const prev = (idx - 1 + tabs.length) % tabs.length;
+          setActiveTab(tabs[prev].id);
+        } else {
+          const next = (idx + 1) % tabs.length;
+          setActiveTab(tabs[next].id);
+        }
+        return;
       }
     };
     window.addEventListener("keydown", handler);

@@ -152,7 +152,7 @@ function PresetCard({ name, icon, color, settings, isActive, onApply }: {
 /* ── 메인 패널 ── */
 
 export function SettingsPanel() {
-  const { settings, updateSetting, applyPreset, resetToDefault, setShowSettings, themeMode, setThemeMode, accentColor, setAccentColor } =
+  const { settings, updateSetting, applyPreset, resetToDefault, setShowSettings, themeMode, setThemeMode, accentColor, setAccentColor, tabSize, setTabSize } =
     useSettingsStore();
 
   const [showFontPreview, setShowFontPreview] = useState(false);
@@ -348,9 +348,10 @@ export function SettingsPanel() {
           <ChipSetting label="줄 간격" value={settings.codeLineHeight} options={[1.2, 1.4, 1.6, 1.8, 2.0, 2.2]} unit="" decimals={1} defaultValue={DEFAULT_SETTINGS.codeLineHeight} onChange={(v) => updateSetting("codeLineHeight", v)} />
           <ChipSetting label="패딩" value={settings.codePadding} options={[4, 8, 12, 16, 20, 24]} unit="" defaultValue={DEFAULT_SETTINGS.codePadding} onChange={(v) => updateSetting("codePadding", v)} />
 
-          {/* 에디터 영역 (프리셋 포함) */}
-          <div style={{ marginTop: "16px" }} />
-          <SectionTitle>에디터 영역</SectionTitle>
+          {/* 편집 */}
+          <div style={{ margin: "16px 0", height: "1px", background: "var(--color-border-light)" }} />
+          <SectionTitle>편집</SectionTitle>
+          <ChipSetting label="탭 크기" value={tabSize} options={[2, 4]} unit="칸" defaultValue={2} onChange={(v) => setTabSize(v as 2 | 4)} />
 
         </div>
 

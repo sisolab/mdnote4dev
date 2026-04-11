@@ -1,5 +1,9 @@
-import { useEditor, EditorContent } from "@tiptap/react";
+import { useEditor, EditorContent, ReactNodeViewRenderer } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
+import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
+import { common, createLowlight } from "lowlight";
+import { liftListItem, sinkListItem } from "@tiptap/pm/schema-list";
+import { CodeBlockView } from "./CodeBlockView";
 import Placeholder from "@tiptap/extension-placeholder";
 import TaskList from "@tiptap/extension-task-list";
 import TaskItem from "@tiptap/extension-task-item";
@@ -39,7 +43,16 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
     extensions: [
       StarterKit.configure({
         heading: { levels: [1, 2, 3, 4] },
-        codeBlock: { HTMLAttributes: { class: "code-block" } },
+        codeBlock: false, // CodeBlockLowlight로 대체
+      }),
+      CodeBlockLowlight.extend({
+        addNodeView() {
+          return ReactNodeViewRenderer(CodeBlockView);
+        },
+      }).configure({
+        lowlight: createLowlight(common),
+        defaultLanguage: null,
+        HTMLAttributes: { class: "code-block" },
       }),
       Placeholder.configure({
         placeholder: "",
@@ -58,6 +71,84 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
     editorProps: {
       attributes: {
         class: "outline-none prose prose-sm max-w-none",
+      },
+      handleKeyDown: (view, event) => {
+        // Ctrl+1~5: 제목/일반텍스트
+        if (event.ctrlKey && !event.altKey && !event.shiftKey && ["1","2","3","4","5"].includes(event.key)) {
+          event.preventDefault();
+          const num = parseInt(event.key);
+          if (num >= 1 && num <= 4) {
+            const heading = view.state.schema.nodes.heading;
+            const { $from } = view.state.selection;
+            const isActive = $from.parent.type === heading && $from.parent.attrs.level === num;
+            if (isActive) {
+              // 토글: 이미 같은 제목이면 paragraph로
+              const paragraph = view.state.schema.nodes.paragraph;
+              view.dispatch(view.state.tr.setBlockType($from.before($from.depth), $from.after($from.depth), paragraph));
+            } else {
+              view.dispatch(view.state.tr.setBlockType($from.before($from.depth), $from.after($from.depth), heading, { level: num }));
+            }
+          } else {
+            // Ctrl+5: 일반 텍스트
+            const paragraph = view.state.schema.nodes.paragraph;
+            const { $from } = view.state.selection;
+            view.dispatch(view.state.tr.setBlockType($from.before($from.depth), $from.after($from.depth), paragraph));
+          }
+          return true;
+        }
+
+
+        // Ctrl+Shift+X: 취소선
+        if (event.ctrlKey && event.shiftKey && event.key.toLowerCase() === "x") {
+          event.preventDefault();
+          const mark = view.state.schema.marks.strike;
+          if (mark) {
+            const { from, to } = view.state.selection;
+            if (view.state.doc.rangeHasMark(from, to, mark)) {
+              view.dispatch(view.state.tr.removeMark(from, to, mark));
+            } else {
+              view.dispatch(view.state.tr.addMark(from, to, mark.create()));
+            }
+          }
+          return true;
+        }
+
+        if (event.key !== "Tab") return false;
+        event.preventDefault();
+        const state = view.state;
+        const { $from } = state.selection;
+
+        // 코드블록: tabSize에 따라 스페이스 삽입
+        if ($from.parent.type.name === "codeBlock") {
+          const tabSize = useSettingsStore.getState().tabSize;
+          const indent = " ".repeat(tabSize);
+          if (event.shiftKey) {
+            const lineStart = state.doc.resolve($from.start());
+            const text = state.doc.textBetween(lineStart.pos, $from.pos);
+            if (text.startsWith(indent)) {
+              view.dispatch(state.tr.delete(lineStart.pos, lineStart.pos + tabSize));
+            }
+          } else {
+            view.dispatch(state.tr.insertText(indent));
+          }
+          return true;
+        }
+
+        // 리스트: 들여쓰기/내어쓰기
+        for (let d = $from.depth; d > 0; d--) {
+          const name = $from.node(d).type.name;
+          if (name === "listItem" || name === "taskItem") {
+            const nodeType = state.schema.nodes[name];
+            if (event.shiftKey) {
+              liftListItem(nodeType)(state, view.dispatch);
+            } else {
+              sinkListItem(nodeType)(state, view.dispatch);
+            }
+            return true;
+          }
+        }
+
+        return true;
       },
     },
     onTransaction: (_props) => setTick((t) => t + 1),
@@ -179,10 +270,17 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
       <div
         className="flex-1 overflow-auto"
         style={{ padding: "24px 48px", cursor: "text" }}
-        onClick={(e) => {
-          // 에디터 내부 콘텐츠 클릭이 아닌 빈 영역 클릭 시 문서 끝에 포커스
+        onMouseDown={(e) => {
+          // 에디터 내부 콘텐츠가 아닌 빈 영역 클릭 시 클릭 위치에 가장 가까운 곳에 포커스
           if (e.target === e.currentTarget || !(e.target as HTMLElement).closest(".tiptap")) {
-            editor.commands.focus("end");
+            e.preventDefault();
+            const pos = editor.view.posAtCoords({ left: e.clientX, top: e.clientY });
+            if (pos) {
+              editor.commands.focus();
+              editor.commands.setTextSelection(pos.pos);
+            } else {
+              editor.commands.focus("end");
+            }
           }
         }}
       >

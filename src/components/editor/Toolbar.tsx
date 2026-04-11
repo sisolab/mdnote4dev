@@ -315,17 +315,20 @@ export function Toolbar({ editor }: ToolbarProps) {
         zIndex: 0,
       }} />
 
-      <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} active={editor.isActive("heading", { level: 1 })} title="제목 1 (Ctrl+Alt+1)" onHover={handleHover}>
+      <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} active={editor.isActive("heading", { level: 1 })} title="제목 1 (Ctrl+1)" onHover={handleHover}>
         <span className="text-[12px] font-bold">H1</span>
       </ToolbarButton>
-      <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} active={editor.isActive("heading", { level: 2 })} title="제목 2 (Ctrl+Alt+2)" onHover={handleHover}>
+      <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} active={editor.isActive("heading", { level: 2 })} title="제목 2 (Ctrl+2)" onHover={handleHover}>
         <span className="text-[12px] font-bold">H2</span>
       </ToolbarButton>
-      <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} active={editor.isActive("heading", { level: 3 })} title="제목 3 (Ctrl+Alt+3)" onHover={handleHover}>
+      <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} active={editor.isActive("heading", { level: 3 })} title="제목 3 (Ctrl+3)" onHover={handleHover}>
         <span className="text-[12px] font-bold">H3</span>
       </ToolbarButton>
-      <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 4 }).run()} active={editor.isActive("heading", { level: 4 })} title="제목 4 (Ctrl+Alt+4)" onHover={handleHover}>
+      <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 4 }).run()} active={editor.isActive("heading", { level: 4 })} title="제목 4 (Ctrl+4)" onHover={handleHover}>
         <span className="text-[12px] font-bold">H4</span>
+      </ToolbarButton>
+      <ToolbarButton onClick={() => editor.chain().focus().setParagraph().run()} active={!editor.isActive("heading")} title="일반 텍스트 (Ctrl+5)" onHover={handleHover}>
+        <span className="text-[12px] font-bold">A</span>
       </ToolbarButton>
 
       <Divider />
@@ -336,7 +339,7 @@ export function Toolbar({ editor }: ToolbarProps) {
       <ToolbarButton onClick={() => editor.chain().focus().toggleItalic().run()} active={editor.isActive("italic")} title="기울임 (Ctrl+I)" onHover={handleHover}>
         <Italic size={15} />
       </ToolbarButton>
-      <ToolbarButton onClick={() => editor.chain().focus().toggleStrike().run()} active={editor.isActive("strike")} title="취소선" onHover={handleHover}>
+      <ToolbarButton onClick={() => editor.chain().focus().toggleStrike().run()} active={editor.isActive("strike")} title="취소선 (Ctrl+Shift+X)" onHover={handleHover}>
         <Strikethrough size={15} />
       </ToolbarButton>
       <ToolbarButton onClick={() => editor.chain().focus().toggleCode().run()} active={editor.isActive("code")} title="인라인 코드" onHover={handleHover}>

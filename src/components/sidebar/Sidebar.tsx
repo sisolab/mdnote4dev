@@ -556,15 +556,6 @@ export function Sidebar() {
                     {!isBroken && aliasEditing !== fav.path && (
                       <div className="shrink-0 ml-auto opacity-0 group-hover:opacity-100" style={{ display: "flex", gap: "2px", transition: "opacity 0.1s" }}>
                         <div
-                          onClick={(e) => { e.stopPropagation(); invoke("open_in_explorer", { path: fav.path }); }}
-                          title="탐색기에서 열기"
-                          style={{ width: "20px", height: "20px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "3px", cursor: "pointer", color: "var(--color-text-light)" }}
-                          onMouseEnter={(e) => { e.currentTarget.style.color = "var(--color-text-secondary)"; e.currentTarget.style.background = "var(--color-bg-active)"; }}
-                          onMouseLeave={(e) => { e.currentTarget.style.color = "var(--color-text-light)"; e.currentTarget.style.background = "transparent"; }}
-                        >
-                          <FolderOpen size={13} />
-                        </div>
-                        <div
                           onClick={(e) => { e.stopPropagation(); handleNewFolder(fav.path); }}
                           title="새 폴더"
                           style={{ width: "20px", height: "20px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "3px", cursor: "pointer", color: "var(--color-text-light)" }}

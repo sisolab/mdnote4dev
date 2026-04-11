@@ -141,32 +141,32 @@ body {
 .tiptap h1 {
   font-size: var(--editor-h1-size, 1.875rem);
   font-weight: 700;
-  margin: 1.5rem 0 0.75rem;
+  margin: var(--tuner-h1-mt, 1.5rem) 0 var(--tuner-h1-mb, 0.75rem);
   line-height: 1.3;
 }
 
 .tiptap h2 {
   font-size: var(--editor-h2-size, 1.5rem);
   font-weight: 600;
-  margin: 1.25rem 0 0.5rem;
+  margin: var(--tuner-h2-mt, 1.25rem) 0 var(--tuner-h2-mb, 0.5rem);
   line-height: 1.35;
 }
 
 .tiptap h3 {
   font-size: var(--editor-h3-size, 1.25rem);
   font-weight: 600;
-  margin: 1rem 0 0.5rem;
+  margin: var(--tuner-h3-mt, 1rem) 0 var(--tuner-h3-mb, 0.5rem);
   line-height: 1.4;
 }
 
 .tiptap h4 {
   font-size: var(--editor-h4-size, 1.1rem);
   font-weight: 600;
-  margin: 0.75rem 0 0.5rem;
+  margin: var(--tuner-h4-mt, 0.75rem) 0 var(--tuner-h4-mb, 0.5rem);
 }
 
 .tiptap p {
-  margin: var(--editor-paragraph-spacing, 0.5rem) 0;
+  margin: var(--tuner-p-spacing, var(--editor-paragraph-spacing, 0.5rem)) 0;
 }
 
 .tiptap strong {
@@ -196,7 +196,7 @@ body {
   color: #cdd6f4;
   border-radius: 3px;
   padding: var(--editor-code-padding, 12px);
-  margin: 0.75rem 0;
+  margin: var(--tuner-pre-spacing, 0.75rem) 0;
   overflow-x: auto;
   font-family: "Cascadia Code", "Fira Code", "Consolas", monospace;
   font-size: var(--editor-code-font-size, 0.875rem);
@@ -211,28 +211,61 @@ body {
   font-size: inherit;
 }
 
+/* 구문 강조 (lowlight / highlight.js) */
+.tiptap pre .hljs-keyword,
+.tiptap pre .hljs-selector-tag { color: #cba6f7; }
+.tiptap pre .hljs-built_in { color: #f38ba8; }
+.tiptap pre .hljs-type,
+.tiptap pre .hljs-title.class_ { color: #f9e2af; }
+.tiptap pre .hljs-title.function_ { color: #89b4fa; }
+.tiptap pre .hljs-string,
+.tiptap pre .hljs-addition { color: #a6e3a1; }
+.tiptap pre .hljs-number,
+.tiptap pre .hljs-literal { color: #fab387; }
+.tiptap pre .hljs-comment,
+.tiptap pre .hljs-meta { color: #6c7086; font-style: italic; }
+.tiptap pre .hljs-variable,
+.tiptap pre .hljs-template-variable { color: #f5c2e7; }
+.tiptap pre .hljs-attr,
+.tiptap pre .hljs-attribute { color: #89dceb; }
+.tiptap pre .hljs-params { color: #cdd6f4; }
+.tiptap pre .hljs-punctuation { color: #9399b2; }
+.tiptap pre .hljs-operator { color: #89dceb; }
+.tiptap pre .hljs-property { color: #89b4fa; }
+.tiptap pre .hljs-deletion { color: #f38ba8; }
+.tiptap pre .hljs-regexp { color: #f5c2e7; }
+.tiptap pre .hljs-selector-class,
+.tiptap pre .hljs-selector-id { color: #a6e3a1; }
+.tiptap pre .hljs-tag { color: #cba6f7; }
+.tiptap pre .hljs-name { color: #f38ba8; }
+
 .tiptap blockquote {
   border-left: 3px solid var(--color-accent);
   padding-left: 1rem;
-  margin: 0.75rem 0;
+  margin: var(--tuner-bq-spacing, 0.75rem) 0;
   color: var(--color-text-secondary);
 }
 
 .tiptap ul {
   list-style-type: disc;
   padding-left: 1.5rem;
-  margin: 0.5rem 0;
+  margin: var(--editor-paragraph-spacing, 0.5rem) 0;
 }
 
 .tiptap ol {
   list-style-type: decimal;
   padding-left: 1.5rem;
-  margin: 0.5rem 0;
+  margin: var(--editor-paragraph-spacing, 0.5rem) 0;
 }
 
 .tiptap li {
-  margin: 0.2rem 0;
+  margin: var(--tuner-li-spacing, 0.2rem) 0;
   display: list-item;
+}
+
+.tiptap li ul,
+.tiptap li ol {
+  margin: 0;
 }
 
 .tiptap li p {
@@ -275,7 +308,7 @@ body {
 .tiptap hr {
   border: none;
   border-top: 3px solid var(--color-border-medium);
-  margin: 1.5rem auto;
+  margin: var(--tuner-hr-spacing, 1.5rem) auto;
   width: 98%;
 }
 

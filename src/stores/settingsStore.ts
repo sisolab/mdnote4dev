@@ -59,7 +59,7 @@ export const PRESETS: Preset[] = [
       letterSpacing: 0,
       widthMode: "fixed" as const,
       pageAlign: "center" as const,
-    },
+        },
   },
   {
     name: "기본",
@@ -83,7 +83,7 @@ export const PRESETS: Preset[] = [
       letterSpacing: 0.2,
       widthMode: "fixed" as const,
       pageAlign: "center" as const,
-    },
+        },
   },
 ];
 
@@ -139,12 +139,14 @@ interface SettingsState {
   showSettings: boolean;
   themeMode: ThemeMode;
   accentColor: AccentColor;
+  tabSize: 2 | 4;
   updateSetting: <K extends keyof EditorSettings>(key: K, value: EditorSettings[K]) => void;
   applyPreset: (preset: EditorSettings) => void;
   resetToDefault: () => void;
   setShowSettings: (show: boolean) => void;
   setThemeMode: (mode: ThemeMode) => void;
   setAccentColor: (color: AccentColor) => void;
+  setTabSize: (size: 2 | 4) => void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -154,6 +156,7 @@ export const useSettingsStore = create<SettingsState>()(
       showSettings: false,
       themeMode: "newspaper" as ThemeMode,
       accentColor: "blue" as AccentColor,
+      tabSize: 2 as 2 | 4,
 
       updateSetting: (key, value) =>
         set((state) => ({
@@ -171,6 +174,7 @@ export const useSettingsStore = create<SettingsState>()(
 
       setThemeMode: (mode) => set({ themeMode: mode }),
       setAccentColor: (color) => set({ accentColor: color }),
+      setTabSize: (size) => set({ tabSize: size }),
     }),
     {
       name: "marknote-settings",
@@ -178,6 +182,7 @@ export const useSettingsStore = create<SettingsState>()(
         settings: state.settings,
         themeMode: state.themeMode,
         accentColor: state.accentColor,
+        tabSize: state.tabSize,
       }),
     }
   )

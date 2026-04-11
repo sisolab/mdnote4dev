@@ -12,6 +12,21 @@ const turndown = new TurndownService({
   hr: "---",
 });
 
+// 코드블록 (언어 태그 보존)
+turndown.addRule("codeBlock", {
+  filter: (node) => node.nodeName === "PRE" && !!node.querySelector("code"),
+  replacement: (_content, node) => {
+    const code = (node as HTMLElement).querySelector("code");
+    if (!code) return _content;
+    const lang = code.className?.match(/language-(\S+)/)?.[1]
+      || (node as HTMLElement).getAttribute("data-language")
+      || code.getAttribute("data-language")
+      || "";
+    const text = code.textContent ?? "";
+    return `\n\n\`\`\`${lang}\n${text}\n\`\`\`\n\n`;
+  },
+});
+
 // 체크박스
 turndown.addRule("taskList", {
   filter: (node) => node.nodeName === "UL" && node.getAttribute("data-type") === "taskList",
@@ -114,8 +129,8 @@ export function markdownToHtml(md: string, docFilePath?: string | null): string 
   html = protected_;
 
   // 코드 블록
-  html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (_m, lang, code) =>
-    `<pre><code class="language-${lang}">${escapeHtml(code.trimEnd())}</code></pre>`
+  html = html.replace(/```([a-z0-9+#-]*)\s*\n([\s\S]*?)```/gi, (_m, lang, code) =>
+    `<pre><code${lang ? ` class="language-${lang}"` : ""}>${escapeHtml(code.trimEnd())}</code></pre>`
   );
   // 인라인 코드
   html = html.replace(/`([^`]+)`/g, "<code>$1</code>");
