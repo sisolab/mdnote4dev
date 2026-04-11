@@ -6,7 +6,7 @@ import {
   Bold, Italic, Strikethrough, Code,
   List, ListOrdered, ListChecks,
   AlignLeft, AlignCenter, Columns2, Square, Star,
-  Quote, SquareCode, Minus, Table,
+  Quote, SquareCode, Minus, Table, MoveHorizontal,
 } from "lucide-react";
 
 interface ToolbarProps {
@@ -175,14 +175,15 @@ function PageWidthButton({ settings, updateSetting, onHover }: { settings: any; 
         title="페이지 폭"
         style={{
           height: "40px", padding: "0 6px", flexShrink: 0,
-          display: "flex", alignItems: "center", justifyContent: "center",
+          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "1px",
           border: "none", background: "transparent", cursor: "pointer",
           position: "relative", zIndex: 1, transition: "color 0.1s",
           color: open ? "var(--color-accent)" : "var(--color-text-secondary)",
           fontSize: "11px", fontWeight: 600, borderRadius: "3px",
         }}
       >
-        {settings.editorMaxWidth}
+        <MoveHorizontal size={11} style={{ marginBottom: "-1px" }} />
+        <span>{settings.editorMaxWidth}</span>
       </button>
       {open && (
         <div style={{
