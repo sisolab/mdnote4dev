@@ -4,10 +4,13 @@ import { rename, readTextFile } from "@tauri-apps/plugin-fs";
 import { open } from "@tauri-apps/plugin-dialog";
 import { useAppStore } from "@/stores/appStore";
 import { Save, FolderOpen, Maximize2, Minimize2, Settings, Search } from "lucide-react";
+import { getCurrentWindow } from "@tauri-apps/api/window";
+import { useSettingsStore } from "@/stores/settingsStore";
 import { useSettingsStore } from "@/stores/settingsStore";
 
 export function TabBar() {
   const { tabs, activeTabId, setActiveTab, closeTab, updateTabTitle, newTab, reorderTabs, toggleSidebar, sidebarCollapsed } = useAppStore();
+  const { settings } = useSettingsStore();
   const { setShowSettings } = useSettingsStore();
   const containerRef = useRef<HTMLDivElement>(null);
   const [highlight, setHighlight] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
@@ -445,7 +448,18 @@ export function TabBar() {
         <Settings size={15} />
       </button>
       <button
-        onClick={toggleSidebar}
+        onClick={async () => {
+          toggleSidebar();
+          if (settings.widthMode === "fixed") {
+            const appWindow = getCurrentWindow();
+            // 고정폭 + 패딩(48*2) + 여유(40) → 사이드바 숨길 때 창 폭 맞춤
+            if (!sidebarCollapsed) {
+              const targetWidth = settings.editorMaxWidth + 96 + 40;
+              const size = await appWindow.innerSize();
+              await appWindow.setSize({ type: "Logical", width: targetWidth, height: size.height / (await appWindow.scaleFactor()) });
+            }
+          }
+        }}
         onMouseEnter={(e) => handleHover(e.currentTarget)}
         title={sidebarCollapsed ? "사이드바 펼치기" : "사이드바 좁히기"}
         style={{
