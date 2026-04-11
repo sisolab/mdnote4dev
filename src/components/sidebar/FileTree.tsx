@@ -24,17 +24,17 @@ async function loadDirectory(path: string): Promise<FileEntry[]> {
       .filter((e) => e.name && !e.name.startsWith("."))
       .sort((a, b) => {
         if (a.isDirectory !== b.isDirectory) return a.isDirectory ? -1 : 1;
+        // customFileOrder가 있으면 정렬 모드와 무관하게 우선 적용 (임시 리오더용)
+        const order = customFileOrder[path];
+        if (order) {
+          const ai = order.indexOf(a.name);
+          const bi = order.indexOf(b.name);
+          const aIdx = ai >= 0 ? ai : 9999;
+          const bIdx = bi >= 0 ? bi : 9999;
+          if (aIdx !== bIdx) return aIdx - bIdx;
+        }
         if (folderSort === "name") return a.name.localeCompare(b.name);
         if (folderSort === "custom") {
-          const order = customFileOrder[path];
-          if (order) {
-            const ai = order.indexOf(a.name);
-            const bi = order.indexOf(b.name);
-            // 순서에 없는 항목은 뒤로
-            const aIdx = ai >= 0 ? ai : 9999;
-            const bIdx = bi >= 0 ? bi : 9999;
-            return aIdx - bIdx;
-          }
         }
         return 0;
       });
@@ -436,18 +436,14 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
             undo: async () => { setCustomFileOrder(folderPath, oldOrder); refreshFileTree(); },
           });
         } else {
-          // 다른 정렬: 일시적으로 custom 모드로 이동 → 원래 정렬로 복귀
-          const origSort = folderSort;
-          useAppStore.getState().setFolderSort("custom");
+          // 다른 정렬: customFileOrder로 임시 이동 → 원래 정렬로 복귀
           setCustomFileOrder(folderPath, newOrder);
           refreshFileTree();
-          // FLIP 이동 후 복귀
           setTimeout(() => {
             insertAnimPaths.current = [`${folderPath}\\${dragName}`];
             const updated = { ...useAppStore.getState().customFileOrder };
             delete updated[folderPath];
             useAppStore.setState({ customFileOrder: updated });
-            useAppStore.getState().setFolderSort(origSort);
             refreshFileTree();
           }, 800);
         }
