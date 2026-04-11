@@ -344,6 +344,11 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
           const pos = me.clientY < rect.top + rect.height / 2 ? "above" : "below";
           reorderTargetRef.current = { path, pos };
           target = null; // 폴더 이동은 아님
+        } else if (path && !isDir && target !== dragDir) {
+          // 다른 폴더의 파일 위 → 이동 시 삽입 위치 기록
+          const rect = btn!.getBoundingClientRect();
+          const pos = me.clientY < rect.top + rect.height / 2 ? "above" : "below";
+          reorderTargetRef.current = { path, pos };
         } else {
           reorderTargetRef.current = null;
           if (target === dragDir) target = null;
