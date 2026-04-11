@@ -38,7 +38,7 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
   const lastMarkdown = useRef(content);
   const contentRef = useRef(content);
   contentRef.current = content;
-  const { settings } = useSettingsStore();
+  const { settings, showSettings } = useSettingsStore();
 
   const filePathRef = useRef(filePath);
   filePathRef.current = filePath;
@@ -430,7 +430,7 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
       >
         <div style={{
           ...(s.widthMode === "fixed"
-            ? { width: `${s.editorMaxWidth}px`, minWidth: `${s.editorMaxWidth}px`, margin: s.pageAlign === "center" ? "0 auto" : undefined }
+            ? { width: `${s.editorMaxWidth}px`, minWidth: `${s.editorMaxWidth}px`, margin: (s.pageAlign === "center" && !showSettings) ? "0 auto" : undefined }
             : { width: "100%" }),
           ...editorStyle,
         }}>

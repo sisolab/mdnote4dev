@@ -6,9 +6,7 @@ import {
   ACCENT_OPTIONS,
   DEFAULT_SETTINGS,
   getFontFamily,
-  SPACING_STYLES,
   type EditorSettings,
-  type SpacingStyleName,
 } from "@/stores/settingsStore";
 import { StylePanelContent } from "./StylePanel";
 import { Sun, Moon, BookOpen, CloudMoon, Minimize2, AlignCenter, Maximize2, SlidersHorizontal, RotateCcw, Type, X } from "lucide-react";
@@ -68,13 +66,13 @@ function ChipSetting({
 }) {
   return (
     <SettingRow label={label} onReset={defaultValue !== undefined ? () => onChange(defaultValue) : undefined} changed={defaultValue !== undefined && Math.abs(value - defaultValue) > 0.001}>
-      <div style={{ display: "flex", borderRadius: "6px", border: "1px solid var(--color-border-input)", overflow: "hidden", width: "240px" }}>
+      <div style={{ display: "inline-flex", borderRadius: "6px", border: "1px solid var(--color-border-input)", overflow: "hidden" }}>
         {options.map((opt) => (
           <button
             key={opt}
             onClick={() => onChange(opt)}
             style={{
-              width: `${240 / 6}px`, padding: "5px 0", fontSize: "12px", fontWeight: value === opt ? 600 : 400,
+              padding: "5px 10px", fontSize: "12px", fontWeight: value === opt ? 600 : 400,
               border: "none", cursor: "pointer", position: "relative",
               fontFamily: "inherit",
               background: "var(--color-bg-primary)",
@@ -94,6 +92,41 @@ function ChipSetting({
         ))}
       </div>
     </SettingRow>
+  );
+}
+
+function SliderSetting({
+  label, desc, value, min, max, step, unit, decimals, onChange, defaultValue,
+}: {
+  label: string; desc: string; value: number; min: number; max: number; step: number;
+  unit: string; decimals?: number; onChange: (v: number) => void; defaultValue: number;
+}) {
+  const isModified = Math.abs(value - defaultValue) > 0.001;
+  return (
+    <div style={{ marginBottom: "14px" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <span style={{ fontSize: "11px", fontWeight: 600, color: "var(--color-text-primary)" }}>{label}</span>
+        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+          <span style={{ fontSize: "11px", color: "var(--color-accent)", fontWeight: 600 }}>
+            {decimals ? value.toFixed(decimals) : value}{unit}
+          </span>
+          {isModified && (
+            <button onClick={() => onChange(defaultValue)} title="기본값으로" style={{
+              width: "16px", height: "16px", display: "flex", alignItems: "center", justifyContent: "center",
+              border: "none", background: "transparent", cursor: "pointer", color: "var(--color-text-tertiary)",
+            }}>
+              <RotateCcw size={10} />
+            </button>
+          )}
+        </div>
+      </div>
+      <div style={{ fontSize: "9px", color: "var(--color-text-tertiary)", marginBottom: "4px" }}>{desc}</div>
+      <input
+        type="range" min={min} max={max} step={step} value={value}
+        onChange={(e) => onChange(parseFloat(e.target.value))}
+        style={{ width: "100%", accentColor: "var(--color-accent)" }}
+      />
+    </div>
   );
 }
 
@@ -159,7 +192,7 @@ export function SettingsPanel() {
     useSettingsStore();
 
   const [showFontPreview, setShowFontPreview] = useState(false);
-  const [activeTab, setActiveTab] = useState<"settings" | "style">("settings");
+  const [activeTab, setActiveTab] = useState<"settings" | "docstyle" | "spacing">("settings");
 
   const isPresetActive = (preset: EditorSettings) =>
     JSON.stringify(settings) === JSON.stringify(preset);
@@ -182,10 +215,10 @@ export function SettingsPanel() {
       {/* 헤더 */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderBottom: "1px solid var(--color-border-light)" }}>
         <div style={{ display: "flex", gap: "4px" }}>
-          {(["settings", "style"] as const).map((tab) => (
+          {([["settings", "설정"], ["docstyle", "문서 스타일"], ["spacing", "줄 간격"]] as const).map(([tab, label]) => (
             <button
               key={tab}
-              onClick={() => setActiveTab(tab)}
+              onClick={() => setActiveTab(tab as any)}
               style={{
                 padding: "4px 12px", fontSize: "12px", fontWeight: activeTab === tab ? 600 : 400,
                 borderRadius: "4px", border: "none", cursor: "pointer",
@@ -194,7 +227,7 @@ export function SettingsPanel() {
                 transition: "all 0.15s",
               }}
             >
-              {tab === "settings" ? "설정" : "문서 스타일"}
+              {label}
             </button>
           ))}
         </div>
@@ -270,58 +303,7 @@ export function SettingsPanel() {
 
           <div style={{ height: "1px", background: "var(--color-border-light)", margin: "16px 0" }} />
 
-          {/* 프리셋 + 프리셋 항목들 */}
-          <SectionTitle>에디터 프리셋</SectionTitle>
-          <div style={{ display: "flex", gap: "10px", marginBottom: "12px" }}>
-            {PRESETS.map((preset, i) => (
-              <PresetCard
-                key={preset.name}
-                name={preset.name}
-                icon={[<Minimize2 size={14} />, <AlignCenter size={14} />, <Maximize2 size={14} />][i]}
-                color={["#d4845a", "#1a73e8", "#5ab8ad"][i]}
-                settings={preset.settings}
-                isActive={isPresetActive(preset.settings)}
-                onApply={applyPreset}
-              />
-            ))}
-            {/* 커스텀 — 3개 프리셋에 해당 안 되면 자동 활성화 */}
-            {(() => {
-              const isCustom = !PRESETS.some((p) => isPresetActive(p.settings));
-              return (
-                <div
-                  style={{
-                    flex: 1, padding: "8px 8px", borderRadius: "8px", textAlign: "center",
-                    border: isCustom ? "1.5px solid #7c3aed" : "1px solid var(--color-border-light)",
-                    background: isCustom ? "#7c3aed15" : "var(--color-bg-elevated)",
-                    display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "4px",
-                  }}
-                >
-                  <SlidersHorizontal size={14} style={{ color: "#a78bfa" }} />
-                  <span style={{ fontSize: "10px", fontWeight: 600, color: "#a78bfa" }}>
-                    커스텀
-                  </span>
-                </div>
-              );
-            })()}
-          </div>
-
-          {/* 타이포그래피 */}
-          <SectionTitle>타이포그래피</SectionTitle>
-          <ChipSetting label="글자 크기" value={settings.fontSize} options={[12, 13, 14, 15, 16, 17]} unit="" defaultValue={DEFAULT_SETTINGS.fontSize} onChange={(v) => updateSetting("fontSize", v)} />
-          <ChipSetting label="줄 간격" value={settings.lineHeight} options={[1.2, 1.4, 1.6, 1.8, 2.0, 2.2]} unit="" decimals={1} defaultValue={DEFAULT_SETTINGS.lineHeight} onChange={(v) => updateSetting("lineHeight", v)} />
-          <ChipSetting label="자간" value={settings.letterSpacing} options={[-0.2, 0, 0.1, 0.2, 0.3, 0.4]} unit="" decimals={1} defaultValue={DEFAULT_SETTINGS.letterSpacing} onChange={(v) => updateSetting("letterSpacing", v)} />
-          <ChipSetting label="문단 간격" value={settings.paragraphSpacing} options={[0, 0.2, 0.4, 0.6, 0.8, 1.0]} unit="" decimals={1} defaultValue={DEFAULT_SETTINGS.paragraphSpacing} onChange={(v) => updateSetting("paragraphSpacing", v)} />
-          <ChipSetting label="제목 배율" value={settings.headingScale} options={[1.1, 1.2, 1.3, 1.4, 1.5, 1.6]} unit="" decimals={1} defaultValue={DEFAULT_SETTINGS.headingScale} onChange={(v) => updateSetting("headingScale", v)} />
-
-          {/* 코드 블록 */}
-          <div style={{ marginTop: "16px" }} />
-          <SectionTitle>코드 블록</SectionTitle>
-          <ChipSetting label="글자 크기" value={settings.codeFontSize} options={[11, 12, 13, 14, 15, 16]} unit="" defaultValue={DEFAULT_SETTINGS.codeFontSize} onChange={(v) => updateSetting("codeFontSize", v)} />
-          <ChipSetting label="줄 간격" value={settings.codeLineHeight} options={[1.2, 1.4, 1.6, 1.8, 2.0, 2.2]} unit="" decimals={1} defaultValue={DEFAULT_SETTINGS.codeLineHeight} onChange={(v) => updateSetting("codeLineHeight", v)} />
-          <ChipSetting label="패딩" value={settings.codePadding} options={[4, 8, 12, 16, 20, 24]} unit="" defaultValue={DEFAULT_SETTINGS.codePadding} onChange={(v) => updateSetting("codePadding", v)} />
-
           {/* 편집 */}
-          <div style={{ margin: "16px 0", height: "1px", background: "var(--color-border-light)" }} />
           <SectionTitle>편집</SectionTitle>
           <ChipSetting label="탭 크기" value={tabSize} options={[2, 4]} unit="칸" defaultValue={2} onChange={(v) => setTabSize(v as 2 | 4)} />
 
@@ -339,6 +321,60 @@ export function SettingsPanel() {
           </button>
         </div>
       </>
+      ) : activeTab === "docstyle" ? (
+        <div style={{ flex: 1, overflowY: "auto", padding: "12px 16px" }}>
+          {/* 프리셋 */}
+          <SectionTitle>프리셋</SectionTitle>
+          <div style={{ display: "flex", gap: "10px", marginBottom: "16px" }}>
+            {PRESETS.map((preset, i) => (
+              <PresetCard
+                key={preset.name}
+                name={preset.name}
+                icon={[<Minimize2 size={14} />, <AlignCenter size={14} />, <Maximize2 size={14} />][i]}
+                color={["#d4845a", "#1a73e8", "#5ab8ad"][i]}
+                settings={preset.settings}
+                isActive={isPresetActive(preset.settings)}
+                onApply={applyPreset}
+              />
+            ))}
+            {(() => {
+              const isCustom = !PRESETS.some((p) => isPresetActive(p.settings));
+              return (
+                <div style={{
+                  flex: 1, padding: "8px 8px", borderRadius: "8px", textAlign: "center",
+                  border: isCustom ? "1.5px solid #7c3aed" : "1px solid var(--color-border-light)",
+                  background: isCustom ? "#7c3aed15" : "var(--color-bg-elevated)",
+                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "4px",
+                }}>
+                  <SlidersHorizontal size={14} style={{ color: isCustom ? "#7c3aed" : "#a78bfa" }} />
+                  <span style={{ fontSize: "10px", fontWeight: 600, color: isCustom ? "#7c3aed" : "var(--color-text-primary)" }}>커스텀</span>
+                </div>
+              );
+            })()}
+          </div>
+
+          {/* 타이포그래피 슬라이더 */}
+          <SectionTitle>타이포그래피</SectionTitle>
+          <SliderSetting label="글자 크기" desc="본문 텍스트 크기" value={settings.fontSize} min={10} max={22} step={1} unit="px" defaultValue={DEFAULT_SETTINGS.fontSize} onChange={(v) => updateSetting("fontSize", v)} />
+          <SliderSetting label="줄 간격" desc="줄 사이 높이 비율" value={settings.lineHeight} min={1.0} max={2.5} step={0.1} unit="" defaultValue={DEFAULT_SETTINGS.lineHeight} onChange={(v) => updateSetting("lineHeight", v)} decimals={1} />
+          <SliderSetting label="자간" desc="글자 사이 간격" value={settings.letterSpacing} min={-0.5} max={1.0} step={0.1} unit="px" defaultValue={DEFAULT_SETTINGS.letterSpacing} onChange={(v) => updateSetting("letterSpacing", v)} decimals={1} />
+          <SliderSetting label="문단 간격" desc="문단 사이 여백" value={settings.paragraphSpacing} min={0} max={1.5} step={0.1} unit="rem" defaultValue={DEFAULT_SETTINGS.paragraphSpacing} onChange={(v) => updateSetting("paragraphSpacing", v)} decimals={1} />
+          <SliderSetting label="제목 배율" desc="제목 크기 = 본문 × 배율" value={settings.headingScale} min={1.0} max={2.0} step={0.1} unit="×" defaultValue={DEFAULT_SETTINGS.headingScale} onChange={(v) => updateSetting("headingScale", v)} decimals={1} />
+
+          <div style={{ height: "1px", background: "var(--color-border-light)", margin: "16px 0" }} />
+
+          <SectionTitle>레이아웃</SectionTitle>
+          <SliderSetting label="에디터 최대폭" desc="고정폭 모드에서 페이지 너비" value={settings.editorMaxWidth} min={480} max={1200} step={20} unit="px" defaultValue={DEFAULT_SETTINGS.editorMaxWidth} onChange={(v) => updateSetting("editorMaxWidth", v)} />
+          <SliderSetting label="좌우 패딩" desc="에디터 좌우 여백" value={settings.editorPaddingX} min={16} max={96} step={4} unit="px" defaultValue={DEFAULT_SETTINGS.editorPaddingX} onChange={(v) => updateSetting("editorPaddingX", v)} />
+          <SliderSetting label="상하 패딩" desc="에디터 상하 여백" value={settings.editorPaddingY} min={16} max={96} step={4} unit="px" defaultValue={DEFAULT_SETTINGS.editorPaddingY} onChange={(v) => updateSetting("editorPaddingY", v)} />
+
+          <div style={{ height: "1px", background: "var(--color-border-light)", margin: "16px 0" }} />
+
+          <SectionTitle>코드 블록</SectionTitle>
+          <SliderSetting label="글자 크기" desc="코드 블록 내 텍스트 크기" value={settings.codeFontSize} min={10} max={18} step={1} unit="px" defaultValue={DEFAULT_SETTINGS.codeFontSize} onChange={(v) => updateSetting("codeFontSize", v)} />
+          <SliderSetting label="줄 간격" desc="코드 블록 줄 높이" value={settings.codeLineHeight} min={1.0} max={2.5} step={0.1} unit="" defaultValue={DEFAULT_SETTINGS.codeLineHeight} onChange={(v) => updateSetting("codeLineHeight", v)} decimals={1} />
+          <SliderSetting label="패딩" desc="코드 블록 내부 여백" value={settings.codePadding} min={4} max={32} step={2} unit="px" defaultValue={DEFAULT_SETTINGS.codePadding} onChange={(v) => updateSetting("codePadding", v)} />
+        </div>
       ) : (
         <StylePanelContent spacingStyle={spacingStyle} setSpacingStyle={setSpacingStyle} />
       )}
