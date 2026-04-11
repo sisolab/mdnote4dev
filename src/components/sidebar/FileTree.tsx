@@ -8,6 +8,7 @@ import { moveToTrash, restoreFromTrash, findFavoriteRoot } from "@/utils/trashUt
 import { moveItems, undoMoveItems } from "@/utils/fileOps";
 import { useAppStore, type FileEntry } from "@/stores/appStore";
 import { ChevronRight, FileText, Star, Folder } from "lucide-react";
+import { AnimatedCollapse } from "@/components/ui/AnimatedCollapse";
 import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
 
 async function loadDirectory(path: string): Promise<FileEntry[]> {
@@ -191,12 +192,12 @@ function FileTreeItem({
         }} />
       </button>
 
-      {(searchMode ? entry.isDirectory : isExpanded) && (
-        <div style={{ animation: "slideDown 0.15s ease" }}>
+      {entry.isDirectory && (
+        <AnimatedCollapse open={searchMode ? true : isExpanded}>
           {(searchMode ? entry.children ?? [] : children).map((child) => (
             <FileTreeItem key={child.path} entry={child} depth={depth + 1} onHover={onHover} onItemClick={onItemClick} onContextMenu={onContextMenu} renamingPath={renamingPath} renameValue={renameValue} setRenameValue={setRenameValue} onFinishRename={onFinishRename} searchMode={searchMode} compact={compact} onDragStart={onDragStart} onDragOverFolder={onDragOverFolder} dragPaths={dragPaths} dropTargetPath={dropTargetPath} reorderTarget={reorderTargetProp} wasDragging={wasDraggingRef} />
           ))}
-        </div>
+        </AnimatedCollapse>
       )}
     </div>
   );

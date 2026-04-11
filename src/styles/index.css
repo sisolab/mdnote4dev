@@ -93,12 +93,6 @@ body {
   background: var(--color-text-tertiary);
 }
 
-/* 폴더 펼침 애니메이션 */
-@keyframes slideDown {
-  from { opacity: 0; transform: translateY(-4px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
 /* 드래그 드롭 타겟 하이라이트 */
 [data-drop-active] {
   background: var(--color-bg-hover) !important;
