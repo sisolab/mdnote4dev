@@ -192,8 +192,8 @@ body {
   background: var(--color-bg-secondary);
   border-radius: 4px;
   padding: 0.15rem 0.35rem;
-  font-size: 0.875em;
-  font-family: "Cascadia Code", "Fira Code", "Consolas", monospace;
+  font-size: 0.9em;
+  font-family: inherit;
   color: #c7254e;
 }
 

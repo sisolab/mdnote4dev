@@ -115,6 +115,41 @@ function escapeHtml(text: string): string {
   return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
+/** 코드블록을 줄 단위로 파싱하여 placeholder로 치환 (regex보다 정확) */
+function extractCodeBlocks(text: string): { text: string; blocks: string[] } {
+  const blocks: string[] = [];
+  const lines = text.split(/\r?\n/);
+  const result: string[] = [];
+  let inCode = false;
+  let codeLang = "";
+  let codeLines: string[] = [];
+
+  for (const line of lines) {
+    if (!inCode && /^```([a-z0-9+#-]*)[ \t]*$/.test(line)) {
+      inCode = true;
+      codeLang = (line.match(/^```([a-z0-9+#-]*)/) ?? ["", ""])[1];
+      codeLines = [];
+    } else if (inCode && /^```[ \t]*$/.test(line)) {
+      inCode = false;
+      const html = `<pre><code${codeLang ? ` class="language-${codeLang}"` : ""}>${escapeHtml(codeLines.join("\n"))}</code></pre>`;
+      blocks.push(html);
+      result.push(`%%CODEBLOCK${blocks.length - 1}%%`);
+    } else if (inCode) {
+      codeLines.push(line);
+    } else {
+      result.push(line);
+    }
+  }
+
+  // 닫히지 않은 코드블록: 원본 복원
+  if (inCode) {
+    result.push("```" + codeLang);
+    result.push(...codeLines);
+  }
+
+  return { text: result.join("\n"), blocks };
+}
+
 /** HTML 태그를 placeholder로 보호 (마크다운 regex에 의해 깨지지 않도록) */
 function protectHtmlBlocks(html: string): { html: string; blocks: string[] } {
   const blocks: string[] = [];
@@ -151,14 +186,13 @@ function resolveImagePaths(html: string, docFilePath: string): string {
 export function markdownToHtml(md: string, docFilePath?: string | null): string {
   let html = md.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, "");
 
+  // 코드 블록을 먼저 추출 (줄 단위 파서로 정확하게 처리)
+  const { text: codeExtracted, blocks: codeBlocks } = extractCodeBlocks(html);
+  html = codeExtracted;
+
   // HTML 태그 보호
   const { html: protected_, blocks } = protectHtmlBlocks(html);
   html = protected_;
-
-  // 코드 블록
-  html = html.replace(/```([a-z0-9+#-]*)\s*\n([\s\S]*?)```/gi, (_m, lang, code) =>
-    `<pre><code${lang ? ` class="language-${lang}"` : ""}>${escapeHtml(code.trimEnd())}</code></pre>`
-  );
   // 인라인 코드
   html = html.replace(/`([^`]+)`/g, "<code>$1</code>");
 
@@ -173,12 +207,14 @@ export function markdownToHtml(md: string, docFilePath?: string | null): string 
   html = html.replace(/^>\s+(.+)$/gm, "<blockquote><p>$1</p></blockquote>");
 
   // 체크박스 리스트
-  html = html.replace(/^- \[x\]\s*(.*)$/gm,
+  html = html.replace(/^[ \t]*- \[x\]\s*(.*)$/gm,
     '<ul data-type="taskList"><li data-type="taskItem" data-checked="true"><label><input type="checkbox" checked><span>$1</span></label></li></ul>');
-  html = html.replace(/^- \[ ?\]\s*(.*)$/gm,
+  html = html.replace(/^[ \t]*- \[ ?\]\s*(.*)$/gm,
     '<ul data-type="taskList"><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span>$1</span></label></li></ul>');
-  // 일반 리스트
-  html = html.replace(/^- (.+)$/gm, "<ul><li>$1</li></ul>");
+  // 일반 리스트 (들여쓰기 포함)
+  html = html.replace(/^[ \t]*- (.+)$/gm, "<ul><li>$1</li></ul>");
+  // 번호 리스트
+  html = html.replace(/^[ \t]*\d+\.\s+(.+)$/gm, "<ol><li>$1</li></ol>");
 
   // 테이블
   html = html.replace(/(^\|.*\|[ \t]*$\n?)+/gm, (match) => {
@@ -229,9 +265,15 @@ export function markdownToHtml(md: string, docFilePath?: string | null): string 
   html = html.split("\n\n").map((block) => {
     block = block.trim();
     if (!block) return "";
-    if (block.startsWith("<") || block.startsWith("%%HTML_BLOCK_")) return block;
+    if (block.startsWith("<") || block.startsWith("%%HTML_BLOCK_") || block.startsWith("%%CODEBLOCK")) return block;
     return `<p>${block.replace(/\n/g, "<br>")}</p>`;
   }).join("");
+
+  // 코드블록 복원
+  codeBlocks.forEach((cb, i) => {
+    html = html.replace(`%%CODEBLOCK${i}%%`, cb);
+    html = html.replace(`<p>%%CODEBLOCK${i}%%</p>`, cb);
+  });
 
   // HTML 복원 + 이미지 경로 변환
   html = restoreHtmlBlocks(html, blocks);
