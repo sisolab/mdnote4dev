@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState } from "react";
 import {
   useSettingsStore,
   PRESETS,
@@ -10,6 +10,7 @@ import {
   type EditorSettings,
   type SpacingStyleName,
 } from "@/stores/settingsStore";
+import { StylePanelContent } from "./StylePanel";
 import { Sun, Moon, BookOpen, CloudMoon, Minimize2, AlignCenter, Maximize2, SlidersHorizontal, RotateCcw, Type, X } from "lucide-react";
 import { FontPreview } from "./FontPreview";
 
@@ -136,15 +137,15 @@ function PresetCard({ name, icon, color, settings, isActive, onApply }: {
     <button
       onClick={() => onApply(settings)}
       style={{
-        flex: 1, padding: "8px 16px", borderRadius: "8px", textAlign: "center" as const,
+        flex: 1, padding: "8px 8px", borderRadius: "8px", textAlign: "center" as const,
         border: isActive ? `1.5px solid ${color}` : "1px solid var(--color-border-light)",
         background: isActive ? `${color}15` : "var(--color-bg-elevated)",
         cursor: "pointer", transition: "all 0.15s",
-        display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
+        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "4px",
       }}
     >
       {icon && <span style={{ color }}>{icon}</span>}
-      <span style={{ fontSize: "13px", fontWeight: 600, color }}>
+      <span style={{ fontSize: "10px", fontWeight: 600, color }}>
         {name}
       </span>
     </button>
@@ -158,6 +159,7 @@ export function SettingsPanel() {
     useSettingsStore();
 
   const [showFontPreview, setShowFontPreview] = useState(false);
+  const [activeTab, setActiveTab] = useState<"settings" | "style">("settings");
 
   const isPresetActive = (preset: EditorSettings) =>
     JSON.stringify(settings) === JSON.stringify(preset);
@@ -171,73 +173,42 @@ export function SettingsPanel() {
     return () => window.removeEventListener("keydown", handler);
   }, [setShowSettings, showFontPreview]);
 
-  // 드래그 이동
-  const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
-  const isDragging = useRef(false);
-
-  const handleDragStart = useCallback((e: React.MouseEvent) => {
-    if ((e.target as HTMLElement).closest("button, select, input")) return;
-    isDragging.current = true;
-    const startX = e.clientX;
-    const startY = e.clientY;
-    const startPos = pos ?? { x: (window.innerWidth - 520) / 2, y: 60 };
-
-    const handleMove = (e: MouseEvent) => {
-      if (!isDragging.current) return;
-      const panelW = 520;
-      const panelH = Math.min(window.innerHeight - 120, 700);
-      const newX = Math.max(0, Math.min(window.innerWidth - panelW, startPos.x + (e.clientX - startX)));
-      const newY = Math.max(0, Math.min(window.innerHeight - panelH, startPos.y + (e.clientY - startY)));
-      setPos({ x: newX, y: newY });
-    };
-    const handleUp = () => {
-      isDragging.current = false;
-      document.removeEventListener("mousemove", handleMove);
-      document.removeEventListener("mouseup", handleUp);
-      document.body.style.userSelect = "";
-    };
-    document.body.style.userSelect = "none";
-    document.addEventListener("mousemove", handleMove);
-    document.addEventListener("mouseup", handleUp);
-  }, [pos]);
-
   return (
-    <div
-      onClick={() => setShowSettings(false)}
-      style={{
-        position: "fixed", inset: 0, zIndex: 50,
-        background: "rgba(0,0,0,0.15)", animation: "fadeIn 0.15s ease-out",
-      }}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          position: "absolute",
-          left: pos ? `${pos.x}px` : "50%",
-          top: pos ? `${pos.y}px` : "60px",
-          transform: pos ? "none" : "translateX(-50%)",
-          width: "520px", maxHeight: "calc(100vh - 120px)",
-          background: "var(--color-bg-elevated)", borderRadius: "12px",
-          border: "1px solid var(--color-border-medium)",
-          boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
-          display: "flex", flexDirection: "column", overflow: "hidden",
-        }}
-      >
-        {/* 헤더 */}
-        <div onMouseDown={handleDragStart} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px", borderBottom: "1px solid var(--color-border-light)", cursor: "grab" }}>
-          <span style={{ fontSize: "15px", fontWeight: 600, color: "var(--color-text-heading)" }}>설정</span>
-          <button
-            onClick={() => setShowSettings(false)}
-            style={{ width: "28px", height: "28px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "6px", border: "none", background: "transparent", cursor: "pointer", color: "var(--color-text-tertiary)", transition: "all 0.1s" }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-hover)"; e.currentTarget.style.color = "var(--color-text-secondary)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--color-text-tertiary)"; }}
-          >
-            <X size={16} />
-          </button>
+    <div style={{
+      position: "fixed", top: 0, right: 0, bottom: 0, width: "400px", zIndex: 100,
+      background: "var(--color-bg-elevated)", borderLeft: "1px solid var(--color-border-medium)",
+      boxShadow: "-4px 0 16px rgba(0,0,0,0.08)", display: "flex", flexDirection: "column",
+    }}>
+      {/* 헤더 */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderBottom: "1px solid var(--color-border-light)" }}>
+        <div style={{ display: "flex", gap: "4px" }}>
+          {(["settings", "style"] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              style={{
+                padding: "4px 12px", fontSize: "12px", fontWeight: activeTab === tab ? 600 : 400,
+                borderRadius: "4px", border: "none", cursor: "pointer",
+                background: activeTab === tab ? "var(--color-accent-subtle)" : "transparent",
+                color: activeTab === tab ? "var(--color-accent)" : "var(--color-text-secondary)",
+                transition: "all 0.15s",
+              }}
+            >
+              {tab === "settings" ? "설정" : "문서 스타일"}
+            </button>
+          ))}
         </div>
+        <button
+          onClick={() => setShowSettings(false)}
+          style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--color-text-tertiary)", display: "flex", padding: "2px" }}
+        >
+          <X size={16} />
+        </button>
+      </div>
 
-        {/* 본문 */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "20px 24px" }}>
+      {activeTab === "settings" ? (
+      <>
+        <div style={{ flex: 1, overflowY: "auto", padding: "12px 16px" }}>
 
           {/* 테마 */}
           <SectionTitle>테마</SectionTitle>
@@ -319,15 +290,15 @@ export function SettingsPanel() {
               return (
                 <div
                   style={{
-                    flex: 1, padding: "8px 16px", borderRadius: "8px", textAlign: "center",
+                    flex: 1, padding: "8px 8px", borderRadius: "8px", textAlign: "center",
                     border: isCustom ? "1.5px solid #7c3aed" : "1px solid var(--color-border-light)",
                     background: isCustom ? "#7c3aed15" : "var(--color-bg-elevated)",
                     opacity: isCustom ? 1 : 0.5,
-                    display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
+                    display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "4px",
                   }}
                 >
                   <SlidersHorizontal size={14} style={{ color: "#a78bfa" }} />
-                  <span style={{ fontSize: "13px", fontWeight: 600, color: "#a78bfa" }}>
+                  <span style={{ fontSize: "10px", fontWeight: 600, color: "#a78bfa" }}>
                     커스텀
                   </span>
                 </div>
@@ -355,38 +326,10 @@ export function SettingsPanel() {
           <SectionTitle>편집</SectionTitle>
           <ChipSetting label="탭 크기" value={tabSize} options={[2, 4]} unit="칸" defaultValue={2} onChange={(v) => setTabSize(v as 2 | 4)} />
 
-          {/* 문서 스타일 */}
-          <div style={{ margin: "16px 0", height: "1px", background: "var(--color-border-light)" }} />
-          <SectionTitle>문서 스타일</SectionTitle>
-          <div style={{ display: "flex", gap: "8px", padding: "4px 0" }}>
-            {(Object.entries(SPACING_STYLES) as [SpacingStyleName, typeof SPACING_STYLES.default][]).map(([key, style]) => (
-              <button
-                key={key}
-                onClick={() => setSpacingStyle(key)}
-                style={{
-                  flex: 1,
-                  padding: "10px 12px",
-                  borderRadius: "6px",
-                  border: spacingStyle === key ? "2px solid var(--color-accent)" : "1px solid var(--color-border-medium)",
-                  background: spacingStyle === key ? "var(--color-accent-subtle)" : "var(--color-bg-primary)",
-                  cursor: "pointer",
-                  textAlign: "left",
-                }}
-              >
-                <div style={{ fontSize: "12px", fontWeight: 600, color: spacingStyle === key ? "var(--color-accent)" : "var(--color-text-primary)", marginBottom: "4px" }}>
-                  {style.label}
-                </div>
-                <div style={{ fontSize: "10px", color: "var(--color-text-tertiary)", lineHeight: 1.4 }}>
-                  {style.desc}
-                </div>
-              </button>
-            ))}
-          </div>
-
         </div>
 
         {/* 푸터 */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-start", padding: "12px 24px", borderTop: "1px solid var(--color-border-light)", background: "var(--color-bg-secondary)" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-start", padding: "12px 16px", borderTop: "1px solid var(--color-border-light)" }}>
           <button
             onClick={resetToDefault}
             style={{ fontSize: "12px", color: "var(--color-text-tertiary)", background: "transparent", border: "none", cursor: "pointer", transition: "color 0.15s" }}
@@ -396,7 +339,10 @@ export function SettingsPanel() {
             기본값으로 초기화
           </button>
         </div>
-      </div>
+      </>
+      ) : (
+        <StylePanelContent spacingStyle={spacingStyle} setSpacingStyle={setSpacingStyle} />
+      )}
 
       {showFontPreview && (
         <FontPreview

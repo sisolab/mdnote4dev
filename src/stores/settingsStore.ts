@@ -175,6 +175,7 @@ export const SPACING_STYLES: Record<SpacingStyleName, { label: string; desc: str
 interface SettingsState {
   settings: EditorSettings;
   showSettings: boolean;
+  showStylePanel: boolean;
   themeMode: ThemeMode;
   accentColor: AccentColor;
   tabSize: 2 | 4;
@@ -183,6 +184,7 @@ interface SettingsState {
   applyPreset: (preset: EditorSettings) => void;
   resetToDefault: () => void;
   setShowSettings: (show: boolean) => void;
+  setShowStylePanel: (show: boolean) => void;
   setThemeMode: (mode: ThemeMode) => void;
   setAccentColor: (color: AccentColor) => void;
   setTabSize: (size: 2 | 4) => void;
@@ -194,6 +196,7 @@ export const useSettingsStore = create<SettingsState>()(
     (set) => ({
       settings: { ...DEFAULT_SETTINGS },
       showSettings: false,
+      showStylePanel: false,
       themeMode: "newspaper" as ThemeMode,
       accentColor: "blue" as AccentColor,
       tabSize: 2 as 2 | 4,
@@ -212,6 +215,8 @@ export const useSettingsStore = create<SettingsState>()(
 
       setShowSettings: (show) =>
         set({ showSettings: show }),
+      setShowStylePanel: (show) =>
+        set({ showStylePanel: show }),
 
       setThemeMode: (mode) => set({ themeMode: mode }),
       setAccentColor: (color) => set({ accentColor: color }),
