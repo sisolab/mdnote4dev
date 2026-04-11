@@ -174,7 +174,7 @@ function PageWidthButton({ settings, updateSetting, onHover }: { settings: any; 
         onMouseEnter={(e) => onHover(e.currentTarget)}
         title="페이지 폭"
         style={{
-          height: "40px", padding: "0 6px", flexShrink: 0,
+          width: "40px", height: "40px", flexShrink: 0,
           display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "1px",
           border: "none", background: "transparent", cursor: "pointer",
           position: "relative", zIndex: 1, transition: "color 0.1s",
