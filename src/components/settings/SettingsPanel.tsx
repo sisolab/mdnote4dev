@@ -207,6 +207,8 @@ export function SettingsPanel() {
   }, [setShowSettings, showFontPreview]);
 
   return (
+    <>
+    <div onClick={() => setShowSettings(false)} style={{ position: "fixed", inset: 0, zIndex: 99 }} />
     <div style={{
       position: "fixed", top: 0, right: 0, bottom: 0, width: "400px", zIndex: 100,
       background: "var(--color-bg-elevated)", borderLeft: "1px solid var(--color-border-medium)",
@@ -387,5 +389,6 @@ export function SettingsPanel() {
         />
       )}
     </div>
+    </>
   );
 }

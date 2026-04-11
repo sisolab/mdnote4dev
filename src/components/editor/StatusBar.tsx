@@ -2,9 +2,73 @@ import { useState, useRef, useEffect } from "react";
 import { useAppStore } from "@/stores/appStore";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { getTagColor, getTagColorDark } from "@/utils/frontmatter";
-import { X, Tag, FolderOpen, ChevronDown, ChevronUp } from "lucide-react";
+import { X, Tag, FolderOpen, ChevronDown, ChevronUp, Home } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
 import { shortenPath } from "@/utils/pathUtils";
+
+const WIDTH_OPTIONS = [480, 600, 720, 840];
+
+function StatusDropdown({ label, items }: {
+  label: string;
+  items: { label: string; active: boolean; isDefault?: boolean; onClick: () => void }[];
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    setTimeout(() => window.addEventListener("click", handler), 0);
+    return () => window.removeEventListener("click", handler);
+  }, [open]);
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <button
+        onClick={() => setOpen(!open)}
+        style={{
+          padding: "2px 6px", fontSize: "11px", fontWeight: 500,
+          border: "none", background: "transparent", cursor: "pointer",
+          color: open ? "var(--color-accent)" : "var(--color-text-secondary)",
+          borderRadius: "3px", transition: "all 0.1s",
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-hover)"; }}
+        onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+      >
+        {label}
+      </button>
+      {open && (
+        <div style={{
+          position: "absolute", bottom: "100%", right: 0, marginBottom: "4px", zIndex: 9999,
+          background: "var(--color-bg-elevated)", border: "1px solid var(--color-border-medium)",
+          borderRadius: "6px", boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
+          padding: "4px", minWidth: "100px",
+        }}>
+          {items.map((item) => (
+            <button
+              key={item.label}
+              onClick={(e) => { e.stopPropagation(); item.onClick(); setOpen(false); }}
+              style={{
+                display: "flex", alignItems: "center", gap: "6px",
+                width: "100%", padding: "5px 10px", borderRadius: "3px",
+                border: "none", cursor: "pointer", textAlign: "left",
+                fontSize: "11px", fontWeight: item.active ? 600 : 400,
+                background: item.active ? "var(--color-accent-subtle)" : "transparent",
+                color: item.active ? "var(--color-accent)" : "var(--color-text-secondary)",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {item.label}
+              {item.isDefault && <Home size={9} style={{ opacity: 0.5, flexShrink: 0 }} />}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface StatusBarProps {
   filePath: string | null;
@@ -26,7 +90,7 @@ export function StatusBar({ filePath, fileSize, lineCount, charCount, tags: prop
   const tags = filePath
     ? Object.keys(allTags).filter((tag) => allTags[tag]?.includes(filePath))
     : propTags;
-  const { themeMode } = useSettingsStore();
+  const { themeMode, settings, updateSetting } = useSettingsStore();
   const isDark = themeMode === "dark" || themeMode === "charcoal";
 
   // 모든 태그 이름 (사용 빈도순)
@@ -210,8 +274,32 @@ export function StatusBar({ filePath, fileSize, lineCount, charCount, tags: prop
         )}
       </div>
 
-      {/* 숨기기 버튼 */}
-      <div style={{ marginLeft: "auto", flexShrink: 0 }}>
+      {/* 레이아웃 버튼 (오른쪽 정렬) */}
+      <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "4px", flexShrink: 0 }}>
+        <StatusDropdown
+          label={settings.widthMode === "fixed" ? "고정폭" : "가변폭"}
+          items={[
+            { label: "고정폭", active: settings.widthMode === "fixed", isDefault: true, onClick: () => updateSetting("widthMode", "fixed") },
+            { label: "가변폭", active: settings.widthMode === "fluid", onClick: () => updateSetting("widthMode", "fluid") },
+          ]}
+        />
+        <div style={{ width: "1px", height: "14px", background: "var(--color-border-light)", flexShrink: 0 }} />
+        <StatusDropdown
+          label={settings.pageAlign === "center" ? "가운데" : "왼쪽"}
+          items={[
+            { label: "가운데 정렬", active: settings.pageAlign === "center", isDefault: true, onClick: () => updateSetting("pageAlign", "center") },
+            { label: "왼쪽 정렬", active: settings.pageAlign === "left", onClick: () => updateSetting("pageAlign", "left") },
+          ]}
+        />
+        <div style={{ width: "1px", height: "14px", background: "var(--color-border-light)", flexShrink: 0 }} />
+        <StatusDropdown
+          label={`${settings.editorMaxWidth}px`}
+          items={WIDTH_OPTIONS.map((w) => ({
+            label: `${w}px`, active: settings.editorMaxWidth === w, isDefault: w === 720,
+            onClick: () => updateSetting("editorMaxWidth", w),
+          }))}
+        />
+        <div style={{ width: "1px", height: "14px", background: "var(--color-border-light)", flexShrink: 0 }} />
         <button
           onClick={() => setCollapsed(true)}
           style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--color-accent)", padding: 0, display: "flex" }}

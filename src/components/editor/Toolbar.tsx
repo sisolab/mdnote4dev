@@ -477,30 +477,8 @@ export function Toolbar({ editor }: ToolbarProps) {
         <Paperclip size={15} />
       </ToolbarButton>
 
-      {/* 오른쪽: 레이아웃 토글 */}
+      {/* 오른쪽: 즐겨찾기 */}
       <div style={{ flex: 1, minWidth: "8px" }} />
-
-      <ToolbarDropdown
-        icon={settings.widthMode === "fixed" ? <Square size={15} /> : <Columns2 size={15} />}
-        label="페이지 폭 모드"
-        onHover={handleHover}
-        options={[
-          { icon: <Square size={14} />, label: "고정폭", active: settings.widthMode === "fixed", isDefault: true, onClick: () => updateSetting("widthMode", "fixed") },
-          { icon: <Columns2 size={14} />, label: "가변폭", active: settings.widthMode === "fluid", onClick: () => updateSetting("widthMode", "fluid") },
-        ]}
-      />
-
-      <ToolbarDropdown
-        icon={settings.pageAlign === "center" ? <AlignCenter size={15} /> : <AlignLeft size={15} />}
-        label="페이지 정렬"
-        onHover={handleHover}
-        options={[
-          { icon: <AlignCenter size={14} />, label: "가운데 정렬", active: settings.pageAlign === "center", isDefault: true, onClick: () => updateSetting("pageAlign", "center") },
-          { icon: <AlignLeft size={14} />, label: "왼쪽 정렬", active: settings.pageAlign === "left", onClick: () => updateSetting("pageAlign", "left") },
-        ]}
-      />
-
-      <PageWidthButton settings={settings} updateSetting={updateSetting} onHover={handleHover} />
 
       <ToolbarDropdown
         icon={<Star size={15} style={isFavorite ? { color: "#f5c518", fill: "#f5c518" } : {}} />}

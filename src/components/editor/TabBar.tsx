@@ -7,6 +7,7 @@ import { renameDocImages } from "@/utils/imageUtils";
 import { Save, FolderOpen, Maximize2, Minimize2, Settings, Search, Paperclip } from "lucide-react";
 import { getCurrentWindow, LogicalSize } from "@tauri-apps/api/window";
 import { useSettingsStore } from "@/stores/settingsStore";
+import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
 
 export function TabBar() {
   const { tabs, activeTabId, setActiveTab, closeTab, updateTabTitle, newTab, reorderTabs, toggleSidebar, sidebarCollapsed, sidebarWidth } = useAppStore();
@@ -16,6 +17,7 @@ export function TabBar() {
   const [highlight, setHighlight] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [closeConfirmId, setCloseConfirmId] = useState<string | null>(null);
+  const [tabContextMenu, setTabContextMenu] = useState<{ x: number; y: number; tabId: string } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
@@ -326,6 +328,10 @@ export function TabBar() {
               onMouseDown={(e) => { if (editingId !== tab.id) startTabDrag(e, index); }}
               onMouseEnter={(e) => handleHover(e.currentTarget.querySelector("[data-tab-inner]") as HTMLElement || e.currentTarget)}
               onClick={() => { if (!wasDragging.current) setActiveTab(tab.id); }}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                setTabContextMenu({ x: e.clientX, y: e.clientY, tabId: tab.id });
+              }}
               style={{
                 transform: isDragging
                   ? "scale(1.03)"
@@ -402,10 +408,6 @@ export function TabBar() {
                     />
                   ) : (
                     <span
-                      onDoubleClick={(e) => {
-                        e.stopPropagation();
-                        startRename(tab.id, tab.title);
-                      }}
                       className="truncate"
                       style={{ maxWidth: "120px" }}
                     >
@@ -612,6 +614,40 @@ export function TabBar() {
       </button>
 
       {/* 임시 문서 닫기 확인 */}
+      {/* 탭 컨텍스트 메뉴 */}
+      {tabContextMenu && (() => {
+        const tab = tabs.find((t) => t.id === tabContextMenu.tabId);
+        if (!tab) return null;
+        const isSpecial = tab.type === "tag-explorer" || tab.type === "attachment-explorer";
+        const menuItems: ContextMenuItem[] = [];
+        if (!isSpecial && tab.filePath) {
+          menuItems.push({ label: "이름 바꾸기", onClick: () => startRename(tab.id, tab.title) });
+        }
+        if (!isSpecial) {
+          menuItems.push({ label: "닫기", onClick: () => closeTab(tab.id) });
+        }
+        menuItems.push({
+          label: "이 탭 외에 모두 닫기",
+          onClick: () => {
+            const toClose = tabs.filter((t) =>
+              t.id !== tab.id &&
+              t.type !== "tag-explorer" &&
+              t.type !== "attachment-explorer" &&
+              t.filePath // 저장되지 않은 임시 탭은 유지
+            );
+            toClose.forEach((t) => closeTab(t.id));
+          },
+        });
+        return (
+          <ContextMenu
+            x={tabContextMenu.x}
+            y={tabContextMenu.y}
+            items={menuItems}
+            onClose={() => setTabContextMenu(null)}
+          />
+        );
+      })()}
+
       {closeConfirmId && (
         <div
           onClick={() => setCloseConfirmId(null)}

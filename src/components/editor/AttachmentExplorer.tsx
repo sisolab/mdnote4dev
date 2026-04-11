@@ -237,30 +237,37 @@ export function AttachmentExplorer() {
         {favItems.length > 0 && <div style={{ height: "1px", background: "var(--color-border-light)", margin: "12px 0" }} />}
 
         {/* 모든 파일 / 그룹별 */}
-        <div style={{ fontSize: "12px", fontWeight: 600, color: "var(--color-text-secondary)", marginBottom: "8px" }}>
-          모든 파일 ({filtered.length})
-        </div>
+        {(() => {
+          const displayItems = (!searchQuery && groupBy === "none") ? filtered.slice(0, 10) : filtered;
+          return (
+            <>
+              <div style={{ fontSize: "12px", fontWeight: 600, color: "var(--color-text-secondary)", marginBottom: "8px" }}>
+                {searchQuery ? `검색 결과 (${filtered.length})` : `최근 파일 (${displayItems.length}${filtered.length > displayItems.length ? ` / ${filtered.length}` : ""})`}
+              </div>
 
-        {grouped ? (
-          Object.entries(grouped).map(([group, items]) => (
-            <div key={group} style={{ marginBottom: "16px" }}>
-              <div style={{ fontSize: "11px", fontWeight: 600, color: "var(--color-text-tertiary)", marginBottom: "6px", padding: "0 4px" }}>
-                {group} ({items.length})
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "6px" }}>
-                {items.map((item) => (
-                  <AttachmentCard key={item.absPath + item.docPath} item={item} isFav={favoriteAttachments.includes(item.absPath)} onToggleFav={() => toggleFav(item.absPath)} />
-                ))}
-              </div>
-            </div>
-          ))
-        ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "6px" }}>
-            {filtered.map((item) => (
-              <AttachmentCard key={item.absPath + item.docPath} item={item} isFav={favoriteAttachments.includes(item.absPath)} onToggleFav={() => toggleFav(item.absPath)} />
-            ))}
-          </div>
-        )}
+              {grouped ? (
+                Object.entries(grouped).map(([group, items]) => (
+                  <div key={group} style={{ marginBottom: "16px" }}>
+                    <div style={{ fontSize: "11px", fontWeight: 600, color: "var(--color-text-tertiary)", marginBottom: "6px", padding: "0 4px" }}>
+                      {group} ({items.length})
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "6px" }}>
+                      {items.map((item) => (
+                        <AttachmentCard key={item.absPath + item.docPath} item={item} isFav={favoriteAttachments.includes(item.absPath)} onToggleFav={() => toggleFav(item.absPath)} />
+                      ))}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "6px" }}>
+                  {displayItems.map((item) => (
+                    <AttachmentCard key={item.absPath + item.docPath} item={item} isFav={favoriteAttachments.includes(item.absPath)} onToggleFav={() => toggleFav(item.absPath)} />
+                  ))}
+                </div>
+              )}
+            </>
+          );
+        })()}
 
         {filtered.length === 0 && (
           <div style={{ textAlign: "center", padding: "40px 0", color: "var(--color-text-tertiary)", fontSize: "13px" }}>
