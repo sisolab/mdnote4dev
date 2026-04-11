@@ -1,12 +1,11 @@
 import type { Editor } from "@tiptap/react";
 import { useRef, useState, useCallback, useEffect } from "react";
-import { useSettingsStore } from "@/stores/settingsStore";
 import { useAppStore } from "@/stores/appStore";
 import {
   Bold, Italic, Strikethrough, Code,
   List, ListOrdered, ListChecks,
   Star, StarOff,
-  Quote, SquareCode, Minus, Table, MoveHorizontal, Home, Smile, Paperclip,
+  Quote, SquareCode, Minus, Table, Smile, Paperclip, Home,
 } from "lucide-react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { saveFileToAssets } from "@/utils/imageUtils";
@@ -217,8 +216,6 @@ function IconPickerButton({ editor, onHover }: { editor: Editor; onHover: (el: H
   );
 }
 
-const WIDTH_OPTIONS = [480, 600, 720, 840];
-
 function ToolbarDropdown({
   icon, label, onHover, options,
 }: {
@@ -290,73 +287,9 @@ function ToolbarDropdown({
   );
 }
 
-function PageWidthButton({ settings, updateSetting, onHover }: { settings: any; updateSetting: (k: string, v: any) => void; onHover: (el: HTMLButtonElement | null) => void }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    const escHandler = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
-    setTimeout(() => window.addEventListener("click", handler), 0);
-    window.addEventListener("keydown", escHandler);
-    return () => { window.removeEventListener("click", handler); window.removeEventListener("keydown", escHandler); };
-  }, [open]);
-
-  return (
-    <div ref={ref} style={{ position: "relative" }}>
-      <button
-        onClick={() => setOpen(!open)}
-        onMouseEnter={(e) => onHover(e.currentTarget)}
-        title="페이지 폭"
-        style={{
-          width: "40px", height: "40px", flexShrink: 0,
-          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "1px",
-          border: "none", background: "transparent", cursor: "pointer",
-          position: "relative", zIndex: 1, transition: "color 0.1s",
-          color: open ? "var(--color-accent)" : "var(--color-text-secondary)",
-          fontSize: "9px", fontWeight: 600, borderRadius: "3px",
-        }}
-      >
-        <MoveHorizontal size={11} style={{ marginBottom: "-1px" }} />
-        <span>{settings.editorMaxWidth}</span>
-      </button>
-      {open && (
-        <div style={{
-          position: "absolute", top: "100%", right: "0", zIndex: 9999,
-          background: "var(--color-bg-elevated)", border: "1px solid var(--color-border-medium)",
-          borderRadius: "6px", boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
-          padding: "4px",
-        }}>
-          {WIDTH_OPTIONS.map((w) => (
-            <button
-              key={w}
-              onClick={(e) => { e.stopPropagation(); updateSetting("editorMaxWidth", w); setOpen(false); }}
-              style={{
-                display: "flex", alignItems: "center", gap: "6px",
-                width: "100%", padding: "5px 12px", borderRadius: "3px",
-                border: "none", cursor: "pointer", textAlign: "left",
-                fontSize: "12px", fontWeight: settings.editorMaxWidth === w ? 600 : 400,
-                background: settings.editorMaxWidth === w ? "var(--color-accent-subtle)" : "transparent",
-                color: settings.editorMaxWidth === w ? "var(--color-accent)" : "var(--color-text-secondary)",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {w}px{w === 720 && <Home size={11} style={{ opacity: 0.5, flexShrink: 0 }} />}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
 export function Toolbar({ editor }: ToolbarProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [highlight, setHighlight] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
-  const { settings, updateSetting } = useSettingsStore();
   const { selectedFile, favoriteFiles, addFavoriteFile, removeFavoriteFile } = useAppStore();
   const isFavorite = selectedFile ? favoriteFiles.includes(selectedFile) : false;
 

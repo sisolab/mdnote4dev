@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { readDir, readTextFile, rename, mkdir, create, stat } from "@tauri-apps/plugin-fs";
-import { deleteDocImages, renameDocImages } from "@/utils/imageUtils";
+import { renameDocImages } from "@/utils/imageUtils";
 import { invoke } from "@tauri-apps/api/core";
 import { executeUndoable, useUndoStore } from "@/stores/undoStore";
 import { moveToTrash, restoreFromTrash, findFavoriteRoot } from "@/utils/trashUtils";
@@ -245,7 +245,7 @@ async function filterTree(path: string, query: string): Promise<FileEntry[]> {
 export function FileTree({ rootPath, searchQuery = "", compact = false }: { rootPath: string; searchQuery?: string; compact?: boolean }) {
   const [entries, setEntries] = useState<FileEntry[]>([]);
   const [searchResults, setSearchResults] = useState<FileEntry[]>([]);
-  const { fileTreeVersion, refreshFileTree, closeTab, tabs, selectedPaths, setSelectedPaths, toggleSelectedPath, clearSelectedPaths, openTab, expandedFolders, toggleFolder } = useAppStore();
+  const { fileTreeVersion, refreshFileTree, closeTab, selectedPaths, setSelectedPaths, toggleSelectedPath, clearSelectedPaths, openTab, expandedFolders, toggleFolder } = useAppStore();
   const containerRef = useRef<HTMLDivElement>(null);
   const [highlight, setHighlight] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
 
@@ -255,21 +255,6 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
   const fileFlipPositions = useRef<Record<string, number>>({});
   const insertAnimPaths = useRef<string[]>([]);
 
-  /** 파일 트리 위치를 FLIP용으로 캡처. folderPath가 지정되면 해당 폴더의 직접 자식만 */
-  const captureFlipPositions = (folderPath?: string) => {
-    if (!containerRef.current) return;
-    const positions: Record<string, number> = {};
-    containerRef.current.querySelectorAll("[data-path]").forEach((el) => {
-      const p = (el as HTMLElement).dataset.path!;
-      if (folderPath) {
-        // 해당 폴더의 직접 자식만 (서브폴더 내 파일 제외)
-        const parentDir = p.substring(0, p.lastIndexOf("\\"));
-        if (parentDir !== folderPath) return;
-      }
-      positions[p] = el.getBoundingClientRect().top;
-    });
-    fileFlipPositions.current = positions;
-  };
   const wasDragging = useRef(false);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
   const dragMoveState = useRef<{ startY: number; active: boolean; paths: string[] }>({ startY: 0, active: false, paths: [] });
@@ -567,7 +552,7 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
     }
   };
 
-  const updateDropTarget = (e: React.MouseEvent, folderPath: string) => {
+  const updateDropTarget = (_e: React.MouseEvent, folderPath: string) => {
     if (!dragMoveState.current.active) return;
     dropTargetRef.current = folderPath;
     setDropTarget(folderPath);

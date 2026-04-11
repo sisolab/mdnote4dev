@@ -57,9 +57,10 @@ export const PRESETS: Preset[] = [
       editorPaddingX: 32,
       editorPaddingY: 24,
       letterSpacing: 0,
+      editorMaxWidth: 720,
       widthMode: "fixed" as const,
       pageAlign: "center" as const,
-        },
+    },
   },
   {
     name: "기본",
@@ -81,9 +82,10 @@ export const PRESETS: Preset[] = [
       editorPaddingX: 64,
       editorPaddingY: 48,
       letterSpacing: 0.2,
+      editorMaxWidth: 720,
       widthMode: "fixed" as const,
       pageAlign: "center" as const,
-        },
+    },
   },
 ];
 

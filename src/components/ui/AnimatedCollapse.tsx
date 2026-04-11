@@ -14,7 +14,7 @@ interface AnimatedCollapseProps {
 export function AnimatedCollapse({ open, children, duration = 400 }: AnimatedCollapseProps) {
   const ref = useRef<HTMLDivElement>(null);
   const mounted = useRef(false);
-  const timer = useRef<ReturnType<typeof setTimeout>>();
+  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
     const el = ref.current;

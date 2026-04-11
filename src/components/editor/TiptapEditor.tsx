@@ -18,7 +18,7 @@ import { useEffect, useCallback, useRef, useState } from "react";
 import { htmlToMarkdown, markdownToHtml } from "./markdown";
 import { parseFrontmatter } from "@/utils/frontmatter";
 import { saveImageToAssets, getAssetsDir } from "@/utils/imageUtils";
-import { moveToTrash, findFavoriteRoot, restoreFromTrash } from "@/utils/trashUtils";
+import { moveToTrash, findFavoriteRoot } from "@/utils/trashUtils";
 import { rename, exists, stat } from "@tauri-apps/plugin-fs";
 import { useAppStore } from "@/stores/appStore";
 import { convertFileSrc } from "@tauri-apps/api/core";

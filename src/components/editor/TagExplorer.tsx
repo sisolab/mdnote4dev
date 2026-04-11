@@ -83,7 +83,6 @@ export function TagExplorer() {
   };
 
   const renderFileItem = (filePath: string) => {
-    const name = filePath.split("\\").pop() ?? "";
     const path = shortenPath(filePath);
     const fileTags = Object.keys(allTags).filter((t) => allTags[t]?.includes(filePath));
     const preview = filePreviews[filePath] ?? "";

@@ -1,18 +1,16 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { exists, mkdir, create, readDir, readTextFile, rename, stat } from "@tauri-apps/plugin-fs";
+import { exists, mkdir, create, readDir, rename, stat } from "@tauri-apps/plugin-fs";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { useAppStore } from "@/stores/appStore";
 import { FileTree } from "./FileTree";
 import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
-import { Tooltip } from "@/components/ui/Tooltip";
-import { Unlink, ChevronRight, Folder, Tag, ChevronsDownUp, ChevronsUpDown, ArrowUpDown, FilePlus, FolderPlus, FileText, FolderOpen, ListCollapse, icons } from "lucide-react";
+import { Unlink, ChevronRight, Folder, Tag, ChevronsDownUp, ChevronsUpDown, ArrowUpDown, FilePlus, FolderPlus, ListCollapse, icons } from "lucide-react";
 import { IconPicker } from "@/components/settings/IconPicker";
-import { shortenPath } from "@/utils/pathUtils";
 import { AnimatedCollapse } from "@/components/ui/AnimatedCollapse";
 import { executeUndoable } from "@/stores/undoStore";
 export function Sidebar() {
-  const { favorites, sidebarCollapsed, sidebarWidth, setSidebarWidth, removeFavorite, addFavorite, openTab, refreshFileTree, fileTreeVersion, setFavoriteAlias, updateFavoritePath, setFavoriteIcon, folderSort, fileSort, setFolderSort, setFileSort, favoriteFiles, addFavoriteFile, removeFavoriteFile, selectedPaths, reorderFavorites } = useAppStore();
+  const { favorites, sidebarCollapsed, sidebarWidth, setSidebarWidth, removeFavorite, addFavorite, openTab, refreshFileTree, fileTreeVersion, setFavoriteAlias, updateFavoritePath, setFavoriteIcon, folderSort, fileSort, setFolderSort, setFileSort, selectedPaths, reorderFavorites } = useAppStore();
   const [compactMode, setCompactMode] = useState(false);
   const [sortMenu, setSortMenu] = useState<{ x: number; y: number } | null>(null);
   const [docCounts, setDocCounts] = useState<Record<string, number>>({});

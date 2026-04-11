@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { RotateCcw } from "lucide-react";
-import { useSettingsStore, SPACING_STYLES, type SpacingStyleName } from "@/stores/settingsStore";
+import { SPACING_STYLES, type SpacingStyleName } from "@/stores/settingsStore";
 
 interface TunerItem {
   key: string;
