@@ -46,12 +46,13 @@ export async function moveItems(
 
     const state = useAppStore.getState();
 
-    // 폴더 펼침 상태 이전 (하위 폴더 포함)
+    // 폴더 펼침 상태 이전 (하위 폴더 포함): 이전 경로 제거 + 새 경로 추가
     const { expandedFolders, toggleFolder } = state;
     for (const expanded of [...expandedFolders]) {
       if (expanded === srcPath || expanded.startsWith(srcPath + "\\")) {
+        toggleFolder(expanded); // 이전 경로 제거
         const newExpandedPath = destPath + expanded.substring(srcPath.length);
-        if (!expandedFolders.has(newExpandedPath)) toggleFolder(newExpandedPath);
+        toggleFolder(newExpandedPath); // 새 경로 추가
       }
     }
 
