@@ -187,7 +187,7 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
         }}
       >
         <div style={{
-          ...(s.widthMode === "fixed" ? { maxWidth: `${s.editorMaxWidth}px`, width: "100%" } : { width: "100%" }),
+          ...(s.widthMode === "fixed" ? { width: `${s.editorMaxWidth}px`, minWidth: `${s.editorMaxWidth}px` } : { width: "100%" }),
           ...editorStyle,
         }}>
           <EditorContent editor={editor} />
