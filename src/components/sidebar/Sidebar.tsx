@@ -494,6 +494,7 @@ export function Sidebar() {
                       padding: "0 16px",
                       color: isBroken ? "var(--color-text-muted)" : "var(--color-text-secondary)",
                       cursor: isBroken ? "default" : "pointer",
+                      background: selectedPaths.has(fav.path) ? "var(--color-accent-subtle)" : undefined,
                     }}
                     onMouseEnter={(e) => {
                       if (!isBroken && !dragFavState.current.active) e.currentTarget.style.background = "var(--color-bg-hover)";
