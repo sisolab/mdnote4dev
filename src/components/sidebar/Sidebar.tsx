@@ -9,6 +9,7 @@ import { Tooltip } from "@/components/ui/Tooltip";
 import { Unlink, ChevronRight, Folder, Tag, ChevronsDownUp, ChevronsUpDown, ArrowUpDown, FilePlus, FolderPlus, FileText, FolderOpen, ListCollapse, icons } from "lucide-react";
 import { IconPicker } from "@/components/settings/IconPicker";
 import { shortenPath } from "@/utils/pathUtils";
+import { AnimatedCollapse } from "@/components/ui/AnimatedCollapse";
 import { executeUndoable } from "@/stores/undoStore";
 export function Sidebar() {
   const { favorites, sidebarCollapsed, removeFavorite, addFavorite, openTab, refreshFileTree, fileTreeVersion, setFavoriteAlias, updateFavoritePath, setFavoriteIcon, folderSort, fileSort, setFolderSort, setFileSort, favoriteFiles, addFavoriteFile, removeFavoriteFile, selectedPaths, reorderFavorites } = useAppStore();
@@ -585,7 +586,11 @@ export function Sidebar() {
                   )}
 
                   {/* 파일 트리 */}
-                  {!isBroken && expandedFavs.has(fav.path) && <FileTree rootPath={fav.path} compact={compactMode} />}
+                  {!isBroken && (
+                    <AnimatedCollapse open={expandedFavs.has(fav.path)}>
+                      <FileTree rootPath={fav.path} compact={compactMode} />
+                    </AnimatedCollapse>
+                  )}
                 </div>
                 </div>
               );

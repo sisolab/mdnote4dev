@@ -6,10 +6,11 @@ interface AnimatedCollapseProps {
   duration?: number;
 }
 
-const DURATION = 300; // 고정 duration으로 일관된 속도감
+const DURATION = 300;
 
 export function AnimatedCollapse({ open, children, duration = DURATION }: AnimatedCollapseProps) {
-  const ref = useRef<HTMLDivElement>(null);
+  const outerRef = useRef<HTMLDivElement>(null);
+  const innerRef = useRef<HTMLDivElement>(null);
   const [render, setRender] = useState(open);
   const mounted = useRef(false);
 
@@ -19,56 +20,58 @@ export function AnimatedCollapse({ open, children, duration = DURATION }: Animat
       return;
     }
 
-    const el = ref.current;
+    const outer = outerRef.current;
 
     if (open) {
       setRender(true);
-    } else if (el) {
-      // 접기: clip-path로 위에서부터 숨기기
-      el.style.transition = `clip-path ${duration}ms ease, opacity ${duration}ms ease`;
-      el.style.clipPath = "inset(0 0 100% 0)";
-      el.style.opacity = "0.3";
-      const timer = setTimeout(() => {
-        setRender(false);
-        if (el) {
-          el.style.transition = "";
-          el.style.clipPath = "";
-          el.style.opacity = "";
-        }
-      }, duration);
-      return () => clearTimeout(timer);
+    } else if (outer) {
+      // 접기: 현재 높이 → 0
+      const h = outer.scrollHeight;
+      outer.style.height = `${h}px`;
+      outer.style.overflow = "hidden";
+      requestAnimationFrame(() => {
+        outer.style.transition = `height ${duration}ms cubic-bezier(0.4, 0, 0.2, 1)`;
+        outer.style.height = "0px";
+        setTimeout(() => {
+          setRender(false);
+          outer.style.transition = "";
+          outer.style.height = "";
+          outer.style.overflow = "";
+        }, duration);
+      });
     }
   }, [open, duration]);
 
-  // 펼치기: render 된 직후 애니메이션
+  // 펼치기: render 직후 0 → 실제 높이
   useEffect(() => {
-    if (!render || !open) return;
-    const el = ref.current;
-    if (!el || !mounted.current) return;
+    if (!render || !open || !mounted.current) return;
+    const outer = outerRef.current;
+    const inner = innerRef.current;
+    if (!outer || !inner) return;
 
-    // 초기 상태: 숨김
-    el.style.clipPath = "inset(0 0 100% 0)";
-    el.style.opacity = "0.3";
-    el.style.transition = "none";
+    outer.style.height = "0px";
+    outer.style.overflow = "hidden";
+    outer.style.transition = "none";
 
     requestAnimationFrame(() => {
+      const h = inner.scrollHeight;
       requestAnimationFrame(() => {
-        if (!el) return;
-        el.style.transition = `clip-path ${duration}ms ease, opacity ${duration}ms ease`;
-        el.style.clipPath = "inset(0 0 0 0)";
-        el.style.opacity = "1";
+        outer.style.transition = `height ${duration}ms cubic-bezier(0.4, 0, 0.2, 1)`;
+        outer.style.height = `${h}px`;
         setTimeout(() => {
-          if (el) {
-            el.style.transition = "";
-            el.style.clipPath = "";
-            el.style.opacity = "";
-          }
-        }, duration + 10);
+          outer.style.height = "";
+          outer.style.overflow = "";
+          outer.style.transition = "";
+        }, duration);
       });
     });
   }, [render, open, duration]);
 
   if (!render) return null;
 
-  return <div ref={ref}>{children}</div>;
+  return (
+    <div ref={outerRef}>
+      <div ref={innerRef}>{children}</div>
+    </div>
+  );
 }
