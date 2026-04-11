@@ -57,11 +57,11 @@ export function ImageToolbar({ editor }: ImageToolbarProps) {
   if (!pos) return null;
 
   const attrs = (editor.state.selection as any).node?.attrs ?? {};
-  const currentWidth = attrs.width ?? 120;
+  const currentWidth = attrs.width ?? null;
   const currentAlign = attrs.align ?? "left";
 
   const setWidth = (w: number) => {
-    editor.chain().focus().updateAttributes("image", { width: w }).run();
+    editor.chain().focus().updateAttributes("image", { width: w === 0 ? null : w }).run();
   };
 
   const setAlign = (a: string) => {
@@ -97,9 +97,9 @@ export function ImageToolbar({ editor }: ImageToolbarProps) {
             borderRadius: "4px",
             border: "none",
             cursor: "pointer",
-            fontWeight: (s.value === 0 ? currentWidth === 0 : currentWidth === s.value) ? 600 : 400,
-            background: (s.value === 0 ? currentWidth === 0 : currentWidth === s.value) ? "var(--color-accent-subtle)" : "transparent",
-            color: (s.value === 0 ? currentWidth === 0 : currentWidth === s.value) ? "var(--color-accent)" : "var(--color-text-secondary)",
+            fontWeight: (s.value === 0 ? (currentWidth === 0 || currentWidth === null) : currentWidth === s.value) ? 600 : 400,
+            background: (s.value === 0 ? (currentWidth === 0 || currentWidth === null) : currentWidth === s.value) ? "var(--color-accent-subtle)" : "transparent",
+            color: (s.value === 0 ? (currentWidth === 0 || currentWidth === null) : currentWidth === s.value) ? "var(--color-accent)" : "var(--color-text-secondary)",
             transition: "all 0.1s",
           }}
         >
