@@ -463,12 +463,12 @@ export function TabBar() {
               targetWidth = settings.editorMaxWidth + 96 + 40;
             }
             // 부드러운 리사이즈 애니메이션 (사이드바 전환과 동기화)
-            const duration = 250;
+            const duration = 350;
             const startTime = performance.now();
             const animate = async (now: number) => {
               const elapsed = now - startTime;
               const progress = Math.min(elapsed / duration, 1);
-              const ease = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+              const ease = 1 - Math.pow(1 - progress, 4); // ease-out quartic
               const w = startWidth + (targetWidth - startWidth) * ease;
               await appWindow.setSize(new LogicalSize(Math.round(w), height));
               if (progress < 1) requestAnimationFrame(animate);
