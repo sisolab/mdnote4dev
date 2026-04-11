@@ -448,15 +448,23 @@ export function TabBar() {
       </button>
       <button
         onClick={() => {
+          const wasCollapsed = sidebarCollapsed;
           toggleSidebar();
-          // 사이드바 숨긴 후 고정폭이면 창 크기 조절
-          if (!sidebarCollapsed && settings.widthMode === "fixed") {
+          if (settings.widthMode === "fixed") {
             setTimeout(async () => {
               const appWindow = getCurrentWindow();
-              const targetWidth = settings.editorMaxWidth + 96 + 40;
               const factor = await appWindow.scaleFactor();
               const size = await appWindow.innerSize();
-              await appWindow.setSize(new LogicalSize(targetWidth, size.height / factor));
+              const currentWidth = size.width / factor;
+              const currentHeight = size.height / factor;
+              if (wasCollapsed) {
+                // 사이드바 펼치기 → 사이드바 폭만큼 넓힘
+                await appWindow.setSize(new LogicalSize(currentWidth + 280, currentHeight));
+              } else {
+                // 사이드바 숨기기 → 고정폭에 맞춤
+                const targetWidth = settings.editorMaxWidth + 96 + 40;
+                await appWindow.setSize(new LogicalSize(targetWidth, currentHeight));
+              }
             }, 300);
           }
         }}
