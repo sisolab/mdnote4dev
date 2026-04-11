@@ -328,10 +328,9 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
           }
         }
 
-        // 드래그 중인 파일의 현재 폴더와 같으면 → 리오더 모드 (custom 정렬일 때만)
+        // 드래그 중인 파일의 현재 폴더와 같으면 → 리오더 모드
         const dragDir = dragMoveState.current.paths[0]?.substring(0, dragMoveState.current.paths[0].lastIndexOf("\\"));
-        const { folderSort } = useAppStore.getState();
-        if (target === dragDir && path && !isDir && folderSort === "custom") {
+        if (target === dragDir && path && !isDir) {
           // 같은 폴더 내 파일 위 → 리오더
           const rect = btn!.getBoundingClientRect();
           const pos = me.clientY < rect.top + rect.height / 2 ? "above" : "below";
@@ -412,12 +411,36 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
           fileFlipPositions.current = positions;
         }
 
-        executeUndoable({
-          type: "reorder-files",
-          description: `파일 순서 변경: ${dragName}`,
-          execute: async () => { setCustomFileOrder(folderPath, newOrder); refreshFileTree(); },
-          undo: async () => { setCustomFileOrder(folderPath, oldOrder); refreshFileTree(); },
-        });
+        const { folderSort } = useAppStore.getState();
+
+        if (folderSort === "custom") {
+          // 커스텀 정렬: 영구 적용
+          executeUndoable({
+            type: "reorder-files",
+            description: `파일 순서 변경: ${dragName}`,
+            execute: async () => { setCustomFileOrder(folderPath, newOrder); refreshFileTree(); },
+            undo: async () => { setCustomFileOrder(folderPath, oldOrder); refreshFileTree(); },
+          });
+        } else {
+          // 다른 정렬: 잠깐 이동 후 되돌아오기
+          setCustomFileOrder(folderPath, newOrder);
+          refreshFileTree();
+          // FLIP으로 이동 보여준 후, 원래 정렬로 복원
+          setTimeout(() => {
+            if (containerRef.current) {
+              const pos2: Record<string, number> = {};
+              containerRef.current.querySelectorAll("[data-path]").forEach((el) => {
+                pos2[(el as HTMLElement).dataset.path!] = el.getBoundingClientRect().top;
+              });
+              fileFlipPositions.current = pos2;
+            }
+            // 커스텀 순서 제거 → 원래 정렬 복원
+            const updated = { ...useAppStore.getState().customFileOrder };
+            delete updated[folderPath];
+            useAppStore.setState({ customFileOrder: updated });
+            refreshFileTree();
+          }, 600);
+        }
         cleanup();
         return;
       }
