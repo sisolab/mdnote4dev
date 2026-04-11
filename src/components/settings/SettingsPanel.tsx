@@ -293,7 +293,6 @@ export function SettingsPanel() {
                     flex: 1, padding: "8px 8px", borderRadius: "8px", textAlign: "center",
                     border: isCustom ? "1.5px solid #7c3aed" : "1px solid var(--color-border-light)",
                     background: isCustom ? "#7c3aed15" : "var(--color-bg-elevated)",
-                    opacity: isCustom ? 1 : 0.5,
                     display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "4px",
                   }}
                 >
