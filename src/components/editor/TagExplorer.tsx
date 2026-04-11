@@ -262,7 +262,7 @@ export function TagExplorer() {
 
       {/* 문서 목록 (즐겨찾기 + 최근 문서 / 검색 결과) */}
       <div className="flex-1 overflow-auto hide-scrollbar" style={{ padding: "4px 0" }}>
-        <div style={{ maxWidth: "600px", margin: "0 auto" }}>
+        <div style={{ maxWidth: "800px", margin: "0 auto" }}>
 
         {/* 즐겨찾기 섹션 (검색 중에는 숨김) */}
         {!searchQuery && !selectedTags.length && favoriteFiles.length > 0 && (
