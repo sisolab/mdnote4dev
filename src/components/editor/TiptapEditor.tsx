@@ -274,10 +274,25 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
           // 에디터 내부 콘텐츠가 아닌 빈 영역 클릭 시 클릭 위치에 가장 가까운 곳에 포커스
           if (e.target === e.currentTarget || !(e.target as HTMLElement).closest(".tiptap")) {
             e.preventDefault();
-            const pos = editor.view.posAtCoords({ left: e.clientX, top: e.clientY });
+            const editorRect = editor.view.dom.getBoundingClientRect();
+            const isLeft = e.clientX < editorRect.left;
+            const isRight = e.clientX > editorRect.right;
+            // 좌우 바깥이면 X를 에디터 안쪽 끝으로 보정해서 해당 줄의 맨앞/맨뒤로
+            const x = isLeft ? editorRect.left + 1 : isRight ? editorRect.right - 1 : e.clientX;
+            const pos = editor.view.posAtCoords({ left: x, top: e.clientY });
             if (pos) {
               editor.commands.focus();
-              editor.commands.setTextSelection(pos.pos);
+              if (isLeft) {
+                // 줄의 맨 앞으로
+                const resolved = editor.state.doc.resolve(pos.pos);
+                editor.commands.setTextSelection(resolved.start());
+              } else if (isRight) {
+                // 줄의 맨 뒤로
+                const resolved = editor.state.doc.resolve(pos.pos);
+                editor.commands.setTextSelection(resolved.end());
+              } else {
+                editor.commands.setTextSelection(pos.pos);
+              }
             } else {
               editor.commands.focus("end");
             }
