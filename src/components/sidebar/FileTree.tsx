@@ -852,7 +852,7 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
         const items = searchQuery ? searchResults : entries;
         if (searchQuery && items.length === 0) return null;
         return items.length === 0 ? (
-          <p className="text-[11px] text-text-light px-3 py-2">빈 폴더</p>
+          <div style={{ padding: "8px 0" }} />
         ) : (
           items.map((entry) => (
             <FileTreeItem key={entry.path} entry={entry} depth={0} onHover={handleHover} onItemClick={handleItemClick} onContextMenu={handleContextMenu} renamingPath={renamingPath} renameValue={renameValue} setRenameValue={setRenameValue} onFinishRename={finishRename} searchMode={!!searchQuery} compact={compact} onDragStart={startItemDrag} onDragOverFolder={updateDropTarget} dragPaths={dragMovePaths} dropTargetPath={dropTarget} reorderTarget={reorderTarget} wasDragging={wasDragging} />
