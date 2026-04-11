@@ -509,7 +509,27 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
 
   const doMove = async (paths: string[], target: string) => {
     try {
+      const rt = reorderTargetRef.current;
       const result = await moveItems(paths, target);
+
+      // 커스텀 정렬일 때 드롭 위치에 삽입
+      const { folderSort, customFileOrder, setCustomFileOrder } = useAppStore.getState();
+      if (folderSort === "custom" && rt && result.newPaths.length > 0) {
+        const order = customFileOrder[target] ? [...customFileOrder[target]] : [];
+        const insertTarget = rt.path.split("\\").pop() ?? "";
+        let insertIdx = order.indexOf(insertTarget);
+        if (insertIdx < 0) insertIdx = order.length;
+        if (rt.pos === "below") insertIdx++;
+        // 이동된 파일들을 삽입 위치에 추가
+        const newNames = result.newPaths.map((p) => p.split("\\").pop() ?? "");
+        for (let i = newNames.length - 1; i >= 0; i--) {
+          const existing = order.indexOf(newNames[i]);
+          if (existing >= 0) order.splice(existing, 1);
+          order.splice(insertIdx, 0, newNames[i]);
+        }
+        setCustomFileOrder(target, order);
+      }
+
       if (result.oldPaths.length > 0) {
         const old = [...result.oldPaths];
         const nw = [...result.newPaths];
