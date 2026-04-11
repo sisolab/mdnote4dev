@@ -179,7 +179,7 @@ function PageWidthButton({ settings, updateSetting, onHover }: { settings: any; 
           border: "none", background: "transparent", cursor: "pointer",
           position: "relative", zIndex: 1, transition: "color 0.1s",
           color: open ? "var(--color-accent)" : "var(--color-text-secondary)",
-          fontSize: "11px", fontWeight: 600, borderRadius: "3px",
+          fontSize: "9px", fontWeight: 600, borderRadius: "3px",
         }}
       >
         <MoveHorizontal size={11} style={{ marginBottom: "-1px" }} />
@@ -187,7 +187,7 @@ function PageWidthButton({ settings, updateSetting, onHover }: { settings: any; 
       </button>
       {open && (
         <div style={{
-          position: "absolute", top: "100%", left: "0", zIndex: 9999,
+          position: "absolute", top: "100%", right: "0", zIndex: 9999,
           background: "var(--color-bg-elevated)", border: "1px solid var(--color-border-medium)",
           borderRadius: "6px", boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
           padding: "4px",
