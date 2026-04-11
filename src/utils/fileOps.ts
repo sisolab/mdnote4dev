@@ -46,15 +46,15 @@ export async function moveItems(
 
     const state = useAppStore.getState();
 
-    // 폴더 펼침 상태 이전 (하위 폴더 포함): 이전 경로 제거 + 새 경로 추가
-    const { expandedFolders, toggleFolder } = state;
-    for (const expanded of [...expandedFolders]) {
+    // 폴더 펼침 상태 이전 (하위 폴더 포함)
+    const newExpanded = new Set(state.expandedFolders);
+    for (const expanded of [...newExpanded]) {
       if (expanded === srcPath || expanded.startsWith(srcPath + "\\")) {
-        toggleFolder(expanded); // 이전 경로 제거
-        const newExpandedPath = destPath + expanded.substring(srcPath.length);
-        toggleFolder(newExpandedPath); // 새 경로 추가
+        newExpanded.delete(expanded);
+        newExpanded.add(destPath + expanded.substring(srcPath.length));
       }
     }
+    useAppStore.setState({ expandedFolders: newExpanded });
 
     // 열린 탭 경로 업데이트 (폴더 이동 시 하위 파일 포함)
     for (const tab of state.tabs) {
