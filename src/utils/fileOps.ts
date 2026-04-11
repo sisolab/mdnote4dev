@@ -44,18 +44,24 @@ export async function moveItems(
 
     await rename(srcPath, destPath);
 
-    // 열린 탭 경로 업데이트
+    // 열린 탭 경로 업데이트 (폴더 이동 시 하위 파일 포함)
     const state = useAppStore.getState();
-    const openTab = state.tabs.find((t) => t.filePath === srcPath);
-    if (openTab) {
-      const newName = destPath.split("\\").pop() ?? "";
-      state.updateTabFilePath(openTab.id, destPath, newName);
+    for (const tab of state.tabs) {
+      if (!tab.filePath) continue;
+      if (tab.filePath === srcPath || tab.filePath.startsWith(srcPath + "\\")) {
+        const newTabPath = destPath + tab.filePath.substring(srcPath.length);
+        const newTabName = newTabPath.split("\\").pop() ?? "";
+        state.updateTabFilePath(tab.id, newTabPath, newTabName);
+      }
     }
 
-    // 즐겨찾기 경로 업데이트
-    if (state.favoriteFiles.includes(srcPath)) {
-      state.removeFavoriteFile(srcPath);
-      state.addFavoriteFile(destPath);
+    // 즐겨찾기 경로 업데이트 (하위 파일 포함)
+    for (const fav of [...state.favoriteFiles]) {
+      if (fav === srcPath || fav.startsWith(srcPath + "\\")) {
+        const newFavPath = destPath + fav.substring(srcPath.length);
+        state.removeFavoriteFile(fav);
+        state.addFavoriteFile(newFavPath);
+      }
     }
 
     oldPaths.push(srcPath);
@@ -74,15 +80,20 @@ export async function undoMoveItems(oldPaths: string[], newPaths: string[]): Pro
     await rename(srcPath, destPath);
 
     const state = useAppStore.getState();
-    const openTab = state.tabs.find((t) => t.filePath === srcPath);
-    if (openTab) {
-      const newName = destPath.split("\\").pop() ?? "";
-      state.updateTabFilePath(openTab.id, destPath, newName);
+    for (const tab of state.tabs) {
+      if (!tab.filePath) continue;
+      if (tab.filePath === srcPath || tab.filePath.startsWith(srcPath + "\\")) {
+        const newTabPath = destPath + tab.filePath.substring(srcPath.length);
+        const newTabName = newTabPath.split("\\").pop() ?? "";
+        state.updateTabFilePath(tab.id, newTabPath, newTabName);
+      }
     }
 
-    if (state.favoriteFiles.includes(srcPath)) {
-      state.removeFavoriteFile(srcPath);
-      state.addFavoriteFile(destPath);
+    for (const fav of [...state.favoriteFiles]) {
+      if (fav === srcPath || fav.startsWith(srcPath + "\\")) {
+        const newFavPath = destPath + fav.substring(srcPath.length);
+        state.removeFavoriteFile(fav);
+        state.addFavoriteFile(newFavPath);
     }
   }
 }
