@@ -150,6 +150,68 @@ function TableGridButton({ editor, onHover }: { editor: Editor; onHover: (el: HT
   );
 }
 
+const WIDTH_OPTIONS = [640, 720, 780, 860, 960, 1080];
+
+function PageWidthButton({ settings, updateSetting, onHover }: { settings: any; updateSetting: (k: string, v: any) => void; onHover: (el: HTMLButtonElement | null) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    const escHandler = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    setTimeout(() => window.addEventListener("click", handler), 0);
+    window.addEventListener("keydown", escHandler);
+    return () => { window.removeEventListener("click", handler); window.removeEventListener("keydown", escHandler); };
+  }, [open]);
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <button
+        onClick={() => setOpen(!open)}
+        onMouseEnter={(e) => onHover(e.currentTarget)}
+        title="페이지 폭"
+        style={{
+          height: "40px", padding: "0 6px", flexShrink: 0,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          border: "none", background: "transparent", cursor: "pointer",
+          position: "relative", zIndex: 1, transition: "color 0.1s",
+          color: open ? "var(--color-accent)" : "var(--color-text-secondary)",
+          fontSize: "11px", fontWeight: 600, borderRadius: "3px",
+        }}
+      >
+        {settings.editorMaxWidth}
+      </button>
+      {open && (
+        <div style={{
+          position: "absolute", top: "100%", left: "0", zIndex: 9999,
+          background: "var(--color-bg-elevated)", border: "1px solid var(--color-border-medium)",
+          borderRadius: "6px", boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
+          padding: "4px",
+        }}>
+          {WIDTH_OPTIONS.map((w) => (
+            <button
+              key={w}
+              onClick={(e) => { e.stopPropagation(); updateSetting("editorMaxWidth", w); setOpen(false); }}
+              style={{
+                display: "block", width: "100%", padding: "5px 12px", borderRadius: "3px",
+                border: "none", cursor: "pointer", textAlign: "left",
+                fontSize: "12px", fontWeight: settings.editorMaxWidth === w ? 600 : 400,
+                background: settings.editorMaxWidth === w ? "var(--color-accent-subtle)" : "transparent",
+                color: settings.editorMaxWidth === w ? "var(--color-accent)" : "var(--color-text-secondary)",
+              }}
+            >
+              {w}px
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function Toolbar({ editor }: ToolbarProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [highlight, setHighlight] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
@@ -261,6 +323,8 @@ export function Toolbar({ editor }: ToolbarProps) {
       >
         {settings.pageAlign === "left" ? <AlignLeft size={15} /> : <AlignCenter size={15} />}
       </ToolbarButton>
+
+      <PageWidthButton settings={settings} updateSetting={updateSetting} onHover={handleHover} />
 
       <ToolbarButton
         onClick={() => {

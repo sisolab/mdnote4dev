@@ -351,7 +351,6 @@ export function SettingsPanel() {
           {/* 에디터 영역 (프리셋 포함) */}
           <div style={{ marginTop: "16px" }} />
           <SectionTitle>에디터 영역</SectionTitle>
-          <ChipSetting label="최대 폭" value={settings.editorMaxWidth} options={[640, 720, 780, 860, 960, 1080]} unit="" defaultValue={DEFAULT_SETTINGS.editorMaxWidth} onChange={(v) => updateSetting("editorMaxWidth", v)} />
 
         </div>
 
