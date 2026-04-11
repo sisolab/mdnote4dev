@@ -179,7 +179,7 @@ export function AttachmentExplorer() {
           display: "flex", alignItems: "center", gap: "8px",
           padding: "8px 16px", borderRadius: "8px",
           border: "1px solid var(--color-border-medium)",
-          background: "var(--color-bg-elevated)", width: "500px", maxWidth: "100%",
+          background: "var(--color-bg-elevated)", width: "600px", maxWidth: "100%",
         }}>
           <Search size={14} style={{ color: "var(--color-text-tertiary)", flexShrink: 0 }} />
           <input

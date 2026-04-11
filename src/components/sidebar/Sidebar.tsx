@@ -663,7 +663,7 @@ export function Sidebar() {
 
       {/* 액션 바 (하단) */}
       <div style={{
-        display: "flex", alignItems: "center", gap: "0",
+        display: "flex", alignItems: "center", justifyContent: "center", gap: "0",
         padding: "0 16px", height: "34px",
         borderTop: "1px solid var(--color-border-light)",
         flexShrink: 0,

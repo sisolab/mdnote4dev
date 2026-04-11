@@ -328,6 +328,7 @@ export function TabBar() {
               onMouseDown={(e) => { if (editingId !== tab.id) startTabDrag(e, index); }}
               onMouseEnter={(e) => handleHover(e.currentTarget.querySelector("[data-tab-inner]") as HTMLElement || e.currentTarget)}
               onClick={() => { if (!wasDragging.current) setActiveTab(tab.id); }}
+              onDoubleClick={(e) => e.preventDefault()}
               onContextMenu={(e) => {
                 e.preventDefault();
                 setTabContextMenu({ x: e.clientX, y: e.clientY, tabId: tab.id });
@@ -342,6 +343,7 @@ export function TabBar() {
                 transition: isDragging ? "none" : "transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.15s",
                 zIndex: isDragging ? 10 : 1,
                 position: "relative",
+                userSelect: "none",
               }}
             >
               <div

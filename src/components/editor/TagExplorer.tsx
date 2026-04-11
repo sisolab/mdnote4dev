@@ -1,12 +1,10 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useAppStore } from "@/stores/appStore";
 import { getTagColor } from "@/utils/frontmatter";
 import { readTextFile, writeTextFile, exists } from "@tauri-apps/plugin-fs";
 import { parseFrontmatter, updateFrontmatterTags } from "@/utils/frontmatter";
 import { shortenPath } from "@/utils/pathUtils";
-import { FileText, Search, X, Star, ChevronRight } from "lucide-react";
-import { invoke } from "@tauri-apps/api/core";
-import { ContextMenu } from "@/components/ui/ContextMenu";
+import { FileText, Search, X, Star, ChevronRight, Clock } from "lucide-react";
 
 export function TagExplorer() {
   const { allTags, openTab, tabs, activeTabId, recentFiles, setRecentFiles, filePreviews, fileContents, favoriteFiles, addFavoriteFile, removeFavoriteFile } = useAppStore();
@@ -27,8 +25,7 @@ export function TagExplorer() {
   const selectedTags = activeTab?.tagFilters ?? [];
   const [searchQuery, setSearchQuery] = useState("");
   const [favExpanded, setFavExpanded] = useState(true);
-  const [showAll, setShowAll] = useState(false);
-  const [menu, setMenu] = useState<{ x: number; y: number; filePath: string } | null>(null);
+  const [recentExpanded, setRecentExpanded] = useState(true);
 
   const tagNames = Object.keys(allTags).sort();
 
@@ -62,23 +59,19 @@ export function TagExplorer() {
   };
 
   const allFiles = [...new Set(Object.values(allTags).flat())];
-  const allSorted = useMemo(() => {
-    const files = recentFiles.length > 0 ? recentFiles : allFiles;
-    return files;
-  }, [recentFiles, allFiles]);
 
   let matchingFiles: string[];
   if (selectedTags.length > 0) {
     matchingFiles = allFiles.filter((fp) => selectedTags.every((tag) => allTags[tag]?.includes(fp)));
   } else if (searchQuery) {
     const q = searchQuery.toLowerCase();
-    matchingFiles = allSorted.filter((fp) => {
+    matchingFiles = (recentFiles.length > 0 ? recentFiles : allFiles).filter((fp) => {
       const name = (fp.split("\\").pop() ?? "").toLowerCase();
       const body = (fileContents[fp] ?? "").toLowerCase();
       return name.includes(q) || body.includes(q);
     });
   } else {
-    matchingFiles = allSorted;
+    matchingFiles = [];
   }
 
   const handleOpenFile = async (filePath: string) => {
@@ -91,7 +84,7 @@ export function TagExplorer() {
 
   const renderFileItem = (filePath: string) => {
     const name = filePath.split("\\").pop() ?? "";
-    const path = shortenPath(filePath.substring(0, filePath.lastIndexOf("\\")));
+    const path = shortenPath(filePath);
     const fileTags = Object.keys(allTags).filter((t) => allTags[t]?.includes(filePath));
     const preview = filePreviews[filePath] ?? "";
     const contentSnippet = searchQuery ? getContentSnippet(filePath, searchQuery) : null;
@@ -100,24 +93,20 @@ export function TagExplorer() {
     return (
       <div
         key={filePath}
-        onClick={(e) => setMenu({ x: e.clientX, y: e.clientY, filePath })}
-        onDoubleClick={() => handleOpenFile(filePath)}
-        title={`${name}\n${path}`}
+        onClick={() => handleOpenFile(filePath)}
         style={{
-          display: "inline-flex", alignItems: "center", gap: "10px",
-          padding: "8px 12px",
-          borderRadius: "6px", border: "1px solid var(--color-border-medium)",
-          background: "var(--color-bg-secondary)", cursor: "pointer",
-          transition: "all 0.15s",
+          display: "flex", alignItems: "flex-start", gap: "8px",
+          padding: "8px 8px", cursor: "pointer",
+          borderRadius: "4px", transition: "background 0.1s",
         }}
         onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-hover)"; }}
-        onMouseLeave={(e) => { e.currentTarget.style.background = "var(--color-bg-secondary)"; }}
+        onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
       >
-        <FileText size={16} style={{ color: "var(--color-text-light)", flexShrink: 0 }} />
-        <div style={{ position: "relative" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "6px", whiteSpace: "nowrap" }}>
-            <span style={{ fontSize: "12px", fontWeight: 500, color: "var(--color-text-primary)" }}>
-              {searchQuery ? highlightText(name, searchQuery) : name}
+        <FileText size={14} style={{ color: "var(--color-text-light)", flexShrink: 0, marginTop: "2px" }} />
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <span style={{ fontSize: "12px", fontWeight: 500, color: "var(--color-text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {searchQuery ? highlightText(path, searchQuery) : path}
             </span>
             {fileTags.length > 0 && (
               <div style={{ display: "flex", gap: "3px", flexShrink: 0 }}>
@@ -128,24 +117,22 @@ export function TagExplorer() {
               </div>
             )}
           </div>
-          <div style={{ fontSize: "11px", color: "var(--color-text-tertiary)", marginTop: "18px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", position: "absolute", left: 0, right: 0, top: 0 }}>
-            {searchQuery && contentSnippet ? highlightText(contentSnippet, searchQuery) : preview || path}
+          <div style={{ fontSize: "11px", color: "var(--color-text-tertiary)", marginTop: "2px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {searchQuery && contentSnippet ? highlightText(contentSnippet, searchQuery) : preview}
           </div>
-          <div style={{ height: "18px" }} />
         </div>
         <button onClick={(e) => { e.stopPropagation(); isFav ? removeFavoriteFile(filePath) : addFavoriteFile(filePath); }}
           title={isFav ? "즐겨찾기 해제" : "즐겨찾기 등록"}
-          style={{ width: "26px", height: "26px", display: "flex", alignItems: "center", justifyContent: "center", border: "none", background: "transparent", cursor: "pointer", borderRadius: "4px", color: isFav ? "#f5c518" : "var(--color-text-tertiary)", flexShrink: 0 }}
+          style={{ width: "22px", height: "22px", display: "flex", alignItems: "center", justifyContent: "center", border: "none", background: "transparent", cursor: "pointer", borderRadius: "3px", color: isFav ? "#f5c518" : "var(--color-text-tertiary)", flexShrink: 0, marginTop: "1px" }}
           onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-active)"; }}
           onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
         >
-          <Star size={14} style={isFav ? { fill: "#f5c518" } : {}} />
+          <Star size={12} style={isFav ? { fill: "#f5c518" } : {}} />
         </button>
       </div>
     );
   };
 
-  // 태그 전체 삭제
   const [deleteConfirmTag, setDeleteConfirmTag] = useState<string | null>(null);
   const handleDeleteTag = async (tag: string) => {
     const paths = allTags[tag] ?? [];
@@ -172,39 +159,35 @@ export function TagExplorer() {
     setDeleteConfirmTag(null);
   };
 
-  const limit = showAll || searchQuery || selectedTags.length > 0 ? matchingFiles.length : 30;
-  const displayFiles = matchingFiles.slice(0, limit);
-  const favFiles = favoriteFiles.filter((fp) => !searchQuery && !selectedTags.length);
+  const recentDisplay = recentFiles.slice(0, 10);
 
   return (
-    <div style={{ height: "100%", overflowY: "auto", padding: "24px 32px" }}>
-      <div>
+    <div style={{ height: "100%", overflowY: "auto", padding: "24px" }}>
+      <div style={{ maxWidth: "600px", margin: "0 auto" }}>
 
-        {/* 검색 (중앙) */}
-        <div style={{ display: "flex", justifyContent: "center", marginBottom: "16px" }}>
-          <div style={{
-            display: "flex", alignItems: "center", gap: "8px",
-            padding: "8px 16px", borderRadius: "8px",
-            border: "1px solid var(--color-border-medium)",
-            background: "var(--color-bg-elevated)", width: "500px", maxWidth: "100%",
-          }}>
-            <Search size={14} style={{ color: "var(--color-text-tertiary)", flexShrink: 0 }} />
-            <input
-              value={searchQuery}
-              onChange={(e) => { setSearchQuery(e.target.value); setShowAll(false); }}
-              placeholder="파일 및 내용 검색..."
-              style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: "13px", color: "var(--color-text-primary)" }}
-            />
-            {searchQuery && (
-              <button onClick={() => setSearchQuery("")}
-                style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--color-text-muted)", fontSize: "16px", lineHeight: 1 }}>
-                ×
-              </button>
-            )}
-          </div>
+        {/* 검색 */}
+        <div style={{
+          display: "flex", alignItems: "center", gap: "8px",
+          padding: "8px 16px", borderRadius: "8px",
+          border: "1px solid var(--color-border-medium)",
+          background: "var(--color-bg-elevated)", marginBottom: "16px",
+        }}>
+          <Search size={14} style={{ color: "var(--color-text-tertiary)", flexShrink: 0 }} />
+          <input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="파일 및 내용 검색..."
+            style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: "13px", color: "var(--color-text-primary)" }}
+          />
+          {searchQuery && (
+            <button onClick={() => setSearchQuery("")}
+              style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--color-text-muted)", fontSize: "16px", lineHeight: 1 }}>
+              ×
+            </button>
+          )}
         </div>
 
-        {/* 태그 필터 칩 (중앙) */}
+        {/* 태그 필터 칩 */}
         {tagNames.length > 0 && (
           <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "16px", justifyContent: "center" }}>
             {tagNames.map((tag) => {
@@ -230,77 +213,57 @@ export function TagExplorer() {
           </div>
         )}
 
-        {/* 즐겨찾기 섹션 */}
-        {!searchQuery && !selectedTags.length && favoriteFiles.length > 0 && (
-          <div style={{ marginBottom: "12px" }}>
-            <div onClick={() => setFavExpanded(!favExpanded)}
-              style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", marginBottom: "6px" }}>
-              <ChevronRight size={14} style={{ color: "var(--color-text-tertiary)", transform: favExpanded ? "rotate(90deg)" : "none", transition: "transform 0.15s" }} />
-              <Star size={12} style={{ color: "#f5c518", fill: "#f5c518" }} />
-              <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--color-text-secondary)" }}>즐겨찾기 ({favoriteFiles.length})</span>
+        {/* 검색 결과 */}
+        {(searchQuery || selectedTags.length > 0) && (
+          <>
+            <div style={{ fontSize: "12px", fontWeight: 600, color: "var(--color-text-secondary)", marginBottom: "6px" }}>
+              검색 결과 ({matchingFiles.length})
             </div>
-            {favExpanded && (
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                {favoriteFiles.map((fp) => renderFileItem(fp))}
+            {matchingFiles.length > 0
+              ? matchingFiles.slice(0, 100).map((fp) => renderFileItem(fp))
+              : <div style={{ textAlign: "center", padding: "40px 0", color: "var(--color-text-tertiary)", fontSize: "13px" }}>검색 결과 없음</div>
+            }
+          </>
+        )}
+
+        {/* 즐겨찾기 + 최근 문서 (검색 안 할 때) */}
+        {!searchQuery && !selectedTags.length && (
+          <>
+            {/* 즐겨찾기 */}
+            {favoriteFiles.length > 0 && (
+              <div style={{ marginBottom: "8px" }}>
+                <div onClick={() => setFavExpanded(!favExpanded)}
+                  style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", marginBottom: "4px" }}>
+                  <ChevronRight size={14} style={{ color: "var(--color-text-tertiary)", transform: favExpanded ? "rotate(90deg)" : "none", transition: "transform 0.15s" }} />
+                  <Star size={12} style={{ color: "#f5c518", fill: "#f5c518" }} />
+                  <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--color-text-secondary)" }}>즐겨찾기 ({favoriteFiles.length})</span>
+                </div>
+                {favExpanded && favoriteFiles.map((fp) => renderFileItem(fp))}
               </div>
             )}
-          </div>
-        )}
 
-        {/* 구분선 */}
-        {!searchQuery && !selectedTags.length && favoriteFiles.length > 0 && (
-          <div style={{ height: "1px", background: "var(--color-border-light)", margin: "12px 0" }} />
-        )}
+            {/* 구분선 */}
+            {favoriteFiles.length > 0 && (
+              <div style={{ height: "1px", background: "var(--color-border-light)", margin: "8px 0" }} />
+            )}
 
-        {/* 모든 문서 */}
-        <div style={{ fontSize: "12px", fontWeight: 600, color: "var(--color-text-secondary)", marginBottom: "8px" }}>
-          {searchQuery || selectedTags.length > 0
-            ? `검색 결과 (${matchingFiles.length})`
-            : `모든 문서 (${displayFiles.length}${matchingFiles.length > displayFiles.length ? ` / ${matchingFiles.length}` : ""})`
-          }
-        </div>
-
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-          {displayFiles.map((fp) => renderFileItem(fp))}
-        </div>
-
-        {displayFiles.length < matchingFiles.length && (
-          <div style={{ textAlign: "center", marginTop: "12px" }}>
-            <button
-              onClick={() => setShowAll(true)}
-              style={{
-                padding: "6px 20px", fontSize: "12px", fontWeight: 500,
-                border: "1px solid var(--color-border-medium)", borderRadius: "6px",
-                background: "transparent", color: "var(--color-text-secondary)",
-                cursor: "pointer", transition: "all 0.15s",
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-hover)"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
-            >
-              더 보기 ({matchingFiles.length - displayFiles.length}개)
-            </button>
-          </div>
-        )}
-
-        {displayFiles.length === 0 && (
-          <div style={{ textAlign: "center", padding: "40px 0", color: "var(--color-text-tertiary)", fontSize: "13px" }}>
-            {searchQuery || selectedTags.length > 0 ? "검색 결과 없음" : "문서 없음"}
-          </div>
+            {/* 최근 문서 */}
+            <div style={{ marginBottom: "8px" }}>
+              <div onClick={() => setRecentExpanded(!recentExpanded)}
+                style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", marginBottom: "4px" }}>
+                <ChevronRight size={14} style={{ color: "var(--color-text-tertiary)", transform: recentExpanded ? "rotate(90deg)" : "none", transition: "transform 0.15s" }} />
+                <Clock size={12} style={{ color: "var(--color-text-tertiary)" }} />
+                <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--color-text-secondary)" }}>최근 문서 ({recentDisplay.length})</span>
+              </div>
+              {recentExpanded && (
+                recentDisplay.length > 0
+                  ? recentDisplay.map((fp) => renderFileItem(fp))
+                  : <div style={{ textAlign: "center", padding: "20px 0", color: "var(--color-text-tertiary)", fontSize: "13px" }}>문서 없음</div>
+              )}
+            </div>
+          </>
         )}
       </div>
-
-      {/* 카드 클릭 컨텍스트 메뉴 */}
-      {menu && (
-        <ContextMenu
-          x={menu.x}
-          y={menu.y}
-          items={[
-            { label: "문서 열기", onClick: () => handleOpenFile(menu.filePath) },
-            { label: "문서 위치 열기", onClick: () => invoke("open_in_explorer", { path: menu.filePath.substring(0, menu.filePath.lastIndexOf("\\")) }) },
-          ]}
-          onClose={() => setMenu(null)}
-        />
-      )}
 
       {/* 태그 전체 삭제 확인 */}
       {deleteConfirmTag && (

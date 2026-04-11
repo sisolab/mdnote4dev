@@ -98,7 +98,7 @@ export function CodeBlockView({ node, updateAttributes }: NodeViewProps) {
   return (
     <NodeViewWrapper className="code-block" style={{ position: "relative" }}>
       <div
-        style={{ position: "absolute", top: "6px", right: "8px", zIndex: 10 }}
+        style={{ position: "absolute", top: "6px", right: "8px", zIndex: editing ? 9999 : 10 }}
         contentEditable={false}
       >
         {editing ? (
