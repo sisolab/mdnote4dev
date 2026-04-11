@@ -234,7 +234,6 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
   const [dragMovePaths, setDragMovePaths] = useState<string[] | null>(null);
   const reorderTargetRef = useRef<{ path: string; pos: "above" | "below" } | null>(null);
   const fileFlipPositions = useRef<Record<string, number>>({});
-  const flipSpeedMultiplier = useRef(1);
   const insertAnimPaths = useRef<string[]>([]);
 
   /** 파일 트리 위치를 FLIP용으로 캡처. folderPath가 지정되면 해당 폴더의 직접 자식만 */
@@ -846,7 +845,7 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           const baseDur = Math.min(1.0, Math.max(0.3, Math.abs(delta) * 0.006));
-          const dur = baseDur / flipSpeedMultiplier.current;
+          const dur = baseDur;
           htmlEl.style.transition = `transform ${dur}s cubic-bezier(0.25, 0.1, 0.25, 1)`;
           htmlEl.style.transform = "translateY(0)";
           setTimeout(() => { htmlEl.style.transition = ""; htmlEl.style.transform = ""; }, dur * 1000 + 20);
