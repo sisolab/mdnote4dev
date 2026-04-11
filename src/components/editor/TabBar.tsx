@@ -610,7 +610,7 @@ export function TabBar() {
           position: "relative", zIndex: 1, flexShrink: 0,
         }}
       >
-        {sidebarCollapsed ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
+        {sidebarCollapsed ? <Maximize2 size={15} /> : <Minimize2 size={15} />}
       </button>
 
       {/* 임시 문서 닫기 확인 */}

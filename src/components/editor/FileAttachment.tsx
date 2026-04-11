@@ -6,7 +6,7 @@ import { useState, useEffect } from "react";
 import { stat } from "@tauri-apps/plugin-fs";
 import {
   FileText, FilePen, FileSpreadsheet, Presentation, BookOpen, FileArchive, File,
-  FolderOpen, Star,
+  Star,
 } from "lucide-react";
 
 // 확장자 → 아이콘 매핑
@@ -82,7 +82,7 @@ function FileAttachmentView({ node }: NodeViewProps) {
         contentEditable={false}
         title={`${filename}\n${formatSize(size)} · ${node.attrs.relativePath || filepath}`}
         style={{
-          display: "flex",
+          display: "inline-flex",
           alignItems: "center",
           gap: "10px",
           padding: "8px 12px",
@@ -91,8 +91,6 @@ function FileAttachmentView({ node }: NodeViewProps) {
           border: "1px solid var(--color-border-medium)",
           background: "var(--color-bg-secondary)",
           cursor: "pointer",
-          width: "600px",
-          maxWidth: "100%",
           transition: "all 0.15s",
           userSelect: "none",
         }}
@@ -100,48 +98,22 @@ function FileAttachmentView({ node }: NodeViewProps) {
         onMouseLeave={(e) => { e.currentTarget.style.background = "var(--color-bg-secondary)"; }}
       >
         <Icon size={18} style={{ color: "var(--color-accent)", flexShrink: 0 }} />
-        <div style={{ minWidth: 0, flex: 1 }}>
-          <div style={{
-            fontSize: "13px", fontWeight: 600, color: "var(--color-text-primary)",
-            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-          }}>
+        <div style={{ position: "relative" }}>
+          <div style={{ fontSize: "12px", fontWeight: 500, color: "var(--color-text-primary)", whiteSpace: "nowrap" }}>
             {filename}
           </div>
-          <div style={{
-            fontSize: "11px", color: "var(--color-text-tertiary)", marginTop: "2px",
-          }}>
+          <div style={{ fontSize: "11px", color: "var(--color-text-tertiary)", marginTop: "18px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", position: "absolute", left: 0, right: 0, top: 0 }}>
             {formatSize(size)} · {node.attrs.relativePath || filepath}
           </div>
+          <div style={{ height: "18px" }} />
         </div>
 
-        <div style={{ display: "flex", gap: "4px", flexShrink: 0, marginLeft: "auto" }}>
-          <button onClick={(e) => { e.stopPropagation(); const folder = filepath.substring(0, filepath.lastIndexOf("\\")); invoke("open_in_explorer", { path: folder }); }}
-            title="파일 위치 열기" style={{ ...actionBtnStyle, color: "var(--color-text-tertiary)" }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-active)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}>
-            <FolderOpen size={14} />
-          </button>
-          <button onClick={async (e) => {
-            e.stopPropagation();
-            const store = useAppStore.getState();
-            // 현재 탭의 filePath가 이 문서
-            const activeTab = store.tabs.find((t) => t.id === store.activeTabId);
-            if (activeTab?.filePath) {
-              // 이미 이 문서가 열려있으니 아무것도 안 함
-            }
-          }}
-            title="이 문서" style={{ ...actionBtnStyle, color: "var(--color-text-tertiary)" }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-active)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}>
-            <FileText size={14} />
-          </button>
-          <button onClick={(e) => { e.stopPropagation(); if (isFav) removeFavoriteAttachment(filepath); else addFavoriteAttachment(filepath); }}
-            title={isFav ? "즐겨찾기 해제" : "즐겨찾기 등록"} style={{ ...actionBtnStyle, color: isFav ? "#f5c518" : "var(--color-text-tertiary)" }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-active)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}>
-            <Star size={14} style={isFav ? { fill: "#f5c518" } : {}} />
-          </button>
-        </div>
+        <button onClick={(e) => { e.stopPropagation(); if (isFav) removeFavoriteAttachment(filepath); else addFavoriteAttachment(filepath); }}
+          title={isFav ? "즐겨찾기 해제" : "즐겨찾기 등록"} style={{ ...actionBtnStyle, color: isFav ? "#f5c518" : "var(--color-text-tertiary)", flexShrink: 0 }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-active)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}>
+          <Star size={14} style={isFav ? { fill: "#f5c518" } : {}} />
+        </button>
       </div>
     </NodeViewWrapper>
   );

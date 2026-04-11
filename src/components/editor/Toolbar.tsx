@@ -5,7 +5,7 @@ import { useAppStore } from "@/stores/appStore";
 import {
   Bold, Italic, Strikethrough, Code,
   List, ListOrdered, ListChecks,
-  AlignLeft, AlignCenter, Columns2, Square, Star, StarOff,
+  Star, StarOff,
   Quote, SquareCode, Minus, Table, MoveHorizontal, Home, Smile, Paperclip,
 } from "lucide-react";
 import { open } from "@tauri-apps/plugin-dialog";
