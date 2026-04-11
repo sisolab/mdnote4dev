@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { exists, mkdir, create, readDir as tauriReadDir, readTextFile, rename } from "@tauri-apps/plugin-fs";
+import { exists, mkdir, create, readDir, readTextFile, rename } from "@tauri-apps/plugin-fs";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { useAppStore } from "@/stores/appStore";
@@ -12,9 +12,7 @@ import { shortenPath } from "@/utils/pathUtils";
 import { executeUndoable } from "@/stores/undoStore";
 export function Sidebar() {
   const { favorites, sidebarCollapsed, removeFavorite, addFavorite, openTab, refreshFileTree, fileTreeVersion, setFavoriteAlias, updateFavoritePath, setFavoriteIcon, folderSort, fileSort, setFolderSort, setFileSort, favoriteFiles, addFavoriteFile, removeFavoriteFile, selectedPaths, reorderFavorites } = useAppStore();
-  const [searchQuery] = useState("");
   const [compactMode, setCompactMode] = useState(false);
-  const [foldersWithResults, setFoldersWithResults] = useState<Set<string>>(new Set());
   const [sortMenu, setSortMenu] = useState<{ x: number; y: number } | null>(null);
   const [docCounts, setDocCounts] = useState<Record<string, number>>({});
   const [aliasEditing, setAliasEditing] = useState<string | null>(null);
@@ -22,7 +20,7 @@ export function Sidebar() {
   const [folderRenaming, setFolderRenaming] = useState<string | null>(null);
   const [folderRenameValue, setFolderRenameValue] = useState("");
   // ── 최상위 폴더 드래그 순서 변경 ──
-  const [dragFav, setDragFav] = useState<{ from: number; over: number; pos: "above" | "below" } | null>(null);
+  const [dragFavFrom, setDragFavFrom] = useState<number | null>(null);
   const dragFavState = useRef<{ startY: number; from: number; to: number; pos: "above" | "below"; active: boolean }>({ startY: 0, from: -1, to: -1, pos: "below", active: false });
   const favFlipPositions = useRef<Record<string, number>>({});
   const [flipAnimating, setFlipAnimating] = useState(false);
@@ -41,7 +39,7 @@ export function Sidebar() {
       const s = dragFavState.current;
       if (!s.active && Math.abs(me.clientY - s.startY) > 5) {
         s.active = true;
-        setDragFav({ from: idx, over: -1, pos: "below" });
+        setDragFavFrom(idx);
         document.body.style.userSelect = "none";
         document.body.style.cursor = "grabbing";
         document.body.setAttribute("data-dragging", "true");
@@ -106,7 +104,7 @@ export function Sidebar() {
         }
       }
       dragFavState.current = { startY: 0, from: -1, to: -1, pos: "below", active: false };
-      setDragFav(null);
+      setDragFavFrom(null);
     };
 
     window.addEventListener("mousemove", onMove);
@@ -150,7 +148,7 @@ export function Sidebar() {
     const pos = e.clientY < rect.top + rect.height / 2 ? "above" : "below";
     dragFavState.current.to = favIdx;
     dragFavState.current.pos = pos;
-    setDragFav({ from: dragFavState.current.from, over: favIdx, pos });
+    // updateFavDragTarget — ref에만 저장, 리렌더 불필요
   };
   const [iconPickerPath, setIconPickerPath] = useState<string | null>(null);
   const [sidebarWidth, setSidebarWidth] = useState(280);
@@ -205,7 +203,7 @@ export function Sidebar() {
   useEffect(() => {
     const countDocs = async (path: string): Promise<number> => {
       try {
-        const entries = await tauriReadDir(path);
+        const entries = await readDir(path);
         let count = 0;
         for (const entry of entries) {
           if (!entry.name || entry.name.startsWith(".")) continue;
@@ -227,33 +225,6 @@ export function Sidebar() {
     update();
   }, [favorites, brokenPaths, fileTreeVersion]);
 
-  // 검색 시 결과 있는 폴더 체크
-  useEffect(() => {
-    if (!searchQuery) { setFoldersWithResults(new Set()); return; }
-    const q = searchQuery.toLowerCase();
-    const check = async () => {
-      const result = new Set<string>();
-      const searchRecursive = async (path: string): Promise<boolean> => {
-        try {
-          const entries = await tauriReadDir(path);
-          for (const entry of entries) {
-            if (!entry.isDirectory && entry.name && entry.name.toLowerCase().includes(q)) return true;
-            if (entry.isDirectory && entry.name && !entry.name.startsWith(".")) {
-              if (await searchRecursive(`${path}\\${entry.name}`)) return true;
-            }
-          }
-        } catch {}
-        return false;
-      };
-      for (const fav of favorites) {
-        if (!brokenPaths.has(fav.path) && await searchRecursive(fav.path)) {
-          result.add(fav.path);
-        }
-      }
-      setFoldersWithResults(result);
-    };
-    check();
-  }, [searchQuery, favorites, brokenPaths]);
 
   // 앱 시작 시 폴더 유효성 체크
   useEffect(() => {
@@ -444,7 +415,7 @@ export function Sidebar() {
 
 
         {/* ── 폴더 섹션 ── */}
-        {!searchQuery && (
+        {(
         <div
           style={{
             display: "flex", alignItems: "center", justifyContent: "space-between",
@@ -459,7 +430,7 @@ export function Sidebar() {
         </div>
         )}
 
-        {(searchQuery || true) && (favorites.length === 0 && !searchQuery ? (
+        {(favorites.length === 0 ? (
           <div className="flex flex-col items-center justify-center" style={{ padding: "24px 0" }}>
             <p style={{ fontSize: "12px", color: "var(--color-text-light)" }}>하단에서 폴더를 추가하세요</p>
           </div>
@@ -467,7 +438,7 @@ export function Sidebar() {
           <div>
             {[...favorites].map((fav, favIdx) => {
               const isBroken = brokenPaths.has(fav.path);
-              const isDragged = dragFav?.from === favIdx;
+              const isDragged = dragFavFrom === favIdx;
               return (
                 <div key={fav.path}>
                 <div
@@ -475,7 +446,6 @@ export function Sidebar() {
                   data-fav-path={fav.path}
                   onMouseMove={(e) => updateFavDragTarget(e, favIdx)}
                   style={{
-                    display: searchQuery && !foldersWithResults.has(fav.path) ? "none" : undefined,
                     opacity: isDragged ? 0.4 : 1,
                     transition: "opacity 0.15s ease",
                   }}
@@ -617,7 +587,7 @@ export function Sidebar() {
                   )}
 
                   {/* 파일 트리 */}
-                  {!isBroken && (searchQuery || expandedFavs.has(fav.path)) && <FileTree rootPath={fav.path} searchQuery={searchQuery} compact={compactMode} />}
+                  {!isBroken && expandedFavs.has(fav.path) && <FileTree rootPath={fav.path} compact={compactMode} />}
                 </div>
                 </div>
               );
