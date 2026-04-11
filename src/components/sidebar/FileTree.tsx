@@ -231,6 +231,7 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
   const [reorderTarget, setReorderTarget] = useState<{ path: string; pos: "above" | "below" } | null>(null);
   const reorderTargetRef = useRef<{ path: string; pos: "above" | "below" } | null>(null);
   const fileFlipPositions = useRef<Record<string, number>>({});
+  const flipSpeedMultiplier = useRef(1);
   const wasDragging = useRef(false);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
   const dragMoveState = useRef<{ startY: number; active: boolean; paths: string[] }>({ startY: 0, active: false, paths: [] });
@@ -422,10 +423,12 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
             undo: async () => { setCustomFileOrder(folderPath, oldOrder); refreshFileTree(); },
           });
         } else {
-          // 다른 정렬: 잠깐 이동 후 되돌아오기
+          // 다른 정렬: 일시적으로 custom 모드로 이동 → 원래 정렬로 복귀
+          const origSort = folderSort;
+          useAppStore.getState().setFolderSort("custom");
           setCustomFileOrder(folderPath, newOrder);
           refreshFileTree();
-          // FLIP으로 이동 보여준 후, 원래 정렬로 복원
+          // FLIP 이동 후 복귀
           setTimeout(() => {
             if (containerRef.current) {
               const pos2: Record<string, number> = {};
@@ -434,12 +437,15 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
               });
               fileFlipPositions.current = pos2;
             }
-            // 커스텀 순서 제거 → 원래 정렬 복원
+            // 원래 정렬 복원 (2배 빠르게 돌아오기)
+            flipSpeedMultiplier.current = 2;
             const updated = { ...useAppStore.getState().customFileOrder };
             delete updated[folderPath];
             useAppStore.setState({ customFileOrder: updated });
+            useAppStore.getState().setFolderSort(origSort);
             refreshFileTree();
-          }, 600);
+            setTimeout(() => { flipSpeedMultiplier.current = 1; }, 600);
+          }, 800);
         }
         cleanup();
         return;
@@ -826,7 +832,8 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
       htmlEl.style.transition = "none";
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          const dur = Math.min(1.0, Math.max(0.3, Math.abs(delta) * 0.006));
+          const baseDur = Math.min(1.0, Math.max(0.3, Math.abs(delta) * 0.006));
+          const dur = baseDur / flipSpeedMultiplier.current;
           htmlEl.style.transition = `transform ${dur}s cubic-bezier(0.25, 0.1, 0.25, 1)`;
           htmlEl.style.transform = "translateY(0)";
           setTimeout(() => { htmlEl.style.transition = ""; htmlEl.style.transform = ""; }, dur * 1000 + 20);
