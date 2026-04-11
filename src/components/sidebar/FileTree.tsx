@@ -192,9 +192,11 @@ function FileTreeItem({
       </button>
 
       {(searchMode ? entry.isDirectory : isExpanded) &&
-        (searchMode ? entry.children ?? [] : children).map((child) => (
+        <div style={{ animation: "slideDown 0.15s ease" }}>
+        {(searchMode ? entry.children ?? [] : children).map((child) => (
           <FileTreeItem key={child.path} entry={child} depth={depth + 1} onHover={onHover} onItemClick={onItemClick} onContextMenu={onContextMenu} renamingPath={renamingPath} renameValue={renameValue} setRenameValue={setRenameValue} onFinishRename={onFinishRename} searchMode={searchMode} compact={compact} onDragStart={onDragStart} onDragOverFolder={onDragOverFolder} dragPaths={dragPaths} dropTargetPath={dropTargetPath} reorderTarget={reorderTargetProp} wasDragging={wasDraggingRef} />
         ))}
+        </div>
     </div>
   );
 }

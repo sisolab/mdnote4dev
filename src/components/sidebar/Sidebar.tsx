@@ -369,7 +369,7 @@ export function Sidebar() {
       return [
         { label: "경로 다시 지정...", onClick: () => handleRelink(path) },
         { divider: true, label: "", onClick: () => {} },
-        { label: "즐겨찾기에서 제거", onClick: () => removeFavorite(path), danger: true },
+        { label: "등록 해제하기", onClick: () => removeFavorite(path), danger: true },
       ];
     }
     const fav = favorites.find((f) => f.path === path);
@@ -393,7 +393,7 @@ export function Sidebar() {
       { label: "경로 복사", onClick: () => navigator.clipboard.writeText(path) },
       { label: "탐색기에서 열기", onClick: () => { invoke("open_in_explorer", { path }); } },
       { divider: true, label: "", onClick: () => {} },
-      { label: "즐겨찾기에서 제거", onClick: () => removeFavorite(path), danger: true },
+      { label: "등록 해제하기", onClick: () => removeFavorite(path), danger: true },
     ];
   };
 
@@ -431,9 +431,7 @@ export function Sidebar() {
         )}
 
         {(favorites.length === 0 ? (
-          <div className="flex flex-col items-center justify-center" style={{ padding: "24px 0" }}>
-            <p style={{ fontSize: "12px", color: "var(--color-text-light)" }}>하단에서 폴더를 추가하세요</p>
-          </div>
+          <div style={{ padding: "24px 0" }} />
         ) : (
           <div>
             {[...favorites].map((fav, favIdx) => {
