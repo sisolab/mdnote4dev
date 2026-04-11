@@ -189,15 +189,17 @@ export function TagExplorer() {
 
   return (
     <div className="flex flex-col h-full">
-      {/* 검색창 */}
+      {/* 검색창 + 태그 영역 */}
       <div style={{
-        display: "flex", alignItems: "center", justifyContent: "center",
-        padding: "16px 16px",
+        display: "flex", flexDirection: "column", alignItems: "center",
+        justifyContent: "center", gap: "12px",
+        padding: "32px 16px 16px",
+        borderBottom: "1px solid var(--color-border-light)",
         flexShrink: 0,
       }}>
         <div style={{
           display: "flex", alignItems: "center", gap: "8px",
-          width: "320px", maxWidth: "100%", padding: "8px 12px",
+          width: "400px", maxWidth: "100%", padding: "8px 12px",
           border: "1px solid var(--color-border-medium)",
           borderRadius: "6px", background: "var(--color-bg-secondary)",
         }}>
@@ -220,15 +222,13 @@ export function TagExplorer() {
             </button>
           )}
         </div>
-      </div>
 
-      {/* 태그 버튼들 */}
-      {tagNames.length > 0 && (
-      <div style={{
-        display: "flex", flexWrap: "wrap", gap: "6px", alignItems: "center",
-        padding: "12px 16px", borderBottom: "1px solid var(--color-border-light)",
-        flexShrink: 0,
-      }}>
+        {/* 태그 버튼들 */}
+        {tagNames.length > 0 && (
+        <div style={{
+          display: "flex", flexWrap: "wrap", gap: "6px", alignItems: "center",
+          justifyContent: "center",
+        }}>
         <span style={{ fontSize: "11px", fontWeight: 600, color: "var(--color-text-tertiary)", marginRight: "2px" }}>Tags:</span>
         {tagNames.map((tag) => {
           const color = getTagColor(tag);
@@ -258,6 +258,7 @@ export function TagExplorer() {
         })}
       </div>
       )}
+      </div>
 
       {/* 문서 목록 (즐겨찾기 + 최근 문서 / 검색 결과) */}
       <div className="flex-1 overflow-auto hide-scrollbar" style={{ padding: "4px 0" }}>
