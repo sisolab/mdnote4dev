@@ -717,10 +717,32 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
       let trashRecords: { trashPath: string; originalPath: string }[] = [];
       const closedTabs: { id: string; filePath: string; title: string; content: string }[] = [];
 
+      let assetRecords: { trashPath: string; originalPath: string }[] = [];
+
       const doDelete = async () => {
         trashRecords = [];
+        assetRecords = [];
         const currentState = useAppStore.getState();
         for (const item of items) {
+          // .md 파일이면 관련 에셋도 .trash로 이동
+          if (!item.isDirectory && /\.(md|markdown)$/i.test(item.name)) {
+            try {
+              const content = currentState.tabs.find((t) => t.filePath === item.path)?.content ?? await readTextFile(item.path);
+              const { extractAssetPaths, getAssetsDir } = await import("@/utils/imageUtils");
+              const assetNames = extractAssetPaths(content).map((p) => p.replace(/^\.\/\.assets\//, ""));
+              const assetsDir = getAssetsDir(item.path);
+              for (const name of assetNames) {
+                const assetPath = `${assetsDir}\\${name}`;
+                try {
+                  const { exists: fileExists } = await import("@tauri-apps/plugin-fs");
+                  if (await fileExists(assetPath)) {
+                    const record = await moveToTrash(assetPath, favRoot);
+                    assetRecords.push(record);
+                  }
+                } catch {}
+              }
+            } catch {}
+          }
           const record = await moveToTrash(item.path, favRoot);
           trashRecords.push(record);
           const openTab = currentState.tabs.find((t) => t.filePath === item.path);
@@ -735,11 +757,22 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
       };
 
       const doRestore = async () => {
+        // 에셋 먼저 복원
+        for (const record of assetRecords) {
+          await restoreFromTrash(record.trashPath, record.originalPath);
+        }
+        // 파일 복원
         for (const record of trashRecords) {
           await restoreFromTrash(record.trashPath, record.originalPath);
         }
+        // 탭 열기 — 파일에서 다시 읽어서 열기 (저장 시점의 content가 깨질 수 있으므로)
         for (const tab of closedTabs) {
-          useAppStore.getState().openTab(tab.filePath, tab.title, tab.content);
+          try {
+            const freshContent = await readTextFile(tab.filePath);
+            useAppStore.getState().openTab(tab.filePath, tab.title, freshContent);
+          } catch {
+            useAppStore.getState().openTab(tab.filePath, tab.title, tab.content);
+          }
         }
         refreshFileTree();
       };

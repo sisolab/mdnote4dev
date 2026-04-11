@@ -203,7 +203,7 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
             const img = new Image();
             img.src = assetUrl;
             await new Promise((resolve) => { img.onload = resolve; img.onerror = resolve; });
-            const width = img.naturalWidth > 0 && img.naturalWidth < 320 ? 0 : 320;
+            const width = img.naturalWidth > 0 && img.naturalWidth < 320 ? null : 320;
             editor.chain().focus().setImage({ src: assetUrl, width, align: "left" } as any).run();
           } catch {}
           return;

@@ -58,11 +58,11 @@ turndown.addRule("image", {
     const el = node as HTMLElement;
     let src = el.getAttribute("src") || "";
     const alt = el.getAttribute("alt") || "";
-    const width = el.getAttribute("data-width") || "320";
+    const width = el.getAttribute("data-width");
     const align = el.getAttribute("data-align") || "left";
     const assetsMatch = src.match(/\.assets(?:[/\\]|%5C|%2F)(.+?)(?:\?.*)?$/i);
     if (assetsMatch) src = `./.assets/${decodeURIComponent(assetsMatch[1])}`;
-    const widthAttr = parseInt(width) > 0 ? ` width="${width}"` : "";
+    const widthAttr = width && parseInt(width) > 0 ? ` width="${width}"` : "";
     return `<img src="${src}" alt="${alt}"${widthAttr} align="${align}">`;
   },
 });
@@ -90,13 +90,21 @@ turndown.addRule("tableExtra", { filter: ["colgroup", "col"], replacement: () =>
 // ── HTML → Markdown ────────────────────────────────────────
 
 export function htmlToMarkdown(html: string): string {
-  // <file-attachment> → 마크다운 링크로 직접 치환 (Turndown이 커스텀 태그를 무시하므로)
+  // <file-attachment> → placeholder로 치환 (Turndown이 이스케이프하지 않도록)
+  // <file-attachment> 추출 후 Turndown 이후에 삽입
+  const attachments: { filename: string; relativePath: string }[] = [];
   html = html.replace(/<file-attachment\s+([^>]*)><\/file-attachment>/gi, (_m, attrs) => {
     const filename = attrs.match(/filename="([^"]*)"/)?.[1] || "file";
     const relativePath = attrs.match(/relativepath="([^"]*)"/)?.[1] || "";
-    return `<p>[${filename}](${relativePath})</p>`;
+    const idx = attachments.length;
+    attachments.push({ filename, relativePath });
+    return `<p>FILEATTACH${idx}FILEATTACH</p>`;
   });
-  return turndown.turndown(html);
+  let md = turndown.turndown(html);
+  attachments.forEach((a, i) => {
+    md = md.replace(new RegExp(`FILEATTACH${i}FILEATTACH`, "g"), `[${a.filename}](${a.relativePath})`);
+  });
+  return md;
 }
 
 // ── Markdown → HTML ────────────────────────────────────────
@@ -129,12 +137,14 @@ function resolveImagePaths(html: string, docFilePath: string): string {
     const docDir = docFilePath.substring(0, docFilePath.lastIndexOf("\\"));
     const absPath = `${docDir}\\${src.substring(2).replace(/\//g, "\\")}`;
     const resolvedSrc = convertFileSrc(absPath);
-    const width = parseInt((_m.match(/width="(\d+)"/) ?? ["", "320"])[1]);
+    const widthMatch = _m.match(/width="(\d+)"/);
+    const width = widthMatch ? parseInt(widthMatch[1]) : null;
     const align = (_m.match(/align="(\w+)"/) ?? ["", "left"])[1];
     const alt = (_m.match(/alt="([^"]*)"/) ?? ["", ""])[1];
-    const style = width > 0 ? `width: ${width}px; height: auto; cursor: pointer;` : "cursor: pointer;";
+    const style = width && width > 0 ? `width: ${width}px; height: auto; cursor: pointer;` : "cursor: pointer;";
     const alignClass = align === "center" ? "image-center" : "";
-    return `<img src="${resolvedSrc}" alt="${alt}" data-width="${width}" data-align="${align}" class="${alignClass}" style="${style}">`;
+    const dataWidth = width !== null ? ` data-width="${width}"` : "";
+    return `<img src="${resolvedSrc}" alt="${alt}"${dataWidth} data-align="${align}" class="${alignClass}" style="${style}">`;
   });
 }
 

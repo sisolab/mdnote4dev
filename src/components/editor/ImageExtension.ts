@@ -56,15 +56,16 @@ export const CustomImage = Image.extend({
     return {
       ...this.parent?.(),
       width: {
-        default: 320,
+        default: null,
         parseHTML: (element) => {
-          const w = element.getAttribute("data-width");
-          return w ? parseInt(w, 10) : 120;
+          const w = element.getAttribute("data-width") ?? element.getAttribute("width");
+          return w ? parseInt(w, 10) : null;
         },
         renderHTML: (attributes) => {
+          const w = attributes.width;
           return {
-            "data-width": attributes.width,
-            style: attributes.width > 0 ? `width: ${attributes.width}px; height: auto; cursor: pointer;` : "cursor: pointer;",
+            ...(w != null && w > 0 ? { "data-width": w } : {}),
+            style: w != null && w > 0 ? `width: ${w}px; height: auto; cursor: pointer;` : "cursor: pointer;",
           };
         },
       },

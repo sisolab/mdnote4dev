@@ -52,24 +52,14 @@ export async function saveFileToAssets(docFilePath: string, srcPath: string): Pr
   if (!dirExists) await mkdir(assetsDir);
 
   const origName = srcPath.split("\\").pop() ?? srcPath.split("/").pop() ?? "file";
-  let finalPath = `${assetsDir}\\${origName}`;
+  const finalPath = `${assetsDir}\\${origName}`;
 
-  // 같은 이름이 있으면 번호 붙이기
-  const ext = origName.includes(".") ? origName.substring(origName.lastIndexOf(".")) : "";
-  const base = origName.includes(".") ? origName.substring(0, origName.lastIndexOf(".")) : origName;
-  let counter = 1;
-  let saveName = origName;
-  while (await exists(finalPath)) {
-    saveName = `${base} (${counter})${ext}`;
-    finalPath = `${assetsDir}\\${saveName}`;
-    counter++;
-  }
-
+  // 같은 이름이 있으면 덮어쓰기
   await invoke("copy_file", { src: srcPath, dest: finalPath });
   const fileStat = await stat(finalPath);
   const size = fileStat.size;
 
-  return { relativePath: `./.assets/${saveName}`, filename: saveName, size };
+  return { relativePath: `./.assets/${origName}`, filename: origName, size };
 }
 
 /** 마크다운에서 .assets 참조 경로 추출 (이미지 + 파일 첨부) */
