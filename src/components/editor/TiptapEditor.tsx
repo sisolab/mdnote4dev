@@ -12,12 +12,15 @@ import { TableRow } from "@tiptap/extension-table-row";
 import { TableCell } from "@tiptap/extension-table-cell";
 import { TableHeader } from "@tiptap/extension-table-header";
 import { CustomImage } from "./ImageExtension";
-import { Underline } from "@tiptap/extension-underline";
+import { FileAttachmentNode } from "./FileAttachment";
 import { Typography } from "@tiptap/extension-typography";
 import { useEffect, useCallback, useRef, useState } from "react";
 import { htmlToMarkdown, markdownToHtml } from "./markdown";
 import { parseFrontmatter } from "@/utils/frontmatter";
-import { saveImageToAssets } from "@/utils/imageUtils";
+import { saveImageToAssets, getAssetsDir } from "@/utils/imageUtils";
+import { moveToTrash, findFavoriteRoot, restoreFromTrash } from "@/utils/trashUtils";
+import { rename, exists } from "@tauri-apps/plugin-fs";
+import { useAppStore } from "@/stores/appStore";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { Toolbar } from "./Toolbar";
 import { ImageToolbar } from "./ImageToolbar";
@@ -64,7 +67,7 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
       TableCell,
       TableHeader,
       CustomImage,
-      Underline,
+      FileAttachmentNode,
       Typography,
     ],
     content: markdownToHtml(content, filePath),
@@ -228,6 +231,79 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
     lastMarkdown.current = md;
     onSave(md);
   }, [editor, onSave, content]);
+
+  // 에셋(이미지/첨부파일) 삭제/복원 추적
+  const prevAssetsRef = useRef<Set<string>>(new Set());
+  const trashMapRef = useRef<Map<string, string>>(new Map()); // assetsPath → trashPath
+
+  const collectAssetPaths = useCallback((doc: any): Set<string> => {
+    const paths = new Set<string>();
+    doc.descendants((node: any) => {
+      if (node.type.name === "image") {
+        const src = node.attrs.src as string;
+        const match = src.match(/\.assets(?:[/\\]|%5C|%2F)(.+?)(?:\?.*)?$/i);
+        if (match) paths.add(decodeURIComponent(match[1]));
+      }
+      if (node.type.name === "fileAttachment") {
+        const rp = node.attrs.relativePath as string;
+        if (rp) {
+          const name = rp.replace(/^\.\/\.assets\//, "");
+          paths.add(name);
+        }
+      }
+    });
+    return paths;
+  }, []);
+
+  useEffect(() => {
+    if (!editor) return;
+    // 초기 에셋 목록
+    prevAssetsRef.current = collectAssetPaths(editor.state.doc);
+
+    const handler = async () => {
+      const fp = filePathRef.current;
+      if (!fp) return;
+      const current = collectAssetPaths(editor.state.doc);
+      const prev = prevAssetsRef.current;
+      const assetsDir = getAssetsDir(fp);
+      const favorites = useAppStore.getState().favorites;
+      const favRoot = findFavoriteRoot(fp, favorites);
+
+      // 삭제된 에셋: prev에 있었는데 current에 없는 것
+      for (const name of prev) {
+        if (!current.has(name)) {
+          const assetPath = `${assetsDir}\\${name}`;
+          try {
+            if (favRoot && await exists(assetPath)) {
+              const result = await moveToTrash(assetPath, favRoot);
+              trashMapRef.current.set(name, result.trashPath);
+            }
+          } catch {}
+        }
+      }
+
+      // 복원된 에셋: current에 있는데 prev에 없는 것 (undo)
+      for (const name of current) {
+        if (!prev.has(name)) {
+          const trashPath = trashMapRef.current.get(name);
+          const assetPath = `${assetsDir}\\${name}`;
+          if (trashPath) {
+            try {
+              if (await exists(trashPath)) {
+                await rename(trashPath, assetPath);
+              }
+              trashMapRef.current.delete(name);
+            } catch {}
+          }
+        }
+      }
+
+      prevAssetsRef.current = current;
+    };
+
+    editor.on("update", handler);
+    return () => { editor.off("update", handler); };
+  }, [editor, collectAssetPaths]);
 
   // 실시간 자동 저장 (타이핑 멈추고 500ms 후)
   const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);

@@ -108,7 +108,7 @@ export function StatusBar({ filePath, fileSize, lineCount, charCount, tags: prop
       flexShrink: 0, gap: "12px",
     }}>
       {/* 파일 정보 */}
-      <span className="truncate" style={{ maxWidth: "180px" }}>{shortenPath(filePath)}</span>
+      <span style={{ flexShrink: 0, whiteSpace: "nowrap" }}>{shortenPath(filePath)}</span>
       <button
         onClick={() => invoke("open_in_explorer", { path: filePath.substring(0, filePath.lastIndexOf("\\")) })}
         style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--color-text-light)", padding: 0, display: "flex", flexShrink: 0 }}

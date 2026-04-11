@@ -1,5 +1,7 @@
-import { mkdir, readDir, writeFile, rename, exists } from "@tauri-apps/plugin-fs";
+import { mkdir, readDir, writeFile, rename, exists, stat } from "@tauri-apps/plugin-fs";
 import { invoke } from "@tauri-apps/api/core";
+import { moveToTrash, findFavoriteRoot } from "./trashUtils";
+import { useAppStore } from "@/stores/appStore";
 
 /** 문서 파일경로에서 문서명(확장자 제외) 추출 */
 function getDocName(docFilePath: string): string {
@@ -43,42 +45,81 @@ export async function saveImageToAssets(docFilePath: string, blob: Blob): Promis
   return `./.assets/${filename}`;
 }
 
-/** 마크다운에서 이미지 경로 추출 (![](src) + <img src="...">) */
-export function extractImagePaths(markdown: string): string[] {
+/** 파일을 .assets 폴더에 복사, { relativePath, filename, size } 반환 */
+export async function saveFileToAssets(docFilePath: string, srcPath: string): Promise<{ relativePath: string; filename: string; size: number }> {
+  const assetsDir = getAssetsDir(docFilePath);
+  const dirExists = await exists(assetsDir);
+  if (!dirExists) await mkdir(assetsDir);
+
+  const origName = srcPath.split("\\").pop() ?? srcPath.split("/").pop() ?? "file";
+  let finalPath = `${assetsDir}\\${origName}`;
+
+  // 같은 이름이 있으면 번호 붙이기
+  const ext = origName.includes(".") ? origName.substring(origName.lastIndexOf(".")) : "";
+  const base = origName.includes(".") ? origName.substring(0, origName.lastIndexOf(".")) : origName;
+  let counter = 1;
+  let saveName = origName;
+  while (await exists(finalPath)) {
+    saveName = `${base} (${counter})${ext}`;
+    finalPath = `${assetsDir}\\${saveName}`;
+    counter++;
+  }
+
+  await invoke("copy_file", { src: srcPath, dest: finalPath });
+  const fileStat = await stat(finalPath);
+  const size = fileStat.size;
+
+  return { relativePath: `./.assets/${saveName}`, filename: saveName, size };
+}
+
+/** 마크다운에서 .assets 참조 경로 추출 (이미지 + 파일 첨부) */
+export function extractAssetPaths(markdown: string): string[] {
   const paths: string[] = [];
-  // 마크다운 형식
+  // 이미지: ![](src)
   const mdRegex = /!\[[^\]]*\]\(([^)]+)\)/g;
   let match;
   while ((match = mdRegex.exec(markdown)) !== null) {
     paths.push(match[1]);
   }
-  // HTML img 태그 형식
+  // HTML img 태그: <img src="...">
   const htmlRegex = /<img[^>]+src="([^"]+)"/g;
   while ((match = htmlRegex.exec(markdown)) !== null) {
+    paths.push(match[1]);
+  }
+  // 파일 첨부 링크: [name](./.assets/...)
+  const linkRegex = /\[[^\]]+\]\((\.\/\.assets\/[^)]+)\)/g;
+  while ((match = linkRegex.exec(markdown)) !== null) {
     paths.push(match[1]);
   }
   return paths;
 }
 
-/** 해당 문서의 미참조 이미지를 휴지통으로 이동 */
+/** @deprecated use extractAssetPaths */
+export const extractImagePaths = extractAssetPaths;
+
+/** 해당 문서의 미참조 에셋(이미지+파일)을 휴지통으로 이동 */
 export async function cleanupOrphanedImages(docFilePath: string, markdown: string): Promise<void> {
   const assetsDir = getAssetsDir(docFilePath);
-  const docName = getDocName(docFilePath);
-  const prefix = `${docName}-`;
 
   try {
     const dirExists = await exists(assetsDir);
     if (!dirExists) return;
 
     const entries = await readDir(assetsDir);
-    const referencedPaths = new Set(extractImagePaths(markdown));
+    const referencedPaths = new Set(extractAssetPaths(markdown));
 
+    const favorites = useAppStore.getState().favorites;
+    const favoriteRoot = findFavoriteRoot(docFilePath, favorites);
     for (const entry of entries) {
-      if (!entry.name?.startsWith(prefix)) continue;
+      if (!entry.name || entry.name.startsWith(".")) continue;
       const relativePath = `./.assets/${entry.name}`;
       if (!referencedPaths.has(relativePath)) {
         try {
-          await invoke("move_to_trash", { path: `${assetsDir}\\${entry.name}` });
+          if (favoriteRoot) {
+            await moveToTrash(`${assetsDir}\\${entry.name}`, favoriteRoot);
+          } else {
+            await invoke("move_to_trash", { path: `${assetsDir}\\${entry.name}` });
+          }
         } catch {}
       }
     }

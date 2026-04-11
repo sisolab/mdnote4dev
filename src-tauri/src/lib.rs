@@ -4,6 +4,24 @@ fn move_to_trash(path: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+fn copy_file(src: String, dest: String) -> Result<(), String> {
+  std::fs::copy(&src, &dest).map_err(|e| e.to_string())?;
+  Ok(())
+}
+
+#[tauri::command]
+fn open_file(path: String) -> Result<(), String> {
+  #[cfg(target_os = "windows")]
+  {
+    std::process::Command::new("cmd")
+      .args(&["/C", "start", "", &path])
+      .spawn()
+      .map_err(|e| e.to_string())?;
+  }
+  Ok(())
+}
+
+#[tauri::command]
 fn open_in_explorer(path: String) {
   #[cfg(target_os = "windows")]
   {
@@ -20,7 +38,7 @@ pub fn run() {
     .plugin(tauri_plugin_fs::init())
     .plugin(tauri_plugin_dialog::init())
     .plugin(tauri_plugin_shell::init())
-    .invoke_handler(tauri::generate_handler![open_in_explorer, move_to_trash])
+    .invoke_handler(tauri::generate_handler![open_in_explorer, open_file, copy_file, move_to_trash])
     .setup(|app| {
       if cfg!(debug_assertions) {
         app.handle().plugin(

@@ -6,8 +6,10 @@ import {
   Bold, Italic, Strikethrough, Code,
   List, ListOrdered, ListChecks,
   AlignLeft, AlignCenter, Columns2, Square, Star, StarOff,
-  Quote, SquareCode, Minus, Table, MoveHorizontal, Home, Smile,
+  Quote, SquareCode, Minus, Table, MoveHorizontal, Home, Smile, Paperclip,
 } from "lucide-react";
+import { open } from "@tauri-apps/plugin-dialog";
+import { saveFileToAssets } from "@/utils/imageUtils";
 
 interface ToolbarProps {
   editor: Editor;
@@ -448,6 +450,32 @@ export function Toolbar({ editor }: ToolbarProps) {
 
       <TableGridButton editor={editor} onHover={handleHover} />
       <IconPickerButton editor={editor} onHover={handleHover} />
+      <ToolbarButton
+        onClick={async () => {
+          const srcPath = await open({ multiple: false });
+          if (!srcPath || typeof srcPath !== "string") return;
+          // 현재 탭의 파일 경로
+          const { tabs, activeTabId } = useAppStore.getState();
+          const activeTab = tabs.find((t) => t.id === activeTabId);
+          const docPath = activeTab?.filePath;
+          if (!docPath) { console.error("문서를 먼저 저장하세요"); return; }
+          try {
+            const { relativePath, filename, size } = await saveFileToAssets(docPath, srcPath);
+            const docDir = docPath.substring(0, docPath.lastIndexOf("\\"));
+            const filepath = `${docDir}\\${relativePath.substring(2).replace(/\//g, "\\")}`;
+            editor.chain().focus().insertContent([
+              { type: "fileAttachment", attrs: { filename, filepath, relativePath, filesize: size } },
+              { type: "paragraph" },
+            ]).run();
+          } catch (err) {
+            console.error("파일 첨부 실패:", err);
+          }
+        }}
+        title="파일 첨부"
+        onHover={handleHover}
+      >
+        <Paperclip size={15} />
+      </ToolbarButton>
 
       {/* 오른쪽: 레이아웃 토글 */}
       <div style={{ flex: 1, minWidth: "8px" }} />

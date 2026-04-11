@@ -1,8 +1,9 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { rename, readTextFile } from "@tauri-apps/plugin-fs";
+import { rename, readTextFile, writeTextFile } from "@tauri-apps/plugin-fs";
 import { open } from "@tauri-apps/plugin-dialog";
 import { useAppStore } from "@/stores/appStore";
+import { renameDocImages } from "@/utils/imageUtils";
 import { Save, FolderOpen, Maximize2, Minimize2, Settings, Search } from "lucide-react";
 import { getCurrentWindow, LogicalSize } from "@tauri-apps/api/window";
 import { useSettingsStore } from "@/stores/settingsStore";
@@ -88,10 +89,22 @@ export function TabBar() {
         const newPath = `${parentPath}\\${newTitle}`;
         if (newPath !== tab.filePath) {
           try {
+            // 이미지 파일명 변경
+            const oldDoc = tab.title.replace(/\.(md|markdown)$/i, "");
+            const newDoc = newTitle.replace(/\.(md|markdown)$/i, "");
+            if (oldDoc !== newDoc) {
+              const content = tab.content ?? await readTextFile(tab.filePath);
+              if (content) {
+                const updated = await renameDocImages(parentPath, oldDoc, newDoc, content);
+                if (updated !== content) {
+                  useAppStore.getState().updateTabContent(id, updated);
+                  await writeTextFile(tab.filePath, updated);
+                }
+              }
+            }
             await rename(tab.filePath, newPath);
             const state = useAppStore.getState();
             state.updateTabFilePath(id, newPath, newTitle);
-            // 문서 섹션 경로 업데이트
             if (state.favoriteFiles.includes(tab.filePath)) {
               state.removeFavoriteFile(tab.filePath);
               state.addFavoriteFile(newPath);

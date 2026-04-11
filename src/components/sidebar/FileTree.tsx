@@ -610,12 +610,18 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
         if (oldDoc !== newDoc) {
           const state = useAppStore.getState();
           const openTab = state.tabs.find((t) => t.filePath === from);
-          const content = openTab?.content ?? "";
-          const { writeTextFile } = await import("@tauri-apps/plugin-fs");
-          const updated = await renameDocImages(parentPath, oldDoc, newDoc, content);
-          if (openTab && updated !== content) {
-            state.updateTabContent(openTab.id, updated);
-            await writeTextFile(from, updated);
+          let content = openTab?.content ?? "";
+          // 탭이 없거나 content가 비어있으면 파일에서 직접 읽기
+          if (!content) {
+            try { content = await readTextFile(from); } catch { content = ""; }
+          }
+          if (content) {
+            const { writeTextFile } = await import("@tauri-apps/plugin-fs");
+            const updated = await renameDocImages(parentPath, oldDoc, newDoc, content);
+            if (updated !== content) {
+              if (openTab) state.updateTabContent(openTab.id, updated);
+              await writeTextFile(from, updated);
+            }
           }
         }
       }

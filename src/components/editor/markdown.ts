@@ -12,6 +12,17 @@ const turndown = new TurndownService({
   hr: "---",
 });
 
+// 파일 첨부
+turndown.addRule("fileAttachment", {
+  filter: (node) => node.nodeName === "FILE-ATTACHMENT",
+  replacement: (_content, node) => {
+    const el = node as HTMLElement;
+    const filename = el.getAttribute("filename") || "file";
+    const relativePath = el.getAttribute("relativepath") || "";
+    return `\n\n[${filename}](${relativePath})\n\n`;
+  },
+});
+
 // 코드블록 (언어 태그 보존)
 turndown.addRule("codeBlock", {
   filter: (node) => node.nodeName === "PRE" && !!node.querySelector("code"),
@@ -79,6 +90,12 @@ turndown.addRule("tableExtra", { filter: ["colgroup", "col"], replacement: () =>
 // ── HTML → Markdown ────────────────────────────────────────
 
 export function htmlToMarkdown(html: string): string {
+  // <file-attachment> → 마크다운 링크로 직접 치환 (Turndown이 커스텀 태그를 무시하므로)
+  html = html.replace(/<file-attachment\s+([^>]*)><\/file-attachment>/gi, (_m, attrs) => {
+    const filename = attrs.match(/filename="([^"]*)"/)?.[1] || "file";
+    const relativePath = attrs.match(/relativepath="([^"]*)"/)?.[1] || "";
+    return `<p>[${filename}](${relativePath})</p>`;
+  });
   return turndown.turndown(html);
 }
 
@@ -181,6 +198,18 @@ export function markdownToHtml(md: string, docFilePath?: string | null): string 
       resolvedSrc = convertFileSrc(`${docDir}\\${src.substring(2).replace(/\//g, "\\")}`);
     }
     return `<img src="${resolvedSrc}" alt="${alt}">`;
+  });
+
+  // 파일 첨부 (.assets/ 링크 중 이미지가 아닌 것)
+  html = html.replace(/\[([^\]]+)\]\((\.\/\.assets\/[^)]+)\)/g, (_m, name, path) => {
+    if (/\.(png|jpg|jpeg|gif|webp|svg)$/i.test(path)) return _m; // 이미지는 스킵
+    const filename = path.split("/").pop() ?? name;
+    let filepath = path;
+    if (docFilePath && path.startsWith("./")) {
+      const docDir = docFilePath.substring(0, docFilePath.lastIndexOf("\\"));
+      filepath = `${docDir}\\${path.substring(2).replace(/\//g, "\\")}`;
+    }
+    return `<file-attachment filename="${filename}" filepath="${filepath}" relativepath="${path}"></file-attachment>`;
   });
 
   // 링크
