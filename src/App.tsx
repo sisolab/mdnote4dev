@@ -11,10 +11,12 @@ import { useAppStore } from "./stores/appStore";
 import { THEMES } from "./stores/themeData";
 import { useUndoStore } from "./stores/undoStore";
 import { emptyTrash } from "./utils/trashUtils";
+import { useFsWatcher } from "./hooks/useFsWatcher";
 
 function App() {
   const { showSettings, themeMode, accentColor } = useSettingsStore();
   const [showExitConfirm, setShowExitConfirm] = useState(false);
+  useFsWatcher();
 
   // 테마 CSS 변수 적용
   useEffect(() => {

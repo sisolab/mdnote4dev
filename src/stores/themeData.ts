@@ -55,6 +55,7 @@ export const THEMES: Record<string, Record<string, string>> = {
     "--color-border-light": "#3c3e41",
     "--color-border-medium": "#4a4c4f",
     "--color-border-input": "#555759",
+    "--color-table-border": "#6a6d70",
   },
   dark: {
     "--color-bg-primary": "#1e1e1e",
@@ -74,5 +75,6 @@ export const THEMES: Record<string, Record<string, string>> = {
     "--color-border-light": "#333333",
     "--color-border-medium": "#444444",
     "--color-border-input": "#555555",
+    "--color-table-border": "#606060",
   },
 };

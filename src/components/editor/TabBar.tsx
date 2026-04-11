@@ -39,6 +39,15 @@ export function TabBar() {
     return () => observer.disconnect();
   }, [updateScrollButtons]);
 
+  // 활성 탭이 바뀌면 해당 탭으로 스크롤
+  useEffect(() => {
+    if (!activeTabId || !scrollRef.current) return;
+    const el = scrollRef.current.querySelector(`[data-tab-id="${activeTabId}"]`) as HTMLElement | null;
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
+    }
+  }, [activeTabId]);
+
   const scrollTabs = (direction: "left" | "right") => {
     const el = scrollRef.current;
     if (!el) return;
@@ -164,6 +173,48 @@ export function TabBar() {
         zIndex: 0,
       }} />
 
+      {/* 고정 검색탭 */}
+      {tabs.filter((t) => t.type === "tag-explorer").map((tab) => {
+        const isActive = tab.id === activeTabId;
+        return (
+          <div
+            key={tab.id}
+            data-tab-id={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            onMouseEnter={(e) => handleHover(e.currentTarget)}
+            style={{
+              height: "40px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "0 14px",
+              cursor: "pointer",
+              position: "relative",
+              zIndex: 1,
+              color: isActive ? "var(--color-accent)" : "var(--color-text-secondary)",
+              transition: "color 0.1s",
+              flexShrink: 0,
+            }}
+          >
+            <Search size={13} />
+            <div style={{
+              position: "absolute",
+              bottom: "0",
+              left: "50%",
+              transform: "translateX(-50%)",
+              width: isActive ? "80%" : "0%",
+              height: "2px",
+              borderRadius: "1px",
+              background: "var(--color-accent)",
+              transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+            }} />
+          </div>
+        );
+      })}
+
+      {/* 구분선 */}
+      <div style={{ width: "1px", height: "14px", background: "var(--color-border-light)", flexShrink: 0, margin: "0 2px" }} />
+
       {/* 스크롤 가능한 탭 영역 */}
       <div
         ref={scrollRef}
@@ -171,7 +222,8 @@ export function TabBar() {
         style={{ display: "flex", alignItems: "center", overflowX: "auto", overflowY: "hidden", flex: 1, minWidth: 0, position: "relative" }}
       >
 
-      {tabs.map((tab, index) => {
+      {tabs.filter((t) => t.type !== "tag-explorer").map((tab, filteredIndex) => {
+        const index = tabs.indexOf(tab);
         const isActive = tab.id === activeTabId;
         const isDragging = dragIndex === index;
         const isDragOver = dragOverIndex === index && dragIndex !== null && dragIndex !== index;
@@ -189,11 +241,11 @@ export function TabBar() {
         }
 
         return (
-          <div key={tab.id} style={{ display: "flex", alignItems: "center" }}>
-            {index > 0 && (
+          <div key={tab.id} data-tab-id={tab.id} style={{ display: "flex", alignItems: "center" }}>
+            {filteredIndex > 0 && (
               <div style={{
                 width: "1px", height: "14px", background: "var(--color-border-light)", flexShrink: 0, margin: "0 2px",
-                opacity: (isDragging || (index > 0 && dragIndex === index - 1)) ? 0 : 1,
+                opacity: (isDragging || (filteredIndex > 0 && dragIndex === index - 1)) ? 0 : 1,
                 transition: "opacity 0.15s",
               }} />
             )}

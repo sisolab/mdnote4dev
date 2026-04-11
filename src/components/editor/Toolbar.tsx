@@ -5,8 +5,8 @@ import { useAppStore } from "@/stores/appStore";
 import {
   Bold, Italic, Strikethrough, Code,
   List, ListOrdered, ListChecks,
-  AlignLeft, AlignCenter, Columns2, Square, Star,
-  Quote, SquareCode, Minus, Table, MoveHorizontal,
+  AlignLeft, AlignCenter, Columns2, Square, Star, StarOff,
+  Quote, SquareCode, Minus, Table, MoveHorizontal, Home,
 } from "lucide-react";
 
 interface ToolbarProps {
@@ -78,25 +78,16 @@ function TableGridButton({ editor, onHover }: { editor: Editor; onHover: (el: HT
   const [open, setOpen] = useState(false);
   const [hoverRow, setHoverRow] = useState(0);
   const [hoverCol, setHoverCol] = useState(0);
-  const ref = useRef<HTMLDivElement>(null);
   const MAX = 6;
   const CELL = 20;
 
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    const escHandler = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
-    setTimeout(() => window.addEventListener("click", handler), 0);
-    window.addEventListener("keydown", escHandler);
-    return () => { window.removeEventListener("click", handler); window.removeEventListener("keydown", escHandler); };
-  }, [open]);
-
   return (
-    <div ref={ref} style={{ position: "relative" }}>
+    <div
+      style={{ position: "relative" }}
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+    >
       <button
-        onClick={() => setOpen(!open)}
         onMouseEnter={(e) => onHover(e.currentTarget)}
         title="표 삽입"
         style={{
@@ -133,7 +124,7 @@ function TableGridButton({ editor, onHover }: { editor: Editor; onHover: (el: HT
                   }}
                   style={{
                     width: CELL, height: CELL,
-                    border: `1px solid ${active ? "var(--color-accent)" : "var(--color-border-light)"}`,
+                    border: `1px solid ${active ? "var(--color-accent)" : "var(--color-border-medium)"}`,
                     background: active ? "var(--color-accent-subtle)" : "transparent",
                     cursor: "pointer",
                   }}
@@ -151,6 +142,77 @@ function TableGridButton({ editor, onHover }: { editor: Editor; onHover: (el: HT
 }
 
 const WIDTH_OPTIONS = [480, 600, 720, 840];
+
+function ToolbarDropdown({
+  icon, label, onHover, options,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  onHover: (el: HTMLButtonElement | null) => void;
+  options: { icon: React.ReactNode; label: string; active: boolean; isDefault?: boolean; onClick: () => void }[];
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    const escHandler = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    setTimeout(() => window.addEventListener("click", handler), 0);
+    window.addEventListener("keydown", escHandler);
+    return () => { window.removeEventListener("click", handler); window.removeEventListener("keydown", escHandler); };
+  }, [open]);
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <button
+        onClick={() => setOpen(!open)}
+        onMouseEnter={(e) => onHover(e.currentTarget)}
+        title={label}
+        style={{
+          width: "34px", height: "40px", flexShrink: 0,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          border: "none", background: "transparent", cursor: "pointer",
+          position: "relative", zIndex: 1, transition: "color 0.1s",
+          color: open ? "var(--color-accent)" : "var(--color-text-secondary)",
+          borderRadius: "3px",
+        }}
+      >
+        {icon}
+      </button>
+      {open && (
+        <div style={{
+          position: "absolute", top: "100%", right: "0", zIndex: 9999,
+          background: "var(--color-bg-elevated)", border: "1px solid var(--color-border-medium)",
+          borderRadius: "6px", boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
+          padding: "4px", minWidth: "120px",
+        }}>
+          {options.map((opt, i) => (
+            <button
+              key={i}
+              onClick={(e) => { e.stopPropagation(); opt.onClick(); setOpen(false); }}
+              style={{
+                display: "flex", alignItems: "center", gap: "8px",
+                width: "100%", padding: "6px 12px", borderRadius: "3px",
+                border: "none", cursor: "pointer", textAlign: "left",
+                fontSize: "12px", fontWeight: opt.active ? 600 : 400,
+                background: opt.active ? "var(--color-accent-subtle)" : "transparent",
+                color: opt.active ? "var(--color-accent)" : "var(--color-text-secondary)",
+                whiteSpace: "nowrap",
+              }}
+            >
+              <span style={{ display: "flex", alignItems: "center", width: "16px", justifyContent: "center" }}>{opt.icon}</span>
+              <span>{opt.label}</span>
+              {opt.isDefault && <Home size={11} style={{ opacity: 0.5, flexShrink: 0 }} />}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function PageWidthButton({ settings, updateSetting, onHover }: { settings: any; updateSetting: (k: string, v: any) => void; onHover: (el: HTMLButtonElement | null) => void }) {
   const [open, setOpen] = useState(false);
@@ -197,14 +259,16 @@ function PageWidthButton({ settings, updateSetting, onHover }: { settings: any; 
               key={w}
               onClick={(e) => { e.stopPropagation(); updateSetting("editorMaxWidth", w); setOpen(false); }}
               style={{
-                display: "block", width: "100%", padding: "5px 12px", borderRadius: "3px",
+                display: "flex", alignItems: "center", gap: "6px",
+                width: "100%", padding: "5px 12px", borderRadius: "3px",
                 border: "none", cursor: "pointer", textAlign: "left",
                 fontSize: "12px", fontWeight: settings.editorMaxWidth === w ? 600 : 400,
                 background: settings.editorMaxWidth === w ? "var(--color-accent-subtle)" : "transparent",
                 color: settings.editorMaxWidth === w ? "var(--color-accent)" : "var(--color-text-secondary)",
+                whiteSpace: "nowrap",
               }}
             >
-              {w}px{w === 720 && <span style={{ marginLeft: "4px", fontSize: "9px", opacity: 0.6 }}>●</span>}
+              {w}px{w === 720 && <Home size={11} style={{ opacity: 0.5, flexShrink: 0 }} />}
             </button>
           ))}
         </div>
@@ -310,38 +374,37 @@ export function Toolbar({ editor }: ToolbarProps) {
       {/* 오른쪽: 레이아웃 토글 */}
       <div style={{ flex: 1, minWidth: "8px" }} />
 
-      <ToolbarButton
-        onClick={() => updateSetting("widthMode", settings.widthMode === "fluid" ? "fixed" : "fluid")}
-        active={settings.widthMode === "fluid"}
-        title={settings.widthMode === "fluid" ? "고정폭으로 전환" : "가변폭으로 전환"}
+      <ToolbarDropdown
+        icon={settings.widthMode === "fixed" ? <Square size={15} /> : <Columns2 size={15} />}
+        label="페이지 폭 모드"
         onHover={handleHover}
-      >
-        {settings.widthMode === "fluid" ? <Columns2 size={15} /> : <Square size={15} />}
-      </ToolbarButton>
+        options={[
+          { icon: <Square size={14} />, label: "고정폭", active: settings.widthMode === "fixed", isDefault: true, onClick: () => updateSetting("widthMode", "fixed") },
+          { icon: <Columns2 size={14} />, label: "가변폭", active: settings.widthMode === "fluid", onClick: () => updateSetting("widthMode", "fluid") },
+        ]}
+      />
 
-      <ToolbarButton
-        onClick={() => updateSetting("pageAlign", settings.pageAlign === "left" ? "center" : "left")}
-        active={settings.pageAlign === "left"}
-        title={settings.pageAlign === "left" ? "가운데 정렬" : "왼쪽 정렬"}
+      <ToolbarDropdown
+        icon={settings.pageAlign === "center" ? <AlignCenter size={15} /> : <AlignLeft size={15} />}
+        label="페이지 정렬"
         onHover={handleHover}
-      >
-        {settings.pageAlign === "left" ? <AlignLeft size={15} /> : <AlignCenter size={15} />}
-      </ToolbarButton>
+        options={[
+          { icon: <AlignCenter size={14} />, label: "가운데 정렬", active: settings.pageAlign === "center", isDefault: true, onClick: () => updateSetting("pageAlign", "center") },
+          { icon: <AlignLeft size={14} />, label: "왼쪽 정렬", active: settings.pageAlign === "left", onClick: () => updateSetting("pageAlign", "left") },
+        ]}
+      />
 
       <PageWidthButton settings={settings} updateSetting={updateSetting} onHover={handleHover} />
 
-      <ToolbarButton
-        onClick={() => {
-          if (!selectedFile) return;
-          if (isFavorite) removeFavoriteFile(selectedFile);
-          else addFavoriteFile(selectedFile);
-        }}
-        active={isFavorite}
-        title={isFavorite ? "즐겨찾기 해제" : "즐겨찾기 등록"}
+      <ToolbarDropdown
+        icon={<Star size={15} style={isFavorite ? { color: "#f5c518", fill: "#f5c518" } : {}} />}
+        label="즐겨찾기"
         onHover={handleHover}
-      >
-        <Star size={15} style={isFavorite ? { color: "#f5c518", fill: "#f5c518" } : {}} />
-      </ToolbarButton>
+        options={[
+          { icon: <Star size={14} style={{ color: "#f5c518", fill: "#f5c518" }} />, label: "즐겨찾기 추가", active: isFavorite, onClick: () => { if (selectedFile && !isFavorite) addFavoriteFile(selectedFile); } },
+          { icon: <StarOff size={14} />, label: "즐겨찾기 해제", active: !isFavorite, onClick: () => { if (selectedFile && isFavorite) removeFavoriteFile(selectedFile); } },
+        ]}
+      />
     </div>
   );
 }
