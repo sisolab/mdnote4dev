@@ -193,7 +193,7 @@ export function TagExplorer() {
       <div style={{
         display: "flex", flexDirection: "column", alignItems: "center",
         justifyContent: "center", gap: "12px",
-        padding: "32px 16px 16px",
+        padding: "32px 16px 32px",
         borderBottom: "1px solid var(--color-border-light)",
         flexShrink: 0,
       }}>
