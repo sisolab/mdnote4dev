@@ -423,9 +423,9 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
         const oldOrder = customFileOrder[folderPath] ? [...customFileOrder[folderPath]] : entries.map((e) => e.name);
         const newOrder = [...order];
 
-        captureFlipPositions(folderPath);
-
         const { folderSort } = useAppStore.getState();
+        // 이동된 파일의 삽입 애니메이션 등록
+        insertAnimPaths.current = [`${folderPath}\\${dragName}`];
 
         if (folderSort === "custom") {
           // 커스텀 정렬: 영구 적용
@@ -443,14 +443,12 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
           refreshFileTree();
           // FLIP 이동 후 복귀
           setTimeout(() => {
-            captureFlipPositions(folderPath);
-            flipSpeedMultiplier.current = 2;
+            insertAnimPaths.current = [`${folderPath}\\${dragName}`];
             const updated = { ...useAppStore.getState().customFileOrder };
             delete updated[folderPath];
             useAppStore.setState({ customFileOrder: updated });
             useAppStore.getState().setFolderSort(origSort);
             refreshFileTree();
-            setTimeout(() => { flipSpeedMultiplier.current = 1; }, 600);
           }, 800);
         }
         cleanup();
