@@ -2,25 +2,8 @@ import { useState, useMemo } from "react";
 import { useAppStore, type AttachmentInfo } from "@/stores/appStore";
 import { invoke } from "@tauri-apps/api/core";
 import { readTextFile } from "@tauri-apps/plugin-fs";
-import {
-  Search, Star, ChevronRight, FolderOpen, FileText,
-  File, FilePen, FileSpreadsheet, Presentation, BookOpen, FileArchive,
-} from "lucide-react";
-
-// 아이콘 매핑
-const FILE_ICONS: Record<string, React.ComponentType<any>> = {
-  pdf: FileText, doc: FilePen, docx: FilePen,
-  xls: FileSpreadsheet, xlsx: FileSpreadsheet, csv: FileSpreadsheet,
-  ppt: Presentation, pptx: Presentation,
-  md: BookOpen, markdown: BookOpen,
-  zip: FileArchive, rar: FileArchive, "7z": FileArchive,
-};
-const getIcon = (ext: string) => FILE_ICONS[ext] || File;
-
-const OPENABLE_EXTS = new Set([
-  "pdf", "doc", "docx", "xls", "xlsx", "csv", "ppt", "pptx",
-  "txt", "html", "htm", "md", "markdown", "rtf",
-]);
+import { Search, Star, ChevronRight, FolderOpen, FileText } from "lucide-react";
+import { getIcon, formatSize, OPENABLE_EXTS } from "./FileAttachment";
 
 type GroupBy = "none" | "ext" | "date" | "size";
 
@@ -30,12 +13,6 @@ const GROUP_OPTIONS: { value: GroupBy; label: string }[] = [
   { value: "date", label: "편집일별" },
   { value: "size", label: "용량별" },
 ];
-
-function formatSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
 
 function getExtLabel(ext: string): string {
   const map: Record<string, string> = {
@@ -67,7 +44,7 @@ function getSizeGroup(size: number): string {
 }
 
 function AttachmentCard({ item, isFav, onToggleFav }: { item: AttachmentInfo; isFav: boolean; onToggleFav: () => void }) {
-  const Icon = getIcon(item.ext);
+  const Icon = getIcon(item.filename);
 
   const handleOpen = () => {
     if (OPENABLE_EXTS.has(item.ext)) {
@@ -92,60 +69,54 @@ function AttachmentCard({ item, isFav, onToggleFav }: { item: AttachmentInfo; is
     }
   };
 
+  const actionBtn: React.CSSProperties = {
+    width: "26px", height: "26px", display: "flex", alignItems: "center", justifyContent: "center",
+    border: "none", background: "transparent", cursor: "pointer", borderRadius: "4px",
+  };
+
   return (
     <div
       onDoubleClick={handleOpen}
+      title={`${item.filename}\n${formatSize(item.size)} · ${item.docPath.split("\\").pop()}`}
       style={{
         display: "flex", alignItems: "center", gap: "10px",
-        padding: "10px 16px", margin: "4px 0",
-        borderRadius: "6px", border: "1px solid var(--color-border-light)",
+        padding: "8px 12px",
+        borderRadius: "6px", border: "1px solid var(--color-border-medium)",
         background: "var(--color-bg-secondary)", cursor: "pointer",
-        transition: "all 0.15s", position: "relative",
+        transition: "all 0.15s", minWidth: 0,
       }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.background = "var(--color-bg-hover)";
-        (e.currentTarget.querySelector("[data-actions]") as HTMLElement)?.style.setProperty("opacity", "1");
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.background = "var(--color-bg-secondary)";
-        (e.currentTarget.querySelector("[data-actions]") as HTMLElement)?.style.setProperty("opacity", "0");
-      }}
+      onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-hover)"; }}
+      onMouseLeave={(e) => { e.currentTarget.style.background = "var(--color-bg-secondary)"; }}
     >
-      <Icon size={22} style={{ color: "var(--color-accent)", flexShrink: 0 }} />
-      <div style={{ minWidth: 0, flex: 1 }}>
-        <div style={{ fontSize: "12px", fontWeight: 600, color: "var(--color-text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {item.filename}
-          <span style={{ fontWeight: 400, color: "var(--color-text-tertiary)", marginLeft: "8px" }}>({formatSize(item.size)})</span>
-        </div>
-        <div style={{ fontSize: "10px", color: "var(--color-text-tertiary)", marginTop: "2px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {item.docPath.split("\\").pop()}
+      <div style={{ display: "flex", alignItems: "center", gap: "8px", minWidth: 0 }}>
+        <Icon size={18} style={{ color: "var(--color-accent)", flexShrink: 0 }} />
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--color-text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {item.filename}
+          </div>
+          <div style={{ fontSize: "11px", color: "var(--color-text-tertiary)", marginTop: "2px" }}>
+            {formatSize(item.size)} · {item.docPath.split("\\").pop()}
+          </div>
         </div>
       </div>
-
-      {/* 액션 버튼 */}
-      <div data-actions style={{ display: "flex", gap: "4px", opacity: 0, transition: "opacity 0.15s", flexShrink: 0 }}>
+      <div style={{ display: "flex", gap: "4px", flexShrink: 0, marginLeft: "auto" }}>
         <button onClick={(e) => { e.stopPropagation(); const folder = item.absPath.substring(0, item.absPath.lastIndexOf("\\")); invoke("open_in_explorer", { path: folder }); }}
-          title="파일 위치 열기" style={{ width: "22px", height: "22px", display: "flex", alignItems: "center", justifyContent: "center", border: "none", background: "transparent", cursor: "pointer", color: "var(--color-text-tertiary)", borderRadius: "3px" }}
+          title="파일 위치 열기" style={{ ...actionBtn, color: "var(--color-text-tertiary)" }}
           onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-active)"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
-        >
-          <FolderOpen size={12} />
+          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}>
+          <FolderOpen size={14} />
         </button>
         <button onClick={(e) => { e.stopPropagation(); handleOpenDoc(); }}
-          title="문서 열기" style={{ width: "22px", height: "22px", display: "flex", alignItems: "center", justifyContent: "center", border: "none", background: "transparent", cursor: "pointer", color: "var(--color-text-tertiary)", borderRadius: "3px" }}
+          title="문서 열기" style={{ ...actionBtn, color: "var(--color-text-tertiary)" }}
           onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-active)"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
-        >
-          <FileText size={12} />
+          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}>
+          <FileText size={14} />
         </button>
         <button onClick={(e) => { e.stopPropagation(); onToggleFav(); }}
-          title={isFav ? "즐겨찾기 해제" : "즐겨찾기 등록"} style={{ width: "22px", height: "22px", display: "flex", alignItems: "center", justifyContent: "center", border: "none", background: "transparent", cursor: "pointer", borderRadius: "3px",
-            color: isFav ? "#f5c518" : "var(--color-text-tertiary)",
-          }}
+          title={isFav ? "즐겨찾기 해제" : "즐겨찾기 등록"} style={{ ...actionBtn, color: isFav ? "#f5c518" : "var(--color-text-tertiary)" }}
           onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-active)"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
-        >
-          <Star size={12} style={isFav ? { fill: "#f5c518" } : {}} />
+          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}>
+          <Star size={14} style={isFav ? { fill: "#f5c518" } : {}} />
         </button>
       </div>
     </div>
@@ -247,14 +218,18 @@ export function AttachmentExplorer() {
                 transform: favExpanded ? "rotate(90deg)" : "none",
                 transition: "transform 0.15s",
               }} />
-              <Star size={12} style={{ color: "#f5c518", fill: "#f5c518" }} />
+              <Star size={14} style={{ color: "#f5c518", fill: "#f5c518" }} />
               <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--color-text-secondary)" }}>
                 즐겨찾기 ({favItems.length})
               </span>
             </div>
-            {favExpanded && favItems.map((item) => (
-              <AttachmentCard key={item.absPath} item={item} isFav={true} onToggleFav={() => toggleFav(item.absPath)} />
-            ))}
+            {favExpanded && (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "6px" }}>
+                {favItems.map((item) => (
+                  <AttachmentCard key={item.absPath} item={item} isFav={true} onToggleFav={() => toggleFav(item.absPath)} />
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -272,15 +247,19 @@ export function AttachmentExplorer() {
               <div style={{ fontSize: "11px", fontWeight: 600, color: "var(--color-text-tertiary)", marginBottom: "6px", padding: "0 4px" }}>
                 {group} ({items.length})
               </div>
-              {items.map((item) => (
-                <AttachmentCard key={item.absPath + item.docPath} item={item} isFav={favoriteAttachments.includes(item.absPath)} onToggleFav={() => toggleFav(item.absPath)} />
-              ))}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "6px" }}>
+                {items.map((item) => (
+                  <AttachmentCard key={item.absPath + item.docPath} item={item} isFav={favoriteAttachments.includes(item.absPath)} onToggleFav={() => toggleFav(item.absPath)} />
+                ))}
+              </div>
             </div>
           ))
         ) : (
-          filtered.map((item) => (
-            <AttachmentCard key={item.absPath + item.docPath} item={item} isFav={favoriteAttachments.includes(item.absPath)} onToggleFav={() => toggleFav(item.absPath)} />
-          ))
+          <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "6px" }}>
+            {filtered.map((item) => (
+              <AttachmentCard key={item.absPath + item.docPath} item={item} isFav={favoriteAttachments.includes(item.absPath)} onToggleFav={() => toggleFav(item.absPath)} />
+            ))}
+          </div>
         )}
 
         {filtered.length === 0 && (

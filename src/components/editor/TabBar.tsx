@@ -253,6 +253,8 @@ export function TabBar() {
         );
       })}
 
+      <div style={{ width: "1px", height: "14px", background: "var(--color-border-light)", flexShrink: 0, margin: "0 2px" }} />
+
       {/* 고정 첨부파일탭 */}
       {tabs.filter((t) => t.type === "attachment-explorer").map((tab) => {
         const isActive = tab.id === activeTabId;

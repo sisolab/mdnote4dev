@@ -165,9 +165,13 @@ function App() {
         }
       }
 
-      // 태그 탐색 탭이 없으면 추가
+      // 고정 탭이 없으면 추가
       if (!restoredTabs.find((t) => t.type === "tag-explorer")) {
-        restoredTabs.unshift({ id: "tag-explorer", title: "태그", filePath: null, content: "", isDirty: false, type: "tag-explorer" as const, tagFilters: [] });
+        restoredTabs.unshift({ id: "tag-explorer", title: "검색", filePath: null, content: "", isDirty: false, type: "tag-explorer" as const, tagFilters: [] });
+      }
+      if (!restoredTabs.find((t) => t.type === "attachment-explorer")) {
+        const tagIdx = restoredTabs.findIndex((t) => t.type === "tag-explorer");
+        restoredTabs.splice(tagIdx + 1, 0, { id: "attachment-explorer", title: "첨부파일", filePath: null, content: "", isDirty: false, type: "attachment-explorer" as const });
       }
 
       // activeTabId 검증

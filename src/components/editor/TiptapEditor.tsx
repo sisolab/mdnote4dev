@@ -314,6 +314,33 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
         }, 50);
       }
 
+      // 첨부파일 탭 실시간 반영
+      const IMAGE_EXTS = /\.(png|jpg|jpeg|gif|webp|svg)$/i;
+      const store = useAppStore.getState();
+      const docPath = fp;
+
+      // 삭제된 첨부파일 제거
+      for (const name of prev) {
+        if (!current.has(name) && !IMAGE_EXTS.test(name)) {
+          const absPath = `${assetsDir}\\${name}`;
+          store.setAllAttachments(store.allAttachments.filter((a) => !(a.absPath === absPath && a.docPath === docPath)));
+        }
+      }
+
+      // 복원/추가된 첨부파일 추가
+      for (const name of current) {
+        if (!prev.has(name) && !IMAGE_EXTS.test(name)) {
+          const absPath = `${assetsDir}\\${name}`;
+          const already = store.allAttachments.some((a) => a.absPath === absPath && a.docPath === docPath);
+          if (!already) {
+            const ext = name.includes(".") ? name.substring(name.lastIndexOf(".") + 1).toLowerCase() : "";
+            let size = 0;
+            try { const s = await stat(absPath); size = s.size; } catch {}
+            store.setAllAttachments([...store.allAttachments, { filename: name, absPath, relativePath: `./.assets/${name}`, docPath, size, mtime: Date.now(), ext }]);
+          }
+        }
+      }
+
       prevAssetsRef.current = current;
     };
 
