@@ -4,7 +4,7 @@ import { rename, readTextFile, writeTextFile } from "@tauri-apps/plugin-fs";
 import { open } from "@tauri-apps/plugin-dialog";
 import { useAppStore } from "@/stores/appStore";
 import { renameDocImages } from "@/utils/imageUtils";
-import { Save, FolderOpen, Maximize2, Minimize2, Settings, Search } from "lucide-react";
+import { Save, FolderOpen, Maximize2, Minimize2, Settings, Search, Paperclip } from "lucide-react";
 import { getCurrentWindow, LogicalSize } from "@tauri-apps/api/window";
 import { useSettingsStore } from "@/stores/settingsStore";
 
@@ -253,6 +253,35 @@ export function TabBar() {
         );
       })}
 
+      {/* 고정 첨부파일탭 */}
+      {tabs.filter((t) => t.type === "attachment-explorer").map((tab) => {
+        const isActive = tab.id === activeTabId;
+        return (
+          <div
+            key={tab.id}
+            data-tab-id={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            onMouseEnter={(e) => handleHover(e.currentTarget)}
+            style={{
+              height: "40px",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              padding: "0 14px", cursor: "pointer",
+              position: "relative", zIndex: 1,
+              color: isActive ? "var(--color-accent)" : "var(--color-text-secondary)",
+              transition: "color 0.1s", flexShrink: 0,
+            }}
+          >
+            <Paperclip size={13} />
+            <div style={{
+              position: "absolute", bottom: "0", left: "50%", transform: "translateX(-50%)",
+              width: isActive ? "80%" : "0%", height: "2px",
+              borderRadius: "1px", background: "var(--color-accent)",
+              transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+            }} />
+          </div>
+        );
+      })}
+
       {/* 구분선 */}
       <div style={{ width: "1px", height: "14px", background: "var(--color-border-light)", flexShrink: 0, margin: "0 2px" }} />
 
@@ -263,7 +292,7 @@ export function TabBar() {
         style={{ display: "flex", alignItems: "center", overflowX: "auto", overflowY: "hidden", flex: 1, minWidth: 0, position: "relative" }}
       >
 
-      {tabs.filter((t) => t.type !== "tag-explorer").map((tab, filteredIndex) => {
+      {tabs.filter((t) => t.type !== "tag-explorer" && t.type !== "attachment-explorer").map((tab, filteredIndex) => {
         const index = tabs.indexOf(tab);
         const isActive = tab.id === activeTabId;
         const isDragging = dragIndex === index;
@@ -407,7 +436,7 @@ export function TabBar() {
                 )}
 
                 {/* 닫기 버튼 (태그탭은 닫기 불가) */}
-                {tab.type !== "tag-explorer" && <button
+                {tab.type !== "tag-explorer" && tab.type !== "attachment-explorer" && <button
                   onClick={(e) => {
                     e.stopPropagation();
                     if (!tab.filePath && tab.content) {

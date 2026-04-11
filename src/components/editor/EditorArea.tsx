@@ -6,6 +6,7 @@ import { TiptapEditor } from "./TiptapEditor";
 import { TabBar } from "./TabBar";
 import { StatusBar } from "./StatusBar";
 import { TagExplorer } from "./TagExplorer";
+import { AttachmentExplorer } from "./AttachmentExplorer";
 import { FileText } from "lucide-react";
 import { parseFrontmatter, updateFrontmatterTags } from "@/utils/frontmatter";
 
@@ -148,6 +149,10 @@ export function EditorArea() {
       {activeTab?.type === "tag-explorer" ? (
         <div className="flex-1 min-h-0">
           <TagExplorer />
+        </div>
+      ) : activeTab?.type === "attachment-explorer" ? (
+        <div className="flex-1 min-h-0">
+          <AttachmentExplorer />
         </div>
       ) : activeTab ? (
         <>

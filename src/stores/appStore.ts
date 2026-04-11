@@ -18,13 +18,23 @@ export interface FavoriteFolder {
 
 export type SortMode = "name" | "date-added" | "date-modified" | "custom";
 
+export interface AttachmentInfo {
+  filename: string;
+  absPath: string;
+  relativePath: string;
+  docPath: string; // 이 첨부파일이 포함된 마크다운 문서 경로
+  size: number;
+  mtime: number;
+  ext: string;
+}
+
 export interface Tab {
   id: string;
   title: string;
   filePath: string | null; // null이면 임시 문서
   content: string;
   isDirty: boolean;
-  type?: "document" | "tag-explorer";
+  type?: "document" | "tag-explorer" | "attachment-explorer";
   tagFilters?: string[]; // tag-explorer 탭에서 선택된 태그들
 }
 
@@ -90,6 +100,14 @@ interface AppState {
   markTabClean: (id: string) => void;
   reorderTabs: (fromIndex: number, toIndex: number) => void;
   openTagExplorer: (tag?: string) => void;
+  openAttachmentExplorer: () => void;
+
+  // 첨부파일
+  allAttachments: AttachmentInfo[];
+  setAllAttachments: (attachments: AttachmentInfo[]) => void;
+  favoriteAttachments: string[];
+  addFavoriteAttachment: (path: string) => void;
+  removeFavoriteAttachment: (path: string) => void;
 
   // 사이드바
   sidebarCollapsed: boolean;
@@ -325,6 +343,25 @@ export const useAppStore = create<AppState>()(
           };
         }),
 
+      openAttachmentExplorer: () =>
+        set((state) => {
+          const existing = state.tabs.find((t) => t.type === "attachment-explorer");
+          if (existing) return { activeTabId: existing.id };
+          const id = `tab-${++tabCounter}`;
+          const tab: Tab = { id, title: "첨부파일", filePath: null, content: "", isDirty: false, type: "attachment-explorer" };
+          return { tabs: [tab, ...state.tabs], activeTabId: id };
+        }),
+
+      allAttachments: [],
+      setAllAttachments: (attachments) => set({ allAttachments: attachments }),
+      favoriteAttachments: [],
+      addFavoriteAttachment: (path) => set((state) => ({
+        favoriteAttachments: state.favoriteAttachments.includes(path) ? state.favoriteAttachments : [...state.favoriteAttachments, path],
+      })),
+      removeFavoriteAttachment: (path) => set((state) => ({
+        favoriteAttachments: state.favoriteAttachments.filter((p) => p !== path),
+      })),
+
       sidebarCollapsed: false,
       sidebarWidth: 280,
       setSidebarWidth: (w) => set({ sidebarWidth: w }),
@@ -359,8 +396,9 @@ export const useAppStore = create<AppState>()(
         // Set → Array로 변환하여 저장
         expandedFolders: [...state.expandedFolders],
         // 탭: content 제외, filePath 있는 탭만 저장
+        favoriteAttachments: state.favoriteAttachments,
         tabs: state.tabs
-          .filter((t) => t.type === "tag-explorer" || t.filePath)
+          .filter((t) => t.type === "tag-explorer" || t.type === "attachment-explorer" || t.filePath)
           .map((t) => ({ id: t.id, title: t.title, filePath: t.filePath, content: "", isDirty: false, type: t.type, tagFilters: t.tagFilters })),
         activeTabId: state.activeTabId,
       }),

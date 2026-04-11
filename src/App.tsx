@@ -57,7 +57,7 @@ function App() {
   // persist hydration 완료 후 실행
   useEffect(() => {
     async function scanFiles() {
-      const { favorites, favoriteFiles, setAllTags, setRecentFiles, setFilePreviews, setFileContents } = useAppStore.getState();
+      const { favorites, favoriteFiles, setAllTags, setRecentFiles, setFilePreviews, setFileContents, setAllAttachments } = useAppStore.getState();
       const tagMap: Record<string, string[]> = {};
       const fileTimes: { path: string; mtime: number }[] = [];
       const previews: Record<string, string> = {};
@@ -116,6 +116,30 @@ function App() {
       fileTimes.sort((a, b) => b.mtime - a.mtime);
       setRecentFiles(fileTimes.slice(0, 50).map((f) => f.path));
 
+      // 첨부파일 스캔
+      const attachments: import("@/stores/appStore").AttachmentInfo[] = [];
+      const IMAGE_EXTS = /\.(png|jpg|jpeg|gif|webp|svg)$/i;
+      for (const filePath of allPaths) {
+        const body = contents[filePath] ?? "";
+        const linkRegex = /\[([^\]]+)\]\((\.\/\.assets\/([^)]+))\)/g;
+        let m;
+        while ((m = linkRegex.exec(body)) !== null) {
+          const [, , relativePath, filename] = m;
+          if (IMAGE_EXTS.test(filename)) continue;
+          const docDir = filePath.substring(0, filePath.lastIndexOf("\\"));
+          const absPath = `${docDir}\\${relativePath.substring(2).replace(/\//g, "\\")}`;
+          const ext = filename.includes(".") ? filename.substring(filename.lastIndexOf(".") + 1).toLowerCase() : "";
+          let size = 0, mtime = 0;
+          try {
+            const s = await stat(absPath);
+            size = s.size;
+            mtime = s.mtime?.getTime?.() ?? (typeof s.mtime === "number" ? s.mtime : 0);
+          } catch {}
+          attachments.push({ filename, absPath, relativePath, docPath: filePath, size, mtime, ext });
+        }
+      }
+      setAllAttachments(attachments);
+
     }
 
     async function restoreTabs() {
@@ -124,7 +148,7 @@ function App() {
       const restoredTabs = [];
 
       for (const tab of tabs) {
-        if (tab.type === "tag-explorer") {
+        if (tab.type === "tag-explorer" || tab.type === "attachment-explorer") {
           restoredTabs.push(tab);
           continue;
         }
@@ -246,7 +270,7 @@ function App() {
         e.preventDefault();
         if (store.activeTabId) {
           const tab = store.tabs.find((t) => t.id === store.activeTabId);
-          if (tab && tab.type !== "tag-explorer") store.closeTab(store.activeTabId);
+          if (tab && tab.type !== "tag-explorer" && tab.type !== "attachment-explorer") store.closeTab(store.activeTabId);
         }
         return;
       }
@@ -262,6 +286,13 @@ function App() {
       if (key === "f" && e.shiftKey) {
         e.preventDefault();
         store.openTagExplorer();
+        return;
+      }
+
+      // Ctrl+Shift+A — 첨부파일 탭
+      if (key === "a" && e.shiftKey) {
+        e.preventDefault();
+        store.openAttachmentExplorer();
         return;
       }
 
