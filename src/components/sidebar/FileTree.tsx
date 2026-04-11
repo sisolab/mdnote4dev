@@ -115,7 +115,7 @@ function FileTreeItem({
   };
 
   const handleDoubleClick = async () => {
-    if (entry.name.endsWith(".md")) {
+    if (/\.(md|markdown)$/i.test(entry.name)) {
       try {
         const content = await readTextFile(entry.path);
         openTab(entry.path, entry.name, content);
@@ -125,7 +125,7 @@ function FileTreeItem({
     }
   };
 
-  const isMarkdown = entry.name.endsWith(".md");
+  const isMarkdown = /\.(md|markdown)$/i.test(entry.name);
   return (
     <div>
       <button
