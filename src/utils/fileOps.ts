@@ -94,6 +94,7 @@ export async function undoMoveItems(oldPaths: string[], newPaths: string[]): Pro
         const newFavPath = destPath + fav.substring(srcPath.length);
         state.removeFavoriteFile(fav);
         state.addFavoriteFile(newFavPath);
+      }
     }
   }
 }
