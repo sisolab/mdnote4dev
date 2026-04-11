@@ -447,25 +447,33 @@ export function TabBar() {
         <Settings size={15} />
       </button>
       <button
-        onClick={() => {
+        onClick={async () => {
           const wasCollapsed = sidebarCollapsed;
           toggleSidebar();
           if (settings.widthMode === "fixed") {
-            setTimeout(async () => {
-              const appWindow = getCurrentWindow();
-              const factor = await appWindow.scaleFactor();
-              const size = await appWindow.innerSize();
-              const currentWidth = size.width / factor;
-              const currentHeight = size.height / factor;
-              if (wasCollapsed) {
-                // 사이드바 펼치기 → 사이드바 폭만큼 넓힘
-                await appWindow.setSize(new LogicalSize(currentWidth + sidebarWidth, currentHeight));
-              } else {
-                // 사이드바 숨기기 → 고정폭에 맞춤
-                const targetWidth = settings.editorMaxWidth + 96 + 40;
-                await appWindow.setSize(new LogicalSize(targetWidth, currentHeight));
-              }
-            }, 300);
+            const appWindow = getCurrentWindow();
+            const factor = await appWindow.scaleFactor();
+            const size = await appWindow.innerSize();
+            const startWidth = size.width / factor;
+            const height = size.height / factor;
+            let targetWidth: number;
+            if (wasCollapsed) {
+              targetWidth = startWidth + sidebarWidth;
+            } else {
+              targetWidth = settings.editorMaxWidth + 96 + 40;
+            }
+            // 부드러운 리사이즈 애니메이션 (사이드바 전환과 동기화)
+            const duration = 250;
+            const startTime = performance.now();
+            const animate = async (now: number) => {
+              const elapsed = now - startTime;
+              const progress = Math.min(elapsed / duration, 1);
+              const ease = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+              const w = startWidth + (targetWidth - startWidth) * ease;
+              await appWindow.setSize(new LogicalSize(Math.round(w), height));
+              if (progress < 1) requestAnimationFrame(animate);
+            };
+            requestAnimationFrame(animate);
           }
         }}
         onMouseEnter={(e) => handleHover(e.currentTarget)}
