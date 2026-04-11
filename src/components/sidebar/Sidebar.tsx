@@ -320,6 +320,8 @@ export function Sidebar() {
       else next.add(path);
       return next;
     });
+    // 루트 폴더 선택 → 하위 항목 하이라이트용
+    useAppStore.getState().setSelectedPaths(new Set([path]));
   };
 
   const handleContextMenu = (e: React.MouseEvent, path: string) => {
