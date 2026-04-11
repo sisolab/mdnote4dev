@@ -150,7 +150,7 @@ function TableGridButton({ editor, onHover }: { editor: Editor; onHover: (el: HT
   );
 }
 
-const WIDTH_OPTIONS = [640, 720, 780, 860, 960, 1080];
+const WIDTH_OPTIONS = [480, 600, 720, 840];
 
 function PageWidthButton({ settings, updateSetting, onHover }: { settings: any; updateSetting: (k: string, v: any) => void; onHover: (el: HTMLButtonElement | null) => void }) {
   const [open, setOpen] = useState(false);
