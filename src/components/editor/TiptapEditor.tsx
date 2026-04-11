@@ -25,6 +25,7 @@ import { convertFileSrc } from "@tauri-apps/api/core";
 import { Toolbar } from "./Toolbar";
 import { ImageToolbar } from "./ImageToolbar";
 import { TableToolbar } from "./TableToolbar";
+import { FileToolbar } from "./FileToolbar";
 import { useSettingsStore, getFontFamily } from "@/stores/settingsStore";
 
 interface TiptapEditorProps {
@@ -372,6 +373,7 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
       <Toolbar editor={editor} />
       <ImageToolbar editor={editor} />
       <TableToolbar editor={editor} />
+      <FileToolbar editor={editor} />
       <div
         className="flex-1 overflow-auto"
         style={{ padding: "24px 48px", cursor: "text" }}

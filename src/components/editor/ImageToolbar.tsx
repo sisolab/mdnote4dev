@@ -1,6 +1,6 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { Editor } from "@tiptap/react";
-import { AlignLeft, AlignCenter, Copy, Scissors, Trash2 } from "lucide-react";
+import { AlignLeft, AlignCenter, Copy, Scissors, Trash2, Image, Check } from "lucide-react";
 
 interface ImageToolbarProps {
   editor: Editor;
@@ -18,6 +18,12 @@ const SIZES = [
 export function ImageToolbar({ editor }: ImageToolbarProps) {
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
   const ref = useRef<HTMLDivElement>(null);
+  const [flash, setFlash] = useState<string | null>(null);
+
+  const flashBtn = useCallback((id: string) => {
+    setFlash(id);
+    setTimeout(() => setFlash(null), 600);
+  }, []);
 
   useEffect(() => {
     const update = () => {
@@ -139,11 +145,24 @@ export function ImageToolbar({ editor }: ImageToolbarProps) {
 
       <div style={{ width: "1px", height: "16px", background: "var(--color-border-light)", margin: "0 2px" }} />
 
-      <button onClick={() => { document.execCommand("copy"); }} title="복사" style={{ padding: "3px 6px", borderRadius: "4px", border: "none", cursor: "pointer", display: "flex", alignItems: "center", background: "transparent", color: "var(--color-text-secondary)", transition: "all 0.1s" }}>
-        <Copy size={13} />
+      <button onClick={async () => {
+        try {
+          const dom = editor.view.nodeDOM(editor.state.selection.from) as HTMLElement | null;
+          const imgEl = dom?.tagName === "IMG" ? dom as HTMLImageElement : dom?.querySelector("img") as HTMLImageElement | null;
+          if (!imgEl) return;
+          const res = await fetch(imgEl.src);
+          const blob = await res.blob();
+          await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
+          flashBtn("img-copy");
+        } catch (err) { console.error("이미지 복사 실패:", err); }
+      }} title="이미지로 복사" style={{ padding: "3px 6px", borderRadius: "4px", border: "none", cursor: "pointer", display: "flex", alignItems: "center", background: "transparent", color: flash === "img-copy" ? "#22c55e" : "var(--color-text-secondary)", transition: "all 0.15s" }}>
+        {flash === "img-copy" ? <Check size={13} /> : <Image size={13} />}
       </button>
-      <button onClick={() => { document.execCommand("cut"); }} title="잘라내기" style={{ padding: "3px 6px", borderRadius: "4px", border: "none", cursor: "pointer", display: "flex", alignItems: "center", background: "transparent", color: "var(--color-text-secondary)", transition: "all 0.1s" }}>
-        <Scissors size={13} />
+      <button onClick={() => { document.execCommand("copy"); flashBtn("copy"); }} title="복사" style={{ padding: "3px 6px", borderRadius: "4px", border: "none", cursor: "pointer", display: "flex", alignItems: "center", background: "transparent", color: flash === "copy" ? "#22c55e" : "var(--color-text-secondary)", transition: "all 0.15s" }}>
+        {flash === "copy" ? <Check size={13} /> : <Copy size={13} />}
+      </button>
+      <button onClick={() => { document.execCommand("cut"); flashBtn("cut"); }} title="잘라내기" style={{ padding: "3px 6px", borderRadius: "4px", border: "none", cursor: "pointer", display: "flex", alignItems: "center", background: "transparent", color: flash === "cut" ? "#22c55e" : "var(--color-text-secondary)", transition: "all 0.15s" }}>
+        {flash === "cut" ? <Check size={13} /> : <Scissors size={13} />}
       </button>
       <button onClick={() => { editor.chain().focus().deleteSelection().run(); }} title="삭제" style={{ padding: "3px 6px", borderRadius: "4px", border: "none", cursor: "pointer", display: "flex", alignItems: "center", background: "transparent", color: "var(--color-text-secondary)", transition: "all 0.1s" }}>
         <Trash2 size={13} />
