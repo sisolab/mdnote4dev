@@ -12,7 +12,7 @@ import { shortenPath } from "@/utils/pathUtils";
 import { AnimatedCollapse } from "@/components/ui/AnimatedCollapse";
 import { executeUndoable } from "@/stores/undoStore";
 export function Sidebar() {
-  const { favorites, sidebarCollapsed, removeFavorite, addFavorite, openTab, refreshFileTree, fileTreeVersion, setFavoriteAlias, updateFavoritePath, setFavoriteIcon, folderSort, fileSort, setFolderSort, setFileSort, favoriteFiles, addFavoriteFile, removeFavoriteFile, selectedPaths, reorderFavorites } = useAppStore();
+  const { favorites, sidebarCollapsed, sidebarWidth, setSidebarWidth, removeFavorite, addFavorite, openTab, refreshFileTree, fileTreeVersion, setFavoriteAlias, updateFavoritePath, setFavoriteIcon, folderSort, fileSort, setFolderSort, setFileSort, favoriteFiles, addFavoriteFile, removeFavoriteFile, selectedPaths, reorderFavorites } = useAppStore();
   const [compactMode, setCompactMode] = useState(false);
   const [sortMenu, setSortMenu] = useState<{ x: number; y: number } | null>(null);
   const [docCounts, setDocCounts] = useState<Record<string, number>>({});
@@ -152,7 +152,6 @@ export function Sidebar() {
     // updateFavDragTarget — ref에만 저장, 리렌더 불필요
   };
   const [iconPickerPath, setIconPickerPath] = useState<string | null>(null);
-  const [sidebarWidth, setSidebarWidth] = useState(280);
   const isResizing = useRef(false);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {

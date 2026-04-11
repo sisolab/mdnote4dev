@@ -93,6 +93,8 @@ interface AppState {
 
   // 사이드바
   sidebarCollapsed: boolean;
+  sidebarWidth: number;
+  setSidebarWidth: (w: number) => void;
   toggleSidebar: () => void;
   fileTreeVersion: number;
   refreshFileTree: () => void;
@@ -324,6 +326,8 @@ export const useAppStore = create<AppState>()(
         }),
 
       sidebarCollapsed: false,
+      sidebarWidth: 280,
+      setSidebarWidth: (w) => set({ sidebarWidth: w }),
       toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
       fileTreeVersion: 0,
       refreshFileTree: () => set((state) => ({ fileTreeVersion: state.fileTreeVersion + 1 })),
@@ -348,6 +352,7 @@ export const useAppStore = create<AppState>()(
         favorites: state.favorites,
         favoriteFiles: state.favoriteFiles,
         sidebarCollapsed: state.sidebarCollapsed,
+        sidebarWidth: state.sidebarWidth,
         folderSort: state.folderSort,
         fileSort: state.fileSort,
         customFileOrder: state.customFileOrder,

@@ -8,7 +8,7 @@ import { getCurrentWindow, LogicalSize } from "@tauri-apps/api/window";
 import { useSettingsStore } from "@/stores/settingsStore";
 
 export function TabBar() {
-  const { tabs, activeTabId, setActiveTab, closeTab, updateTabTitle, newTab, reorderTabs, toggleSidebar, sidebarCollapsed } = useAppStore();
+  const { tabs, activeTabId, setActiveTab, closeTab, updateTabTitle, newTab, reorderTabs, toggleSidebar, sidebarCollapsed, sidebarWidth } = useAppStore();
   const { settings } = useSettingsStore();
   const { setShowSettings } = useSettingsStore();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -459,7 +459,7 @@ export function TabBar() {
               const currentHeight = size.height / factor;
               if (wasCollapsed) {
                 // 사이드바 펼치기 → 사이드바 폭만큼 넓힘
-                await appWindow.setSize(new LogicalSize(currentWidth + 280, currentHeight));
+                await appWindow.setSize(new LogicalSize(currentWidth + sidebarWidth, currentHeight));
               } else {
                 // 사이드바 숨기기 → 고정폭에 맞춤
                 const targetWidth = settings.editorMaxWidth + 96 + 40;
