@@ -260,6 +260,9 @@ export function Toolbar({ editor }: ToolbarProps) {
       <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} active={editor.isActive("heading", { level: 3 })} title="제목 3 (Ctrl+Alt+3)" onHover={handleHover}>
         <span className="text-[12px] font-bold">H3</span>
       </ToolbarButton>
+      <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 4 }).run()} active={editor.isActive("heading", { level: 4 })} title="제목 4 (Ctrl+Alt+4)" onHover={handleHover}>
+        <span className="text-[12px] font-bold">H4</span>
+      </ToolbarButton>
 
       <Divider />
 
