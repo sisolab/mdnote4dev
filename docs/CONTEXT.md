@@ -57,9 +57,23 @@
 - **expandedFolders**: Set → Array로 직렬화, 복원 시 Array → Set
 - **tabs**: content 제외하고 저장, 앱 시작 시 파일에서 다시 읽기
 
+### 드래그앤드롭 + Undo/Redo
+- **Undo/Redo**: Command 패턴 (execute/undo), 최대 50개 히스토리 스택
+- **Ctrl+Z/Ctrl+Shift+Z**: 에디터 포커스가 아닐 때 사이드바 undo/redo
+- **앱 내 휴지통**: 삭제 시 `.trash/` 폴더로 이동, undo 가능, 앱 종료 시 OS 휴지통으로
+- **최상위 폴더 순서 변경**: 마우스 드래그, FLIP 슬라이딩 애니메이션, undoable
+- **파일/폴더 이동**: 드래그로 다른 폴더에 드롭, 폴더 영역 하이라이트, 고스트 행 복제
+  - 이동 시 탭 경로, 즐겨찾기, 펼침 상태 자동 업데이트
+  - 멀티 선택 이동 시 확인창
+  - 중복 이름 자동 처리 (`이름 (1)`)
+- **커스텀 파일 순서**: `folderSort === "custom"` 일 때 드래그로 순서 변경, persist
+- **폴더 선택 시 하위 전체 하이라이트** (부모 경로 prefix 매칭)
+- **드래그 중 hover 비활성화**: `data-dragging` 속성으로 제어
+
 ### 앱 종료 처리
 - `event.preventDefault()`로 즉시 종료 방지
 - 열린 탭의 고아 이미지 cleanup 실행
+- `.trash/` 폴더 비우기 (OS 휴지통으로)
 - 미저장 임시 문서 있으면 확인 다이얼로그
 - cleanup 완료 후 `appWindow.destroy()`
 
@@ -68,12 +82,15 @@
 src/
 ├── App.tsx                    — 메인 앱, 테마 적용, 파일 스캔, 종료 처리
 ├── stores/
-│   ├── appStore.ts            — 파일/탭/즐겨찾기/태그 상태
+│   ├── appStore.ts            — 파일/탭/즐겨찾기/태그/커스텀순서 상태
+│   ├── undoStore.ts           — undo/redo 히스토리 스택
 │   ├── settingsStore.ts       — 에디터/테마 설정
 │   └── themeData.ts           — 테마 CSS 변수 정의
 ├── utils/
 │   ├── frontmatter.ts         — frontmatter 파싱/직렬화, 태그 색상
 │   ├── imageUtils.ts          — 이미지 저장/정리/이름변경/삭제
+│   ├── fileOps.ts             — 파일 이동/되돌리기 (경로/탭/즐겨찾기 업데이트)
+│   ├── trashUtils.ts          — 앱 내 .trash 관리 (이동/복원/비우기)
 │   └── pathUtils.ts           — 경로 유틸 (shortenPath 등)
 ├── components/
 │   ├── editor/
