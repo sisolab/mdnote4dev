@@ -110,6 +110,13 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
         return true;
       },
       handleKeyDown: (view, event) => {
+        // Ctrl+Z: 사용자 편집 없으면 ProseMirror undo 차단 (setContent undo 방지)
+        if (event.ctrlKey && event.key === "z" && !event.shiftKey) {
+          if (!(view as any).__userEditCount || (view as any).__userEditCount <= 0) {
+            return true; // ProseMirror에게 "처리했음"이라고 알림 → undo 안 함
+          }
+        }
+
         // Ctrl+1~5: 제목/일반텍스트
         if (event.ctrlKey && !event.altKey && !event.shiftKey && ["1","2","3","4","5"].includes(event.key)) {
           event.preventDefault();
@@ -500,6 +507,7 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
     const handler = () => {
       if ((editor as any).__initializing) return;
       userEditCount.current++;
+      (editor.view as any).__userEditCount = userEditCount.current;
       const store = useAppStore.getState();
       const tab = store.tabs.find((t) => t.id === store.activeTabId);
       if (tab && !tab.isDirty) {
@@ -519,6 +527,7 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
     // 초기 스냅샷 (문서 열 때, body만)
     if (!undoSnapshots.has(tabId)) {
       undoSnapshots.set(tabId, [stripFrontmatter(content)]);
+      console.log("[undo] init snapshot for", tabId, "stack:", 1);
     }
     const handler = () => {
       if ((editor as any).__initializing) return;
@@ -530,8 +539,9 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
           // 마지막 스냅샷과 같으면 스킵
           if (stack.length > 0 && stack[stack.length - 1] === md) return;
           stack.push(md);
-          if (stack.length > UNDO_MAX + 1) stack.shift(); // +1: 현재 상태 포함
+          if (stack.length > UNDO_MAX + 1) stack.shift();
           undoSnapshots.set(tabId, stack);
+          console.log("[undo] snapshot saved, stack:", stack.length);
         } catch {}
       }, 2000);
     };
@@ -618,14 +628,16 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
     const handler = (e: KeyboardEvent) => {
       if (!e.ctrlKey || e.key !== "z" || e.shiftKey) return;
       if (!document.activeElement?.closest(".tiptap")) return;
+      const tabId = mountedTabId.current;
+      const stack = tabId ? undoSnapshots.get(tabId) : null;
+      console.log("[undo] Ctrl+Z pressed", { canUndo: editor.can().undo(), userEdits: userEditCount.current, stackSize: stack?.length, tabId });
 
       // 네이티브 undo가 있고 사용자가 편집한 적 있으면 TipTap에게 위임
       if (editor.can().undo() && userEditCount.current > 0) {
         userEditCount.current--;
-        const tabId = mountedTabId.current;
+        (editor.view as any).__userEditCount = userEditCount.current;
         requestAnimationFrame(() => {
           if (tabId && !editor.can().undo() && userEditCount.current <= 0) {
-            const stack = undoSnapshots.get(tabId);
             if (!stack || stack.length <= 1) {
               useAppStore.getState().markTabClean(tabId);
             }
@@ -635,14 +647,15 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
       }
 
       // 네이티브 undo 비었거나 setContent undo만 남음 → 스냅샷에서 복원
-      const tabId = mountedTabId.current;
-      if (!tabId) return;
-      const stack = undoSnapshots.get(tabId);
-      if (!stack || stack.length <= 1) return;
+      if (!tabId || !stack || stack.length <= 1) {
+        console.log("[undo] no snapshot to restore", { tabId, stackSize: stack?.length });
+        return;
+      }
       e.preventDefault();
       e.stopImmediatePropagation();
       stack.pop();
       const prev = stack[stack.length - 1];
+      console.log("[undo] restoring snapshot", { remaining: stack.length, prevLength: prev?.length, preview: prev?.substring(0, 50) });
       (editor as any).__initializing = true;
       editor.commands.setContent(stripFrontmatter(prev), { contentType: "markdown" } as any);
       requestAnimationFrame(() => { (editor as any).__initializing = false; });
