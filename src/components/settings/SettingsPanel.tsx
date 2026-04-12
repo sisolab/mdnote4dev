@@ -374,6 +374,7 @@ function DocStyleTab({ settings, updateSetting, applyPreset, spacingStyle, setSp
 
   return (
     <div style={{ flex: 1, overflowY: "auto", padding: "12px 16px" }}>
+      <PreviewDocButton />
       {/* 프리셋 */}
       <SectionTitle>프리셋</SectionTitle>
       <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "10px" }}>
@@ -717,35 +718,9 @@ function DesignTab() {
   const { designPresets, setDesignPreset, resetDesign } = useSettingsStore();
   const isDefault = JSON.stringify(designPresets) === JSON.stringify(DEFAULT_DESIGN);
 
-  const openPreviewDoc = () => {
-    const { openTab, tabs } = useAppStore.getState();
-    const existing = tabs.find((t) => t.title === "Design Preview");
-    if (existing) {
-      useAppStore.getState().setActiveTab(existing.id);
-    } else {
-      openTab("", "Design Preview", DESIGN_PREVIEW_MD);
-    }
-  };
-
   return (
     <div style={{ flex: 1, overflowY: "auto", padding: "12px 16px" }}>
-      {/* 예제 문서 열기 */}
-      <button
-        onClick={openPreviewDoc}
-        style={{
-          display: "flex", alignItems: "center", gap: "6px", width: "100%",
-          padding: "8px 12px", fontSize: "12px", fontWeight: 500,
-          borderRadius: "6px", cursor: "pointer",
-          border: "1px solid var(--color-border-input)",
-          background: "var(--color-bg-primary)", color: "var(--color-text-primary)",
-          marginBottom: "16px", transition: "all 0.15s",
-        }}
-        onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--color-accent)"; e.currentTarget.style.color = "var(--color-accent)"; }}
-        onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--color-border-input)"; e.currentTarget.style.color = "var(--color-text-primary)"; }}
-      >
-        <FileText size={14} />
-        디자인 미리보기 문서 열기
-      </button>
+      <PreviewDocButton />
 
       {!isDefault && (
         <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "8px" }}>
@@ -789,6 +764,36 @@ function DesignTab() {
         </div>
       ))}
     </div>
+  );
+}
+
+function PreviewDocButton() {
+  const openPreviewDoc = () => {
+    const { openTab, tabs, setActiveTab } = useAppStore.getState();
+    const existing = tabs.find((t) => t.title === "Design Preview");
+    if (existing) {
+      setActiveTab(existing.id);
+    } else {
+      openTab("", "Design Preview", DESIGN_PREVIEW_MD);
+    }
+  };
+  return (
+    <button
+      onClick={openPreviewDoc}
+      style={{
+        display: "flex", alignItems: "center", gap: "6px", width: "100%",
+        padding: "8px 12px", fontSize: "12px", fontWeight: 500,
+        borderRadius: "6px", cursor: "pointer",
+        border: "1px solid var(--color-border-input)",
+        background: "var(--color-bg-primary)", color: "var(--color-text-primary)",
+        marginBottom: "16px", transition: "all 0.15s",
+      }}
+      onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--color-accent)"; e.currentTarget.style.color = "var(--color-accent)"; }}
+      onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--color-border-input)"; e.currentTarget.style.color = "var(--color-text-primary)"; }}
+    >
+      <FileText size={14} />
+      미리보기 문서 열기
+    </button>
   );
 }
 
@@ -849,6 +854,7 @@ export function SettingsPanel() {
       {activeTab === "settings" ? (
       <>
         <div style={{ flex: 1, overflowY: "auto", padding: "12px 16px" }}>
+          <PreviewDocButton />
 
           {/* 테마 */}
           <SectionTitle>테마</SectionTitle>
