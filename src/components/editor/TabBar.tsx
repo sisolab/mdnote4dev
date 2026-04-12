@@ -678,8 +678,6 @@ export function TabBar() {
       })()}
 
       {closeConfirmId && (() => {
-        const confirmTab = tabs.find((t) => t.id === closeConfirmId);
-        const isTemp = confirmTab && !confirmTab.filePath;
         return (
         <div
           onClick={() => setCloseConfirmId(null)}

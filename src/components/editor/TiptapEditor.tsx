@@ -36,6 +36,7 @@ interface TiptapEditorProps {
 
 // 모듈 레벨: 탭 전환/리마운트해도 유지
 const globalTrashMap = new Map<string, string>(); // assetName → trashPath
+const editorStateCache = new Map<string, any>(); // tabId → ProseMirror EditorState
 
 function stripFrontmatter(md: string): string {
   return md.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, "");
@@ -186,6 +187,19 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
     },
     onCreate: ({ editor: e }) => {
       (e as any).__initializing = true;
+
+      // 캐시된 EditorState가 있으면 복원 (undo 히스토리 + 커서 보존)
+      const currentTabId = useAppStore.getState().activeTabId;
+      const cachedState = currentTabId ? editorStateCache.get(currentTabId) : null;
+      if (cachedState) {
+        try {
+          e.view.updateState(cachedState);
+          editorStateCache.delete(currentTabId!);
+          requestAnimationFrame(() => { (e as any).__initializing = false; });
+          return;
+        } catch {}
+      }
+
       e.commands.setContent(stripFrontmatter(content), { contentType: "markdown" } as any);
       // .assets/ 링크를 fileAttachment 노드로 변환 (이미지 제외)
       const IMAGE_EXTS = /\.(png|jpg|jpeg|gif|webp|svg)$/i;
@@ -511,7 +525,10 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
       try {
         const store = useAppStore.getState();
         const tab = store.tabs.find((t) => t.id === store.activeTabId);
-        if (!tab?.isDirty) return;
+        if (!tab) return;
+        // EditorState 캐시 (undo 히스토리 + 커서 위치 보존)
+        editorStateCache.set(tab.id, editor.state);
+        if (!tab.isDirty) return;
         let body = editor.getMarkdown();
         body = body.replace(/http:\/\/asset\.localhost\/[^)"\s]*?\.assets(?:[/\\]|%5C|%2F)([^)"\s?]+)(?:\?[^)"\s]*)?/gi,
           (_m: string, f: string) => `./.assets/${decodeURIComponent(f)}`);
