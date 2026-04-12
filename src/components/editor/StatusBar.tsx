@@ -278,7 +278,7 @@ export function StatusBar({ filePath, fileSize, tags: propTags, onAddTag, onRemo
       <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "4px", flexShrink: 0 }}>
         <StatusDropdown
           label={settings.widthMode === "fixed" ? "고정폭" : "가변폭"}
-          title="폭 모드"
+          title="페이지 폭 방식"
           items={[
             { label: "고정폭", active: settings.widthMode === "fixed", isDefault: true, onClick: () => updateSetting("widthMode", "fixed") },
             { label: "가변폭", active: settings.widthMode === "fluid", onClick: () => updateSetting("widthMode", "fluid") },
@@ -287,7 +287,7 @@ export function StatusBar({ filePath, fileSize, tags: propTags, onAddTag, onRemo
         <div style={{ width: "1px", height: "14px", background: "var(--color-border-light)", flexShrink: 0 }} />
         <StatusDropdown
           label={settings.pageAlign === "center" ? "가운데" : "왼쪽"}
-          title="정렬"
+          title="페이지 정렬"
           items={[
             { label: "가운데 정렬", active: settings.pageAlign === "center", isDefault: true, onClick: () => updateSetting("pageAlign", "center") },
             { label: "왼쪽 정렬", active: settings.pageAlign === "left", onClick: () => updateSetting("pageAlign", "left") },
@@ -328,7 +328,7 @@ export function StatusBar({ filePath, fileSize, tags: propTags, onAddTag, onRemo
                   borderRadius: "6px", boxShadow: "0 4px 12px rgba(0,0,0,0.12)", padding: "4px", minWidth: "120px",
                 }}>
                   <div style={{ padding: "4px 10px 6px", fontSize: "10px", color: "var(--color-text-tertiary)", fontWeight: 600 }}>
-                    탭 크기
+                    코드블록 탭 크기
                   </div>
                   {([2, 4] as const).map((n) => (
                     <button key={n} onClick={(e) => { e.stopPropagation(); setTabSize(n); setTabOpen(false); }} style={{
