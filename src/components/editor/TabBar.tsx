@@ -675,7 +675,7 @@ export function TabBar() {
               </button>
               {!isTemp && (
               <button
-                onClick={() => { closeTab(closeConfirmId); setCloseConfirmId(null); }}
+                onClick={() => { const id = closeConfirmId; setCloseConfirmId(null); requestAnimationFrame(() => closeTab(id)); }}
                 style={{
                   padding: "6px 16px", fontSize: "12px", fontWeight: 600,
                   background: "var(--color-bg-hover)", color: "var(--color-text-primary)",
@@ -694,7 +694,7 @@ export function TabBar() {
                   requestAnimationFrame(() => {
                     window.dispatchEvent(new KeyboardEvent("keydown", { ctrlKey: true, key: "s", bubbles: true }));
                     if (!isTemp) {
-                      const onSaved = () => { closeTab(tabId); window.removeEventListener("manual-save", onSaved); };
+                      const onSaved = () => { requestAnimationFrame(() => closeTab(tabId)); window.removeEventListener("manual-save", onSaved); };
                       window.addEventListener("manual-save", onSaved);
                     }
                   });
