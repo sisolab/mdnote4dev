@@ -15,7 +15,7 @@
 - [ ] 마크다운 호환 — DB 없이 문서를 열면 일반 마크다운 테이블로 fallback 표시
 
 ### 개선
-- [ ] 탭 전환 시 에디터 undo 히스토리 보존 — EditorState 캐시 접근 실패, 다른 방법 조사 필요
+- [ ] 탭 전환 시 에디터 undo 히스토리 보존 — 여러 접근 실패. 상세: [ISSUE-undo-across-tabs.md](./ISSUE-undo-across-tabs.md)
 
 ### 기타
 - [ ] 매뉴얼 버튼 — 앱 사용법 안내 페이지/문서

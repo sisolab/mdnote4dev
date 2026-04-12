@@ -36,8 +36,6 @@ interface TiptapEditorProps {
 
 // 모듈 레벨: 탭 전환/리마운트해도 유지
 const globalTrashMap = new Map<string, string>(); // assetName → trashPath
-const undoSnapshots = new Map<string, string[]>(); // tabId → markdown snapshots (max 10)
-const UNDO_MAX = 10;
 
 function stripFrontmatter(md: string): string {
   return md.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, "");
@@ -48,7 +46,6 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
   const contentRef = useRef(content);
   contentRef.current = content;
   const mountedTabId = useRef(useAppStore.getState().activeTabId);
-  const userEditCount = useRef(0); // 사용자 편집 횟수 (setContent 제외)
   const { settings, showSettings, codeFontFamily, designPresets } = useSettingsStore();
 
   const filePathRef = useRef(filePath);
@@ -110,13 +107,6 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
         return true;
       },
       handleKeyDown: (view, event) => {
-        // Ctrl+Z: 사용자 편집 없으면 ProseMirror undo 차단 (setContent undo 방지)
-        if (event.ctrlKey && event.key === "z" && !event.shiftKey) {
-          if (!(view as any).__userEditCount || (view as any).__userEditCount <= 0) {
-            return true; // ProseMirror에게 "처리했음"이라고 알림 → undo 안 함
-          }
-        }
-
         // Ctrl+1~5: 제목/일반텍스트
         if (event.ctrlKey && !event.altKey && !event.shiftKey && ["1","2","3","4","5"].includes(event.key)) {
           event.preventDefault();
@@ -270,14 +260,6 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
             img.setAttribute("src", convertFileSrc(absPath) + `?t=${Date.now()}`);
           }
         });
-      }
-      // 초기 스냅샷 (content 로드 완료 후)
-      const initTabId = useAppStore.getState().activeTabId;
-      if (initTabId && !undoSnapshots.has(initTabId)) {
-        const initMd = e.getMarkdown();
-        if (initMd.trim()) {
-          undoSnapshots.set(initTabId, [initMd]);
-            }
       }
       requestAnimationFrame(() => { (e as any).__initializing = false; });
     },
@@ -514,8 +496,6 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
     if (!editor) return;
     const handler = () => {
       if ((editor as any).__initializing) return;
-      userEditCount.current++;
-      (editor.view as any).__userEditCount = userEditCount.current;
       const store = useAppStore.getState();
       const tab = store.tabs.find((t) => t.id === store.activeTabId);
       if (tab && !tab.isDirty) {
@@ -524,32 +504,6 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
     };
     editor.on("update", handler);
     return () => { editor.off("update", handler); };
-  }, [editor]);
-
-  // undo 스냅샷: 편집할 때마다 디바운스로 마크다운 저장 (탭 전환 후 undo용)
-  const snapshotTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
-  useEffect(() => {
-    if (!editor) return;
-    const tabId = mountedTabId.current;
-    if (!tabId) return;
-    // 초기 스냅샷은 onCreate에서 설정 (content가 로드된 후)
-    const handler = () => {
-      if ((editor as any).__initializing) return;
-      clearTimeout(snapshotTimer.current);
-      snapshotTimer.current = setTimeout(() => {
-        try {
-          const md = editor.getMarkdown();
-          const stack = undoSnapshots.get(tabId) ?? [];
-          // 마지막 스냅샷과 같으면 스킵
-          if (stack.length > 0 && stack[stack.length - 1] === md) return;
-          stack.push(md);
-          if (stack.length > UNDO_MAX + 1) stack.shift();
-          undoSnapshots.set(tabId, stack);
-        } catch {}
-      }, 2000);
-    };
-    editor.on("update", handler);
-    return () => { editor.off("update", handler); clearTimeout(snapshotTimer.current); };
   }, [editor]);
 
   // 포커스 잃을 때 에디터 content → 탭에 동기화 (탭 전환 직전)
@@ -625,46 +579,6 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
     return () => window.removeEventListener("keydown", handler);
   }, [handleSave]);
 
-  // Ctrl+Z: 네이티브 undo 비었으면 스냅샷에서 복원 + 원본 복귀 시 isDirty 해제
-  useEffect(() => {
-    if (!editor) return;
-    const handler = (e: KeyboardEvent) => {
-      if (!e.ctrlKey || e.key !== "z" || e.shiftKey) return;
-      if (!document.activeElement?.closest(".tiptap")) return;
-      const tabId = mountedTabId.current;
-      const stack = tabId ? undoSnapshots.get(tabId) : null;
-
-      // 네이티브 undo가 있고 사용자가 편집한 적 있으면 TipTap에게 위임
-      if (editor.can().undo() && userEditCount.current > 0) {
-        userEditCount.current--;
-        (editor.view as any).__userEditCount = userEditCount.current;
-        requestAnimationFrame(() => {
-          if (tabId && !editor.can().undo() && userEditCount.current <= 0) {
-            if (!stack || stack.length <= 1) {
-              useAppStore.getState().markTabClean(tabId);
-            }
-          }
-        });
-        return; // TipTap이 처리
-      }
-
-      // 네이티브 undo 비었거나 setContent undo만 남음 → 스냅샷에서 복원
-      if (!tabId || !stack || stack.length <= 1) return;
-      e.preventDefault();
-      e.stopImmediatePropagation();
-      stack.pop();
-      const prev = stack[stack.length - 1];
-      (editor as any).__initializing = true;
-      editor.commands.setContent(prev, { contentType: "markdown" } as any);
-      requestAnimationFrame(() => { (editor as any).__initializing = false; });
-      if (stack.length <= 1) {
-        useAppStore.getState().markTabClean(tabId);
-      }
-    };
-    // capture phase로 ProseMirror보다 먼저 실행
-    window.addEventListener("keydown", handler, true);
-    return () => window.removeEventListener("keydown", handler, true);
-  }, [editor]);
 
   if (!editor) return null;
 
