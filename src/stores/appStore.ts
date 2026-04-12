@@ -223,9 +223,13 @@ export const useAppStore = create<AppState>()(
 
       openTab: (filePath, title, content) =>
         set((state) => {
+          // 최근 문서 리스트 갱신: 맨 앞으로 이동
+          const recentFiles = filePath
+            ? [filePath, ...state.recentFiles.filter((p) => p !== filePath)].slice(0, 50)
+            : state.recentFiles;
           const existing = state.tabs.find((t) => t.filePath === filePath);
           if (existing) {
-            return { activeTabId: existing.id, selectedFile: filePath, fileContent: content };
+            return { activeTabId: existing.id, selectedFile: filePath, fileContent: content, recentFiles };
           }
           const id = `tab-${++tabCounter}`;
           const tab: Tab = { id, title, filePath, content, isDirty: false };
@@ -234,6 +238,7 @@ export const useAppStore = create<AppState>()(
             activeTabId: id,
             selectedFile: filePath,
             fileContent: content,
+            recentFiles,
           };
         }),
 

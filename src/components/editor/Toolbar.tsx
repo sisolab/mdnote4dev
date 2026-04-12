@@ -443,6 +443,8 @@ export function Toolbar({ editor, rawMode, onToggleRawMode }: ToolbarProps) {
       {/* 오른쪽: 저장 + 즐겨찾기 */}
       <div style={{ flex: 1, minWidth: "8px" }} />
 
+      <Divider />
+
       <ToolbarButton
         onClick={() => onToggleRawMode?.()}
         active={rawMode}
@@ -468,8 +470,6 @@ export function Toolbar({ editor, rawMode, onToggleRawMode }: ToolbarProps) {
         }
       </ToolbarButton>
       )}
-
-      <Divider />
 
       <ToolbarDropdown
         icon={<Star size={15} style={isFavorite ? { color: "#f5c518", fill: "#f5c518" } : {}} />}
