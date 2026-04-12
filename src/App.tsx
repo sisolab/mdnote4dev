@@ -419,7 +419,7 @@ function App() {
             <div style={{ marginBottom: "20px", padding: "8px 12px", borderRadius: "6px", background: "var(--color-bg-hover)" }}>
               {useAppStore.getState().tabs.filter((t) =>
                 t.type !== "tag-explorer" && t.type !== "attachment-explorer" &&
-                ((!t.filePath && t.content) || (t.filePath && t.isDirty))
+                (t.isDirty || (!t.filePath && t.content))
               ).map((t) => (
                 <div key={t.id} style={{ fontSize: "12px", color: "var(--color-text-primary)", fontStyle: t.filePath ? "normal" : "italic", padding: "2px 0" }}>
                   • {t.title.replace(/\.(md|markdown)$/i, "")}{!t.filePath ? " (임시)" : ""}
