@@ -7,10 +7,13 @@ import {
   DEFAULT_SETTINGS,
   SAVE_MODE_OPTIONS,
   SPACING_STYLES,
+  DESIGN_OPTIONS,
+  DEFAULT_DESIGN,
   getFontFamily,
   type EditorSettings,
   type SaveMode,
   type SpacingStyleName,
+  type DesignPresets,
 } from "@/stores/settingsStore";
 import { Sun, Moon, BookOpen, CloudMoon, Minimize2, AlignCenter, Maximize2, SlidersHorizontal, RotateCcw, Type, X } from "lucide-react";
 import { FontPreview } from "./FontPreview";
@@ -547,6 +550,58 @@ function SaveModeSetting() {
   );
 }
 
+const DESIGN_SECTION_LABELS: Record<keyof DesignPresets, string> = {
+  h1: "제목 1 (H1)", h2: "제목 2 (H2)", h3: "제목 3 (H3)",
+  blockquote: "인용문", codeBlock: "코드 블록", hr: "수평선",
+};
+
+function DesignTab() {
+  const { designPresets, setDesignPreset, resetDesign } = useSettingsStore();
+  const isDefault = JSON.stringify(designPresets) === JSON.stringify(DEFAULT_DESIGN);
+
+  return (
+    <div style={{ flex: 1, overflowY: "auto", padding: "12px 16px" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
+        <SectionTitle>요소 디자인</SectionTitle>
+        {!isDefault && (
+          <button onClick={resetDesign} style={{ fontSize: "11px", color: "var(--color-text-tertiary)", background: "transparent", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: "3px" }}>
+            <RotateCcw size={10} /> 기본으로 초기화
+          </button>
+        )}
+      </div>
+
+      {(Object.keys(DESIGN_OPTIONS) as (keyof DesignPresets)[]).map((key) => (
+        <div key={key} style={{ marginBottom: "16px" }}>
+          <div style={{ fontSize: "12px", fontWeight: 600, color: "var(--color-text-primary)", marginBottom: "8px" }}>
+            {DESIGN_SECTION_LABELS[key]}
+          </div>
+          <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+            {DESIGN_OPTIONS[key].map((opt) => {
+              const active = designPresets[key] === opt.value;
+              return (
+                <button
+                  key={opt.value}
+                  onClick={() => setDesignPreset(key, opt.value)}
+                  style={{
+                    padding: "6px 14px", fontSize: "11px", fontWeight: active ? 600 : 400,
+                    borderRadius: "6px", cursor: "pointer",
+                    border: active ? "1.5px solid var(--color-accent)" : "1px solid var(--color-border-input)",
+                    background: active ? "var(--color-accent-subtle)" : "var(--color-bg-primary)",
+                    color: active ? "var(--color-accent)" : "var(--color-text-secondary)",
+                    transition: "all 0.15s",
+                  }}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /* ── 메인 패널 ── */
 
 export function SettingsPanel() {
@@ -554,7 +609,7 @@ export function SettingsPanel() {
     useSettingsStore();
 
   const [showFontPreview, setShowFontPreview] = useState(false);
-  const [activeTab, setActiveTab] = useState<"settings" | "docstyle">("settings");
+  const [activeTab, setActiveTab] = useState<"settings" | "docstyle" | "design">("settings");
 
   // ESC로 닫기 (글꼴 미리보기가 열려있으면 무시)
   useEffect(() => {
@@ -576,7 +631,7 @@ export function SettingsPanel() {
       {/* 헤더 */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderBottom: "1px solid var(--color-border-light)" }}>
         <div style={{ display: "flex", gap: "4px" }}>
-          {([["settings", "설정"], ["docstyle", "스타일"]] as const).map(([tab, label]) => (
+          {([["settings", "설정"], ["docstyle", "스타일"], ["design", "디자인"]] as const).map(([tab, label]) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab as any)}
@@ -697,8 +752,10 @@ export function SettingsPanel() {
           </button>
         </div>
       </>
-      ) : (
+      ) : activeTab === "docstyle" ? (
         <DocStyleTab settings={settings} updateSetting={updateSetting} applyPreset={applyPreset} spacingStyle={spacingStyle} setSpacingStyle={setSpacingStyle} />
+      ) : (
+        <DesignTab />
       )}
 
       {showFontPreview && (

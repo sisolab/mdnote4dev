@@ -45,7 +45,7 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
   const lastMarkdown = useRef(content);
   const contentRef = useRef(content);
   contentRef.current = content;
-  const { settings, showSettings, codeFontFamily } = useSettingsStore();
+  const { settings, showSettings, codeFontFamily, designPresets } = useSettingsStore();
 
   const filePathRef = useRef(filePath);
   filePathRef.current = filePath;
@@ -576,7 +576,14 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
   } as React.CSSProperties;
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full"
+      data-design-h1={designPresets.h1}
+      data-design-h2={designPresets.h2}
+      data-design-h3={designPresets.h3}
+      data-design-blockquote={designPresets.blockquote}
+      data-design-codeblock={designPresets.codeBlock}
+      data-design-hr={designPresets.hr}
+    >
       <Toolbar editor={editor} rawMode={rawMode} onToggleRawMode={() => setRawMode(!rawMode)} />
       <ImageToolbar editor={editor} />
       <TableToolbar editor={editor} />

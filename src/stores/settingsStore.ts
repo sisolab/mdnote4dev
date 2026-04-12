@@ -210,6 +210,55 @@ export const SPACING_STYLES: Record<SpacingStyleName, { label: string; values: S
   },
 };
 
+export interface DesignPresets {
+  h1: string;
+  h2: string;
+  h3: string;
+  blockquote: string;
+  codeBlock: string;
+  hr: string;
+}
+
+export const DESIGN_OPTIONS: Record<keyof DesignPresets, { value: string; label: string }[]> = {
+  h1: [
+    { value: "default", label: "기본" },
+    { value: "underline", label: "하단선" },
+    { value: "background", label: "배경" },
+    { value: "accent-left", label: "강조선" },
+  ],
+  h2: [
+    { value: "default", label: "기본" },
+    { value: "underline", label: "하단선" },
+    { value: "dot", label: "강조 점" },
+  ],
+  h3: [
+    { value: "default", label: "기본" },
+    { value: "accent-left", label: "강조선" },
+    { value: "muted", label: "연한 강조" },
+  ],
+  blockquote: [
+    { value: "default", label: "기본" },
+    { value: "background", label: "배경" },
+    { value: "quote-mark", label: "큰따옴표" },
+  ],
+  codeBlock: [
+    { value: "default", label: "다크" },
+    { value: "light", label: "라이트" },
+    { value: "bordered", label: "테두리" },
+  ],
+  hr: [
+    { value: "default", label: "기본" },
+    { value: "dotted", label: "점선" },
+    { value: "thick", label: "두꺼운" },
+    { value: "dots", label: "가운데 점" },
+  ],
+};
+
+export const DEFAULT_DESIGN: DesignPresets = {
+  h1: "default", h2: "default", h3: "default",
+  blockquote: "default", codeBlock: "default", hr: "default",
+};
+
 export interface SavedPreset {
   name: string;
   settings: EditorSettings;
@@ -227,6 +276,9 @@ interface SettingsState {
   codeFontFamily: string;
   saveMode: SaveMode;
   savedPresets: SavedPreset[];
+  designPresets: DesignPresets;
+  setDesignPreset: <K extends keyof DesignPresets>(key: K, value: string) => void;
+  resetDesign: () => void;
   updateSetting: <K extends keyof EditorSettings>(key: K, value: EditorSettings[K]) => void;
   applyPreset: (preset: EditorSettings) => void;
   resetToDefault: () => void;
@@ -255,6 +307,9 @@ export const useSettingsStore = create<SettingsState>()(
       codeFontFamily: "cascadia",
       saveMode: "manual" as SaveMode,
       savedPresets: PRESETS.map((p) => ({ name: p.name, settings: p.settings, builtIn: true })) as SavedPreset[],
+      designPresets: { ...DEFAULT_DESIGN },
+      setDesignPreset: (key, value) => set((state) => ({ designPresets: { ...state.designPresets, [key]: value } })),
+      resetDesign: () => set({ designPresets: { ...DEFAULT_DESIGN } }),
 
       updateSetting: (key, value) =>
         set((state) => ({
@@ -296,6 +351,7 @@ export const useSettingsStore = create<SettingsState>()(
         codeFontFamily: state.codeFontFamily,
         saveMode: state.saveMode,
         savedPresets: state.savedPresets,
+        designPresets: state.designPresets,
       }),
     }
   )
