@@ -303,6 +303,21 @@ export function Toolbar({ editor }: ToolbarProps) {
     return () => window.removeEventListener("manual-save", handler);
   }, []);
 
+  // 툴바 폭에 따라 섹션 숨기기
+  const [toolbarWidth, setToolbarWidth] = useState(9999);
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) setToolbarWidth(entry.contentRect.width);
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+  const showLists = toolbarWidth > 620;
+  const showFormat = toolbarWidth > 520;
+  const showHeadings = toolbarWidth > 420;
+
   const handleHover = useCallback((el: HTMLButtonElement | null) => {
     if (!el || !containerRef.current) {
       setHighlight(null);
@@ -334,6 +349,7 @@ export function Toolbar({ editor }: ToolbarProps) {
         zIndex: 0,
       }} />
 
+      {showHeadings && (<>
       <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} active={editor.isActive("heading", { level: 1 })} title="제목 1 (Ctrl+1)" onHover={handleHover}>
         <span className="text-[12px] font-bold">H1</span>
       </ToolbarButton>
@@ -349,9 +365,10 @@ export function Toolbar({ editor }: ToolbarProps) {
       <ToolbarButton onClick={() => editor.chain().focus().setParagraph().run()} active={!editor.isActive("heading")} title="일반 텍스트 (Ctrl+5)" onHover={handleHover}>
         <span className="text-[12px] font-bold">A</span>
       </ToolbarButton>
-
       <Divider />
+      </>)}
 
+      {showFormat && (<>
       <ToolbarButton onClick={() => editor.chain().focus().toggleBold().run()} active={editor.isActive("bold")} title="굵게 (Ctrl+B)" onHover={handleHover}>
         <Bold size={15} />
       </ToolbarButton>
@@ -364,9 +381,10 @@ export function Toolbar({ editor }: ToolbarProps) {
       <ToolbarButton onClick={() => editor.chain().focus().toggleCode().run()} active={editor.isActive("code")} title="인라인 코드" onHover={handleHover}>
         <Code size={15} />
       </ToolbarButton>
-
       <Divider />
+      </>)}
 
+      {showLists && (<>
       <ToolbarButton onClick={() => editor.chain().focus().toggleBulletList().run()} active={editor.isActive("bulletList")} title="글머리 기호 목록" onHover={handleHover}>
         <List size={15} />
       </ToolbarButton>
@@ -376,8 +394,8 @@ export function Toolbar({ editor }: ToolbarProps) {
       <ToolbarButton onClick={() => editor.chain().focus().toggleTaskList().run()} active={editor.isActive("taskList")} title="체크리스트" onHover={handleHover}>
         <ListChecks size={15} />
       </ToolbarButton>
-
       <Divider />
+      </>)}
 
       <ToolbarButton onClick={() => editor.chain().focus().toggleBlockquote().run()} active={editor.isActive("blockquote")} title="인용문" onHover={handleHover}>
         <Quote size={15} />
