@@ -21,6 +21,7 @@ import { saveImageToAssets, getAssetsDir } from "@/utils/imageUtils";
 import { moveToTrash, findFavoriteRoot } from "@/utils/trashUtils";
 import { rename, exists, stat } from "@tauri-apps/plugin-fs";
 import { Code } from "@tiptap/extension-code";
+import { markInputRule } from "@tiptap/core";
 import { useAppStore } from "@/stores/appStore";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { Toolbar } from "./Toolbar";
@@ -63,12 +64,15 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
         },
       }),
       Code.extend({
+        inclusive: false,
         exitable: false,
-        addInputRules() { return []; },
-        addKeyboardShortcuts() {
-          return {
-            "Mod-e": () => this.editor.commands.toggleCode(),
-          };
+        addInputRules() {
+          return [
+            markInputRule({
+              find: /(?:`)([^`]+)(?:`)$/,
+              type: this.type,
+            }),
+          ];
         },
       }),
       CodeBlockLowlight.extend({
