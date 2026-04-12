@@ -719,7 +719,14 @@ function FontTab({ currentFont, currentCodeFont, onApply, onApplyCodeFont }: {
   currentFont: string; currentCodeFont: string;
   onApply: (v: string) => void; onApplyCodeFont: (v: string) => void;
 }) {
-  const [selectedCategory, setSelectedCategory] = useState("popular");
+  const [selectedCategory, setSelectedCategory] = useState(() => {
+    // 현재 적용된 폰트가 속한 언어 카테고리 자동 선택
+    if (currentFont === "system") return "popular";
+    for (const cat of CATEGORIES) {
+      if (cat.fonts.some((f) => f.value === currentFont)) return cat.id;
+    }
+    return "popular";
+  });
   const [selectedFont, setSelectedFont] = useState<FontItem | null>(null);
   const [selectedCodeFont, setSelectedCodeFont] = useState(currentCodeFont);
   const [loadedFonts, setLoadedFonts] = useState<Set<string>>(new Set());
