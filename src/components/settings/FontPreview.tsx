@@ -479,8 +479,8 @@ export function FontPreview({
               disabled={!selectedFont && selectedCodeFont === currentCodeFont}
               style={{
                 padding: "6px 16px", fontSize: "12px", fontWeight: 600,
-                background: (selectedFont || selectedCodeFont !== currentCodeFont) ? "var(--color-accent)" : "var(--color-bg-hover)",
-                color: (selectedFont || selectedCodeFont !== currentCodeFont) ? "#fff" : "var(--color-text-muted)",
+                background: (selectedFont || selectedCodeFont !== currentCodeFont) ? "var(--color-accent)" : "var(--color-bg-active)",
+                color: (selectedFont || selectedCodeFont !== currentCodeFont) ? "#fff" : "var(--color-text-tertiary)",
                 border: "none", borderRadius: "6px",
                 cursor: (selectedFont || selectedCodeFont !== currentCodeFont) ? "pointer" : "default",
               }}

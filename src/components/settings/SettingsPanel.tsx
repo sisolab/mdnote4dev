@@ -38,7 +38,7 @@ function ResetButton({ onClick, visible }: { onClick: () => void; visible: boole
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <h3 style={{ fontSize: "11px", fontWeight: 600, color: "#888", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "12px" }}>
+    <h3 style={{ fontSize: "11px", fontWeight: 600, color: "var(--color-text-tertiary)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "12px" }}>
       {children}
     </h3>
   );
@@ -283,7 +283,7 @@ function SpacingSliders({ spacingStyle, setSpacingStyle }: { spacingStyle: Spaci
           padding: "5px 12px", fontSize: "11px", fontWeight: isCustom ? 600 : 400,
           borderRadius: "5px",
           border: isCustom ? "1.5px solid #888" : "1px solid var(--color-border-medium)",
-          background: isCustom ? "rgba(136,136,136,0.08)" : "var(--color-bg-primary)",
+          background: isCustom ? "var(--color-bg-hover)" : "var(--color-bg-primary)",
           color: isCustom ? "var(--color-text-primary)" : "var(--color-text-tertiary)",
         }}>
           커스텀
@@ -333,7 +333,7 @@ function SectionPresetButtons({ keys, settings, color, onApply }: {
         padding: "5px 12px", fontSize: "11px", fontWeight: isCustom ? 600 : 400,
         borderRadius: "5px",
         border: isCustom ? "1.5px solid #888" : "1px solid var(--color-border-medium)",
-        background: isCustom ? "rgba(136,136,136,0.08)" : "var(--color-bg-primary)",
+        background: isCustom ? "var(--color-bg-hover)" : "var(--color-bg-primary)",
         color: isCustom ? "var(--color-text-primary)" : "var(--color-text-tertiary)",
       }}>
         커스텀
@@ -439,7 +439,7 @@ function DocStyleTab({ settings, updateSetting, applyPreset, spacingStyle, setSp
             padding: "5px 14px", fontSize: "12px", fontWeight: 600,
             borderRadius: "6px", border: "none", cursor: newPresetName.trim() ? "pointer" : "default",
             background: newPresetName.trim() ? "var(--color-accent)" : "var(--color-bg-hover)",
-            color: newPresetName.trim() ? "#fff" : "var(--color-text-muted)",
+            color: newPresetName.trim() ? "#fff" : "var(--color-text-tertiary)",
             transition: "all 0.15s",
           }}
         >
