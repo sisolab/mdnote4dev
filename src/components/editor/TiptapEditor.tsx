@@ -46,6 +46,8 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
   const lastMarkdown = useRef(content);
   const contentRef = useRef(content);
   contentRef.current = content;
+  // 마운트 시 탭 ID 캡처 (blur 시점에 activeTabId가 바뀌어있을 수 있으므로)
+  const mountedTabId = useRef(useAppStore.getState().activeTabId);
   const { settings, showSettings, codeFontFamily, designPresets } = useSettingsStore();
 
   const filePathRef = useRef(filePath);
@@ -523,8 +525,9 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
     if (!editor) return;
     const syncToTab = () => {
       try {
+        const tabId = mountedTabId.current;
         const store = useAppStore.getState();
-        const tab = store.tabs.find((t) => t.id === store.activeTabId);
+        const tab = tabId ? store.tabs.find((t) => t.id === tabId) : null;
         if (!tab) return;
         // EditorState 캐시 (undo 히스토리 + 커서 위치 보존)
         editorStateCache.set(tab.id, editor.state);
