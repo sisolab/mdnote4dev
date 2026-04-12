@@ -655,7 +655,7 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
       stack.pop();
       const prev = stack[stack.length - 1];
       (editor as any).__initializing = true;
-      editor.commands.setContent(stripFrontmatter(prev), { contentType: "markdown" } as any);
+      editor.commands.setContent(prev, { contentType: "markdown" } as any);
       requestAnimationFrame(() => { (editor as any).__initializing = false; });
       if (stack.length <= 1) {
         useAppStore.getState().markTabClean(tabId);
