@@ -415,6 +415,18 @@ body {
   padding-left: 0.6rem;
 }
 
+[data-design-h1="gradient-line"] .tiptap h1 {
+  padding-bottom: 0.4rem;
+  border-bottom: 3px solid transparent;
+  border-image: linear-gradient(90deg, var(--color-accent), transparent) 1;
+}
+[data-design-h1="thin-large"] .tiptap h1 {
+  border-left: 4px solid var(--color-accent);
+  padding-left: 0.6rem;
+  background: linear-gradient(90deg, var(--color-accent-subtle), transparent 70%);
+  border-radius: 0 4px 4px 0;
+}
+
 /* ── 디자인 프리셋: H2 ── */
 [data-design-h2="underline"] .tiptap h2 {
   padding-bottom: 0.2rem;
@@ -425,6 +437,16 @@ body {
   padding-left: 0.5rem;
 }
 
+[data-design-h2="highlight"] .tiptap h2 {
+  background: linear-gradient(transparent 60%, var(--color-accent-subtle) 60%);
+  display: inline;
+}
+[data-design-h2="uppercase"] .tiptap h2 {
+  background: var(--color-bg-secondary);
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+}
+
 /* ── 디자인 프리셋: H3 ── */
 [data-design-h3="accent-left"] .tiptap h3 {
   border-left: 3px solid var(--color-accent);
@@ -433,6 +455,22 @@ body {
 [data-design-h3="muted"] .tiptap h3 {
   color: var(--color-text-secondary);
   font-style: italic;
+}
+
+[data-design-h3="badge"] .tiptap h3::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 2px;
+  background: var(--color-accent);
+  margin-right: 0.4rem;
+  vertical-align: middle;
+}
+[data-design-h3="dotted"] .tiptap h3 {
+  padding-bottom: 0.15rem;
+  border-bottom: 2px dotted var(--color-border-medium);
+  display: inline-block;
 }
 
 /* ── 디자인 프리셋: 인용문 ── */
@@ -458,6 +496,21 @@ body {
   line-height: 1;
 }
 
+[data-design-blockquote="card"] .tiptap blockquote {
+  border-left: none;
+  background: var(--color-bg-secondary);
+  padding: 0.8rem 1rem;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+[data-design-blockquote="serif"] .tiptap blockquote {
+  border-left: none;
+  font-style: italic;
+  font-size: 1.05em;
+  padding-left: 1.5rem;
+  opacity: 0.85;
+}
+
 /* ── 디자인 프리셋: 코드블록 ── */
 [data-design-codeblock="light"] .tiptap pre {
   background: var(--color-bg-secondary);
@@ -472,6 +525,34 @@ body {
   border-radius: 6px;
 }
 [data-design-codeblock="bordered"] .tiptap pre code { color: inherit; }
+
+[data-design-codeblock="terminal"] .tiptap pre {
+  background: #0c0c0c;
+  color: #33ff33;
+  border-radius: 6px;
+  font-family: "Cascadia Code", "Consolas", monospace;
+}
+[data-design-codeblock="terminal"] .tiptap pre code { color: inherit; }
+[data-design-codeblock="header"] .tiptap pre {
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-light);
+  border-radius: 8px;
+  padding-top: calc(var(--editor-code-padding, 12px) + 24px);
+  position: relative;
+}
+[data-design-codeblock="header"] .tiptap pre::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 24px;
+  background: var(--color-bg-hover);
+  border-radius: 7px 7px 0 0;
+  border-bottom: 1px solid var(--color-border-light);
+}
+[data-design-codeblock="header"] .tiptap pre code { color: inherit; }
 
 /* ── 디자인 프리셋: 수평선 ── */
 [data-design-hr="dotted"] .tiptap hr {
@@ -491,4 +572,14 @@ body {
   font-size: 1.5rem;
   letter-spacing: 0.5rem;
   color: var(--color-text-light);
+}
+[data-design-hr="gradient"] .tiptap hr {
+  border: none;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--color-accent), transparent);
+}
+[data-design-hr="fade"] .tiptap hr {
+  border: none;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 5%, var(--color-border-medium) 50%, transparent 95%);
 }

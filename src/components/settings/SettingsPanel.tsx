@@ -560,6 +560,8 @@ const DESIGN_SECTIONS: { key: keyof DesignPresets; label: string; preview: (styl
         underline: { paddingBottom: "4px", borderBottom: "2px solid var(--color-border-medium)" },
         background: { background: "var(--color-bg-secondary)", padding: "4px 8px", borderRadius: "4px" },
         "accent-left": { borderLeft: "4px solid var(--color-accent)", paddingLeft: "8px" },
+        "gradient-line": { paddingBottom: "5px", borderBottom: "3px solid transparent", borderImage: "linear-gradient(90deg, var(--color-accent), transparent) 1" },
+        "thin-large": { borderLeft: "4px solid var(--color-accent)", paddingLeft: "8px", background: "linear-gradient(90deg, var(--color-accent-subtle), transparent 70%)", borderRadius: "0 4px 4px 0" },
       };
       return <div style={{ ...base, ...variants[style] }}>Research Notes</div>;
     },
@@ -571,6 +573,8 @@ const DESIGN_SECTIONS: { key: keyof DesignPresets; label: string; preview: (styl
       const variants: Record<string, React.CSSProperties> = {
         underline: { paddingBottom: "3px", borderBottom: "1px solid var(--color-border-light)" },
         "accent-left": { borderLeft: "3px solid var(--color-accent)", paddingLeft: "6px" },
+        highlight: { background: "linear-gradient(transparent 60%, var(--color-accent-subtle) 60%)", display: "inline" },
+        uppercase: { background: "var(--color-bg-secondary)", padding: "3px 6px", borderRadius: "4px" },
       };
       return <div style={{ ...base, ...variants[style] }}>프로젝트 개요</div>;
     },
@@ -582,8 +586,10 @@ const DESIGN_SECTIONS: { key: keyof DesignPresets; label: string; preview: (styl
       const variants: Record<string, React.CSSProperties> = {
         "accent-left": { borderLeft: "3px solid var(--color-accent)", paddingLeft: "6px" },
         muted: { color: "var(--color-text-secondary)", fontStyle: "italic" },
+        badge: {},
+        dotted: { paddingBottom: "2px", borderBottom: "2px dotted var(--color-border-medium)", display: "inline-block" },
       };
-      return <div style={{ ...base, ...variants[style] }}>핵심 기능</div>;
+      return <div style={{ ...base, ...variants[style] }}>{style === "badge" && <span style={{ display: "inline-block", width: "6px", height: "6px", borderRadius: "2px", background: "var(--color-accent)", marginRight: "6px", verticalAlign: "middle" }} />}핵심 기능</div>;
     },
   },
   {
@@ -592,6 +598,8 @@ const DESIGN_SECTIONS: { key: keyof DesignPresets; label: string; preview: (styl
       const text = "Good design is as little design as possible.";
       if (style === "background") return <div style={{ borderLeft: "3px solid var(--color-accent)", background: "var(--color-bg-hover)", padding: "8px 12px", borderRadius: "0 6px 6px 0", color: "var(--color-text-secondary)", fontSize: "13px", margin: 0, lineHeight: 1.6 }}>{text}</div>;
       if (style === "quote-mark") return <div style={{ paddingLeft: "28px", position: "relative", color: "var(--color-text-secondary)", fontSize: "13px", margin: 0, lineHeight: 1.6 }}><span style={{ position: "absolute", left: "2px", top: "-4px", fontSize: "28px", color: "var(--color-accent)", opacity: 0.4, lineHeight: 1 }}>{"\u201C"}</span>{text}</div>;
+      if (style === "card") return <div style={{ background: "var(--color-bg-secondary)", padding: "10px 14px", borderRadius: "8px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)", color: "var(--color-text-secondary)", fontSize: "13px", margin: 0, lineHeight: 1.6 }}>{text}</div>;
+      if (style === "serif") return <div style={{ fontStyle: "italic", fontSize: "13.5px", paddingLeft: "16px", opacity: 0.85, color: "var(--color-text-secondary)", margin: 0, lineHeight: 1.6 }}>{text}</div>;
       return <div style={{ borderLeft: "3px solid var(--color-accent)", paddingLeft: "12px", color: "var(--color-text-secondary)", fontSize: "13px", margin: 0, lineHeight: 1.6 }}>{text}</div>;
     },
   },
@@ -603,8 +611,15 @@ const DESIGN_SECTIONS: { key: keyof DesignPresets; label: string; preview: (styl
         default: { background: "#1e1e2e", color: "#cdd6f4" },
         light: { background: "var(--color-bg-secondary)", color: "var(--color-text-primary)", border: "1px solid var(--color-border-light)" },
         bordered: { background: "transparent", color: "var(--color-text-primary)", border: "1px solid var(--color-border-medium)", borderRadius: "6px" },
+        terminal: { background: "#0c0c0c", color: "#33ff33" },
+        header: { background: "var(--color-bg-secondary)", color: "var(--color-text-primary)", border: "1px solid var(--color-border-light)", borderRadius: "8px", paddingTop: "32px", position: "relative" },
       };
-      return <pre style={{ ...variants[style] || variants.default, padding: "8px 10px", borderRadius: "4px", fontSize: "11px", fontFamily: "monospace", margin: 0, lineHeight: 1.5, whiteSpace: "pre" }}>{code}</pre>;
+      return (
+        <div style={{ position: "relative" }}>
+          {style === "header" && <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "24px", background: "var(--color-bg-hover)", borderRadius: "7px 7px 0 0", borderBottom: "1px solid var(--color-border-light)" }} />}
+          <pre style={{ ...variants[style] || variants.default, padding: "8px 10px", borderRadius: "4px", fontSize: "11px", fontFamily: "monospace", margin: 0, lineHeight: 1.5, whiteSpace: "pre" }}>{code}</pre>
+        </div>
+      );
     },
   },
   {
@@ -613,6 +628,8 @@ const DESIGN_SECTIONS: { key: keyof DesignPresets; label: string; preview: (styl
       if (style === "dotted") return <hr style={{ border: "none", borderTop: "2px dotted var(--color-border-medium)", margin: "8px auto", width: "100%" }} />;
       if (style === "thick") return <hr style={{ border: "none", borderTop: "4px solid var(--color-border-medium)", margin: "8px auto", width: "60%" }} />;
       if (style === "dots") return <div style={{ textAlign: "center", fontSize: "18px", letterSpacing: "6px", color: "var(--color-text-light)", margin: "4px 0" }}>···</div>;
+      if (style === "gradient") return <hr style={{ border: "none", height: "2px", background: "linear-gradient(90deg, transparent, var(--color-accent), transparent)", margin: "8px 0" }} />;
+      if (style === "fade") return <hr style={{ border: "none", height: "1px", background: "linear-gradient(90deg, transparent 5%, var(--color-border-medium) 50%, transparent 95%)", margin: "8px 0" }} />;
       return <hr style={{ border: "none", borderTop: "3px solid var(--color-border-medium)", margin: "8px auto", width: "98%" }} />;
     },
   },
@@ -733,14 +750,13 @@ function DesignTab() {
         디자인 미리보기 문서 열기
       </button>
 
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
-        <SectionTitle>요소 디자인</SectionTitle>
-        {!isDefault && (
+      {!isDefault && (
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "8px" }}>
           <button onClick={resetDesign} style={{ fontSize: "11px", color: "var(--color-text-tertiary)", background: "transparent", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: "3px" }}>
             <RotateCcw size={10} /> 기본으로 초기화
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {DESIGN_SECTIONS.map(({ key, label, preview }) => (
         <div key={key} style={{ marginBottom: "20px" }}>
