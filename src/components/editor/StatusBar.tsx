@@ -8,8 +8,9 @@ import { shortenPath } from "@/utils/pathUtils";
 
 const WIDTH_OPTIONS = [480, 600, 720, 840];
 
-function StatusDropdown({ label, items }: {
+function StatusDropdown({ label, title, items }: {
   label: string;
+  title?: string;
   items: { label: string; active: boolean; isDefault?: boolean; onClick: () => void }[];
 }) {
   const [open, setOpen] = useState(false);
@@ -46,6 +47,11 @@ function StatusDropdown({ label, items }: {
           borderRadius: "6px", boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
           padding: "4px", minWidth: "100px",
         }}>
+          {title && (
+            <div style={{ padding: "4px 10px 6px", fontSize: "10px", color: "var(--color-text-tertiary)", fontWeight: 600 }}>
+              {title}
+            </div>
+          )}
           {items.map((item) => (
             <button
               key={item.label}
@@ -272,6 +278,7 @@ export function StatusBar({ filePath, fileSize, tags: propTags, onAddTag, onRemo
       <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "4px", flexShrink: 0 }}>
         <StatusDropdown
           label={settings.widthMode === "fixed" ? "고정폭" : "가변폭"}
+          title="폭 모드"
           items={[
             { label: "고정폭", active: settings.widthMode === "fixed", isDefault: true, onClick: () => updateSetting("widthMode", "fixed") },
             { label: "가변폭", active: settings.widthMode === "fluid", onClick: () => updateSetting("widthMode", "fluid") },
@@ -280,6 +287,7 @@ export function StatusBar({ filePath, fileSize, tags: propTags, onAddTag, onRemo
         <div style={{ width: "1px", height: "14px", background: "var(--color-border-light)", flexShrink: 0 }} />
         <StatusDropdown
           label={settings.pageAlign === "center" ? "가운데" : "왼쪽"}
+          title="정렬"
           items={[
             { label: "가운데 정렬", active: settings.pageAlign === "center", isDefault: true, onClick: () => updateSetting("pageAlign", "center") },
             { label: "왼쪽 정렬", active: settings.pageAlign === "left", onClick: () => updateSetting("pageAlign", "left") },
@@ -288,6 +296,7 @@ export function StatusBar({ filePath, fileSize, tags: propTags, onAddTag, onRemo
         <div style={{ width: "1px", height: "14px", background: "var(--color-border-light)", flexShrink: 0 }} />
         <StatusDropdown
           label={`${settings.editorMaxWidth}px`}
+          title="페이지 폭"
           items={WIDTH_OPTIONS.map((w) => ({
             label: `${w}px`, active: settings.editorMaxWidth === w, isDefault: w === 720,
             onClick: () => updateSetting("editorMaxWidth", w),
