@@ -610,21 +610,35 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
     return () => window.removeEventListener("keydown", handler);
   }, [handleSave]);
 
-  // Ctrl+Z: 네이티브 undo 비었으면 스냅샷에서 복원
+  // Ctrl+Z: 네이티브 undo 비었으면 스냅샷에서 복원 + 원본 복귀 시 isDirty 해제
   useEffect(() => {
     if (!editor) return;
     const handler = (e: KeyboardEvent) => {
       if (!e.ctrlKey || e.key !== "z" || e.shiftKey) return;
       if (!document.activeElement?.closest(".tiptap")) return;
-      if (editor.can().undo()) return; // 네이티브 undo 있으면 TipTap이 처리
       const tabId = mountedTabId.current;
       if (!tabId) return;
       const stack = undoSnapshots.get(tabId);
-      if (!stack || stack.length <= 1) return; // 1개 = 현재 상태만
+
+      if (editor.can().undo()) {
+        // 네이티브 undo — TipTap이 처리한 뒤 isDirty 체크
+        requestAnimationFrame(() => {
+          if (!editor.can().undo() && stack && stack.length <= 1) {
+            useAppStore.getState().markTabClean(tabId);
+          }
+        });
+        return;
+      }
+
+      if (!stack || stack.length <= 1) return;
       e.preventDefault();
-      stack.pop(); // 현재 상태 제거
-      const prev = stack[stack.length - 1]; // 이전 상태
+      stack.pop();
+      const prev = stack[stack.length - 1];
       editor.commands.setContent(stripFrontmatter(prev), { contentType: "markdown" } as any);
+      // 원본까지 돌아왔으면 isDirty 해제
+      if (stack.length <= 1) {
+        useAppStore.getState().markTabClean(tabId);
+      }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
