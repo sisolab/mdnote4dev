@@ -879,7 +879,16 @@ function FontTab({ currentFont, currentCodeFont, onApply, onApplyCodeFont }: {
           fontFamily: previewCodeFont, fontSize: "12px", lineHeight: 1.5,
           background: "#1e1e2e", color: "#cdd6f4",
           padding: "8px 10px", borderRadius: "4px", margin: 0,
-        }}>{`function greet(name) {\n  return "Hello, " + name;\n}`}</pre>
+        }}>{({
+          popular: `// Hello World\nfunction greet(name) {\n  return "Hello, " + name;\n}`,
+          en: `// Greeting function\nfunction greet(name) {\n  return "Hello, " + name;\n}`,
+          ko: `// 인사 함수\nfunction greet(name) {\n  return "안녕, " + name;\n}`,
+          ja: `// 挨拶関数\nfunction greet(name) {\n  return "こんにちは、" + name;\n}`,
+          zh: `// 问候函数\nfunction greet(name) {\n  return "你好，" + name;\n}`,
+          es: `// Función de saludo\nfunction greet(name) {\n  return "Hola, " + name;\n}`,
+          fr: `// Fonction de salutation\nfunction greet(name) {\n  return "Bonjour, " + name;\n}`,
+          de: `// Begrüßungsfunktion\nfunction greet(name) {\n  return "Hallo, " + name;\n}`,
+        }[selectedCategory] || `function greet(name) {\n  return "Hello, " + name;\n}`)}</pre>
       </div>
     </div>
 
