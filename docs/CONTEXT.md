@@ -70,9 +70,11 @@
 
 ### 에셋 라이프사이클
 - 편집 중 삭제: `.assets/` → `.trash/` (globalTrashMap 추적)
-- Ctrl+Z undo: `.trash/` → `.assets/` 복원 + DOM src 캐시 무효화
+- Ctrl+Z undo: `.trash/` → `.assets/` 복원 + DOM src 캐시 무효화 (`?t=timestamp`)
 - 앱 종료: `.trash/` → OS 휴지통
-- 문서 삭제: 에셋 전부 `.trash/`로
+- 문서 삭제: `.assets/` 폴더에서 문서명 접두사로 매칭하여 `.trash/`로 이동 (content 파싱 불필요)
+- 복원: `.assets/` 부모 디렉토리 없으면 자동 생성 (`mkdir recursive`)
+- 이미지 로드 시 캐시 무효화: `convertFileSrc(path) + ?t=timestamp`
 
 ### 창 크기 관리
 - **동적 최소 크기**: `Math.max(720, sidebar + editorMaxWidth + 140)`
@@ -86,9 +88,12 @@
 - **550px 미만**: 제목 버튼 추가 숨김
 
 ### 탭 관리
+- **고정(pin)**: 탭 우클릭 → 고정, 핀 아이콘 표시, Ctrl+W 보호, 고정탭 뒤로 정렬
 - **닫기**: 이전 탭으로 포커스, 마지막 문서탭 닫으면 검색탭으로
 - **isDirty 닫기**: requestAnimationFrame으로 closeTab 호출 (React 렌더링 충돌 방지)
+- **탭 전환 시 content 보존**: editor blur 이벤트에서 마크다운 → 탭 content 동기화
 - **외부 rename**: FS 감시로 파일 없어지면 같은 폴더에서 새 파일 탐색, 탭 경로 업데이트
+- **탭 탐색기**: 열린 문서 탭 목록 특수탭 (LayoutList 아이콘, 검색/클릭 전환)
 
 ### 상태바
 ```
@@ -153,6 +158,7 @@ src/
 │   │   ├── FileToolbar.tsx        — 첨부파일 플로팅 툴바
 │   │   ├── FileAttachment.tsx     — 커스텀 fileAttachment 노드
 │   │   ├── ImageExtension.ts      — 커스텀 Image 확장 (width/align, renderMarkdown)
+│   │   ├── TabExplorer.tsx        — 열린 탭 탐색기 (특수탭)
 │   │   └── CodeBlockView.tsx      — 코드블록 NodeView (언어 선택)
 │   ├── sidebar/
 │   │   ├── Sidebar.tsx            — 사이드바 + 폴더 관리 + 정렬
