@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from "react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { rename, readTextFile, writeTextFile } from "@tauri-apps/plugin-fs";
 import { open } from "@tauri-apps/plugin-dialog";
@@ -232,85 +232,30 @@ export function TabBar() {
         zIndex: 0,
       }} />
 
-      {/* 고정 검색탭 */}
-      {tabs.filter((t) => t.type === "tag-explorer").map((tab) => {
+      {/* 고정 특수탭 */}
+      {([
+        { type: "tag-explorer" as const, icon: Search, label: "검색 (Alt+1)" },
+        { type: "tab-explorer" as const, icon: LayoutList, label: "열린 탭 (Alt+2)" },
+        { type: "attachment-explorer" as const, icon: Paperclip, label: "첨부파일 (Alt+3)" },
+      ] as const).map(({ type, icon: Icon, label }, i) => {
+        const tab = tabs.find((t) => t.type === type);
+        if (!tab) return null;
         const isActive = tab.id === activeTabId;
         return (
-          <div
-            key={tab.id}
-            data-tab-id={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            onMouseEnter={(e) => handleHover(e.currentTarget)}
-            title="검색 (Alt+1)"
-            style={{
-              height: "40px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "0 14px",
-              cursor: "pointer",
-              position: "relative",
-              zIndex: 1,
-              color: isActive ? "var(--color-accent)" : "var(--color-text-secondary)",
-              transition: "color 0.1s",
-              flexShrink: 0,
-            }}
-          >
-            <Search size={13} />
-            <div style={{
-              position: "absolute",
-              bottom: "0",
-              left: "50%",
-              transform: "translateX(-50%)",
-              width: isActive ? "80%" : "0%",
-              height: "2px",
-              borderRadius: "1px",
-              background: "var(--color-accent)",
-              transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
-            }} />
-          </div>
-        );
-      })}
-
-      <div style={{ width: "1px", height: "14px", background: "var(--color-border-light)", flexShrink: 0, margin: "0 2px" }} />
-
-      {/* 고정 탭 탐색기 (최근) */}
-      {tabs.filter((t) => t.type === "tab-explorer").map((tab) => {
-        const isActive = tab.id === activeTabId;
-        return (
-          <div key={tab.id} data-tab-id={tab.id} onClick={() => setActiveTab(tab.id)}
-            onMouseEnter={(e) => handleHover(e.currentTarget)}
-            title="열린 탭 (Alt+2)"
-            style={{ height: "40px", display: "flex", alignItems: "center", justifyContent: "center",
-              padding: "0 14px", cursor: "pointer", position: "relative", zIndex: 1,
-              color: isActive ? "var(--color-accent)" : "var(--color-text-secondary)",
-              transition: "color 0.1s", flexShrink: 0 }}>
-            <LayoutList size={13} />
-            <div style={{ position: "absolute", bottom: "0", left: "50%", transform: "translateX(-50%)",
-              width: isActive ? "80%" : "0%", height: "2px", borderRadius: "1px",
-              background: "var(--color-accent)", transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)" }} />
-          </div>
-        );
-      })}
-
-      <div style={{ width: "1px", height: "14px", background: "var(--color-border-light)", flexShrink: 0, margin: "0 2px" }} />
-
-      {/* 고정 첨부파일탭 */}
-      {tabs.filter((t) => t.type === "attachment-explorer").map((tab) => {
-        const isActive = tab.id === activeTabId;
-        return (
-          <div key={tab.id} data-tab-id={tab.id} onClick={() => setActiveTab(tab.id)}
-            onMouseEnter={(e) => handleHover(e.currentTarget)}
-            title="첨부파일 (Alt+3)"
-            style={{ height: "40px", display: "flex", alignItems: "center", justifyContent: "center",
-              padding: "0 14px", cursor: "pointer", position: "relative", zIndex: 1,
-              color: isActive ? "var(--color-accent)" : "var(--color-text-secondary)",
-              transition: "color 0.1s", flexShrink: 0 }}>
-            <Paperclip size={13} />
-            <div style={{ position: "absolute", bottom: "0", left: "50%", transform: "translateX(-50%)",
-              width: isActive ? "80%" : "0%", height: "2px", borderRadius: "1px",
-              background: "var(--color-accent)", transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)" }} />
-          </div>
+          <React.Fragment key={type}>
+            {i > 0 && <div style={{ width: "1px", height: "14px", background: "var(--color-border-light)", flexShrink: 0, margin: "0 2px" }} />}
+            <div data-tab-id={tab.id} onClick={() => setActiveTab(tab.id)}
+              onMouseEnter={(e) => handleHover(e.currentTarget)} title={label}
+              style={{ height: "40px", display: "flex", alignItems: "center", justifyContent: "center",
+                padding: "0 14px", cursor: "pointer", position: "relative", zIndex: 1,
+                color: isActive ? "var(--color-accent)" : "var(--color-text-secondary)",
+                transition: "color 0.1s", flexShrink: 0 }}>
+              <Icon size={13} />
+              <div style={{ position: "absolute", bottom: "0", left: "50%", transform: "translateX(-50%)",
+                width: isActive ? "80%" : "0%", height: "2px", borderRadius: "1px",
+                background: "var(--color-accent)", transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)" }} />
+            </div>
+          </React.Fragment>
         );
       })}
 

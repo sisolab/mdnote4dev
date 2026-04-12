@@ -313,17 +313,19 @@ function App() {
   // 글로벌 단축키
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      const store = useAppStore.getState();
-
       // Alt+1/2/3 — 특수탭 전환
-      if (e.altKey && !e.ctrlKey) {
-        if (e.key === "1") { e.preventDefault(); store.openTagExplorer(); return; }
-        if (e.key === "2") { e.preventDefault(); store.openTabExplorer(); return; }
-        if (e.key === "3") { e.preventDefault(); store.openAttachmentExplorer(); return; }
+      if (e.altKey && !e.ctrlKey && ["1","2","3"].includes(e.key)) {
+        e.preventDefault();
+        const store = useAppStore.getState();
+        if (e.key === "1") store.openTagExplorer();
+        else if (e.key === "2") store.openTabExplorer();
+        else if (e.key === "3") store.openAttachmentExplorer();
+        return;
       }
 
       if (!e.ctrlKey) return;
       const key = e.key.toLowerCase();
+      const store = useAppStore.getState();
 
       // Ctrl+Z / Ctrl+Shift+Z — 사이드바 undo/redo (에디터 외부)
       if (key === "z" && !document.activeElement?.closest(".tiptap")) {
