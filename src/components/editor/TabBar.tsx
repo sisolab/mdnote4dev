@@ -214,7 +214,7 @@ export function TabBar() {
     <div
       ref={containerRef}
       onMouseLeave={() => { if (dragIndex === null) setHighlight(null); }}
-      style={{ position: "relative", padding: "0 8px" }}
+      style={{ position: "relative", padding: 0 }}
       className="flex items-center border-b border-border-light bg-bg-primary shrink-0 overflow-hidden"
     >
       {/* 슬라이딩 호버 하이라이트 */}
@@ -400,7 +400,6 @@ export function TabBar() {
                   fontWeight: isActive ? 500 : 400,
                   fontStyle: tab.filePath ? "normal" : "italic",
                   fontSize: "13px",
-                  letterSpacing: "-0.01em",
                   transition: "color 0.1s",
                 }}
               >

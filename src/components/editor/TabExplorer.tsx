@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAppStore } from "@/stores/appStore";
-import { FileText, Star, Pin } from "lucide-react";
+import { FileText, Star, Pin, X } from "lucide-react";
 import { shortenPath } from "@/utils/pathUtils";
 
 export function TabExplorer() {
@@ -83,6 +83,29 @@ export function TabExplorer() {
                   <div style={{ display: "flex", alignItems: "center", gap: "4px", flexShrink: 0 }}>
                     {tab.pinned && <Pin size={11} style={{ color: "var(--color-accent)" }} />}
                     {isFav && <Star size={11} style={{ color: "#f5c518", fill: "#f5c518" }} />}
+                    {!tab.pinned && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if ((tab.isDirty && tab.filePath) || (!tab.filePath && tab.content)) {
+                            setActiveTab(tab.id);
+                            window.dispatchEvent(new CustomEvent("request-close-tab", { detail: tab.id }));
+                          } else {
+                            const { closeTab } = useAppStore.getState();
+                            closeTab(tab.id);
+                          }
+                        }}
+                        style={{
+                          width: "18px", height: "18px", display: "flex", alignItems: "center", justifyContent: "center",
+                          border: "none", background: "transparent", cursor: "pointer",
+                          color: "var(--color-text-muted)", borderRadius: "3px", transition: "all 0.1s",
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-active)"; e.currentTarget.style.color = "var(--color-text-secondary)"; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--color-text-muted)"; }}
+                      >
+                        <X size={12} />
+                      </button>
+                    )}
                   </div>
                 </button>
               );
