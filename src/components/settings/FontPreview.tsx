@@ -159,6 +159,16 @@ function buildFontUrl(families: string[]): string {
   return `https://fonts.googleapis.com/css2?${params}&display=swap`;
 }
 
+// 코드 폰트 → Google Fonts 패밀리명 매핑 (로컬 설치 안 되어있을 때 로드)
+const CODE_FONT_GOOGLE_FAMILIES: Record<string, string> = {
+  "cascadia": "Cascadia Code",        // Google Fonts에 없음 — 로컬만
+  "fira-code": "Fira Code",
+  "jetbrains-mono": "JetBrains Mono",
+  "source-code-pro": "Source Code Pro",
+  "nanum-gothic-coding": "Nanum Gothic Coding",
+  "d2coding": "D2Coding",             // Google Fonts에 없음 — 로컬만
+};
+
 function renderMarkdown(md: string, codeFontCss?: string): string {
   let html = md;
   const cf = codeFontCss || "monospace";
@@ -231,6 +241,28 @@ export function FontPreview({
     document.head.appendChild(link);
     setLoadedFonts((prev) => { const n = new Set(prev); families.forEach((f) => n.add(f)); return n; });
   }, [selectedCategory, category.fonts, loadedFonts]);
+
+  // 코드 폰트 Google Fonts 로드
+  useEffect(() => {
+    const googleFamily = CODE_FONT_GOOGLE_FAMILIES[selectedCodeFont];
+    if (!googleFamily || loadedFonts.has(googleFamily)) return;
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = buildFontUrl([googleFamily]);
+    document.head.appendChild(link);
+    setLoadedFonts((prev) => { const n = new Set(prev); n.add(googleFamily); return n; });
+  }, [selectedCodeFont, loadedFonts]);
+
+  // 모든 코드 폰트를 미리 로드 (선택 전에도 2열 폰트명이 해당 폰트로 표시되도록)
+  useEffect(() => {
+    const toLoad = Object.values(CODE_FONT_GOOGLE_FAMILIES).filter((f) => f && !loadedFonts.has(f));
+    if (toLoad.length === 0) return;
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = buildFontUrl(toLoad);
+    document.head.appendChild(link);
+    setLoadedFonts((prev) => { const n = new Set(prev); toLoad.forEach((f) => n.add(f)); return n; });
+  }, []);
 
   // ESC 닫기
   useEffect(() => {
