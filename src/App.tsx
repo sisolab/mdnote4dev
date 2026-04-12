@@ -252,8 +252,11 @@ function App() {
       event.preventDefault();
       const { tabs } = useAppStore.getState();
 
-      // 미저장 임시 문서 확인
-      const unsaved = tabs.filter((t) => t.type !== "tag-explorer" && !t.filePath && t.content);
+      // 미저장 문서 확인 (임시 문서 + isDirty 문서)
+      const unsaved = tabs.filter((t) =>
+        t.type !== "tag-explorer" && t.type !== "attachment-explorer" &&
+        ((!t.filePath && t.content) || (t.filePath && t.isDirty))
+      );
       if (unsaved.length > 0) {
         setShowExitConfirm(true);
         return;
@@ -411,12 +414,15 @@ function App() {
               저장되지 않은 문서가 있습니다
             </div>
             <div style={{ fontSize: "12px", color: "var(--color-text-secondary)", marginBottom: "12px", lineHeight: 1.6 }}>
-              종료하면 아래 임시 문서의 내용이 삭제됩니다.
+              종료하면 변경 내용이 사라집니다.
             </div>
             <div style={{ marginBottom: "20px", padding: "8px 12px", borderRadius: "6px", background: "var(--color-bg-hover)" }}>
-              {useAppStore.getState().tabs.filter((t) => !t.filePath && t.content).map((t) => (
-                <div key={t.id} style={{ fontSize: "12px", color: "var(--color-text-primary)", fontStyle: "italic", padding: "2px 0" }}>
-                  • {t.title.replace(/\.(md|markdown)$/i, "")}
+              {useAppStore.getState().tabs.filter((t) =>
+                t.type !== "tag-explorer" && t.type !== "attachment-explorer" &&
+                ((!t.filePath && t.content) || (t.filePath && t.isDirty))
+              ).map((t) => (
+                <div key={t.id} style={{ fontSize: "12px", color: "var(--color-text-primary)", fontStyle: t.filePath ? "normal" : "italic", padding: "2px 0" }}>
+                  • {t.title.replace(/\.(md|markdown)$/i, "")}{!t.filePath ? " (임시)" : ""}
                 </div>
               ))}
             </div>
