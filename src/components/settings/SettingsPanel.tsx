@@ -517,11 +517,8 @@ function SaveModeSetting() {
           ))}
         </div>
       </div>
-      <div style={{ fontSize: "10px", color: "var(--color-text-tertiary)", marginTop: "4px", marginBottom: "4px" }}>
-        {SAVE_MODE_OPTIONS.find((o) => o.value === pending)?.desc}
-      </div>
       {changed && (
-        <div style={{ display: "flex", gap: "6px", marginTop: "4px" }}>
+        <div style={{ display: "flex", gap: "6px", marginTop: "8px" }}>
           <button
             onClick={() => setPending(saveMode)}
             style={{
@@ -544,6 +541,9 @@ function SaveModeSetting() {
           </button>
         </div>
       )}
+      <div style={{ fontSize: "10px", color: "var(--color-text-tertiary)", marginTop: "4px", marginBottom: "4px" }}>
+        {SAVE_MODE_OPTIONS.find((o) => o.value === pending)?.desc}
+      </div>
     </>
   );
 }
@@ -607,7 +607,11 @@ export function SettingsPanel() {
 
           {/* 테마 */}
           <SectionTitle>테마</SectionTitle>
-          <SettingRow label="배경" onReset={() => setThemeMode("newspaper")} changed={themeMode !== "newspaper"}>
+          <div style={{ marginBottom: "12px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "4px", marginBottom: "8px" }}>
+              <span style={{ fontSize: "13px", fontWeight: 500, color: "var(--color-text-primary)" }}>배경</span>
+              <ResetButton onClick={() => setThemeMode("newspaper")} visible={themeMode !== "newspaper"} />
+            </div>
             <ToggleButtons
               options={[
                 { value: "light", label: "라이트", icon: <Sun size={12} /> },
@@ -618,8 +622,12 @@ export function SettingsPanel() {
               value={themeMode}
               onChange={(v) => setThemeMode(v as "light" | "newspaper" | "charcoal" | "dark")}
             />
-          </SettingRow>
-          <SettingRow label="강조 색상" onReset={() => setAccentColor("blue")} changed={accentColor !== "blue"}>
+          </div>
+          <div style={{ marginBottom: "4px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "4px", marginBottom: "8px" }}>
+              <span style={{ fontSize: "13px", fontWeight: 500, color: "var(--color-text-primary)" }}>강조 색상</span>
+              <ResetButton onClick={() => setAccentColor("navy")} visible={accentColor !== "navy"} />
+            </div>
             <div style={{ display: "flex", gap: "8px" }}>
               {ACCENT_OPTIONS.map((opt) => (
                 <button
@@ -635,7 +643,7 @@ export function SettingsPanel() {
                 />
               ))}
             </div>
-          </SettingRow>
+          </div>
 
           <div style={{ height: "1px", background: "var(--color-border-light)", margin: "16px 0" }} />
 

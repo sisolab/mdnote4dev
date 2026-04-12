@@ -248,7 +248,7 @@ export const useSettingsStore = create<SettingsState>()(
       showSettings: false,
       showStylePanel: false,
       themeMode: "newspaper" as ThemeMode,
-      accentColor: "blue" as AccentColor,
+      accentColor: "navy" as AccentColor,
       tabSize: 2 as 2 | 4,
       spacingStyle: "default" as SpacingStyleName,
       codeFontFamily: "cascadia",
