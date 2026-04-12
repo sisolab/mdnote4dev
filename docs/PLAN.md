@@ -17,6 +17,12 @@
 ### 개선
 - [ ] 탭 전환 시 에디터 undo 히스토리 보존 — 여러 접근 실패. 상세: [ISSUE-undo-across-tabs.md](./ISSUE-undo-across-tabs.md)
 
+### 브랜딩
+- [ ] 앱 이름 확정: **MarkDen** (Markdown + Den, "마크다운이 모이는 나만의 서재")
+- [ ] 로고/아이콘 디자인
+- [ ] 앱 내 이름 적용 (타이틀바, 설정, about)
+- [ ] GitHub repo 이름 변경 검토
+
 ### 기타
 - [ ] 매뉴얼 버튼 — 앱 사용법 안내 페이지/문서
 - [ ] 버그 리포트 버튼 — GitHub Issues 등 외부 링크
