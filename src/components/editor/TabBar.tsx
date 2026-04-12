@@ -391,7 +391,7 @@ export function TabBar() {
                   alignItems: "center",
                   justifyContent: "space-between",
                   gap: "8px",
-                  padding: tab.type === "tag-explorer" ? "0 12px" : tab.filePath ? "0 10px 0 16px" : "0 8px 0 16px",
+                  padding: tab.type === "tag-explorer" ? "0 12px" : tab.filePath ? "0 6px 0 10px" : "0 6px 0 10px",
                   minWidth: tab.type === "tag-explorer" ? "50px" : tab.filePath ? "120px" : "140px",
                   cursor: isDragging ? "grabbing" : "pointer",
                   position: "relative",
