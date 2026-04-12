@@ -699,13 +699,10 @@ export function TabBar() {
             }}
           >
             <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--color-text-heading)", marginBottom: "8px" }}>
-              {isTemp ? "임시 문서 닫기" : "변경 사항 저장"}
+              변경 사항 저장
             </div>
             <div style={{ fontSize: "12px", color: "var(--color-text-secondary)", marginBottom: "20px", lineHeight: 1.6 }}>
-              {isTemp
-                ? <>이 문서는 아직 파일로 저장되지 않았습니다.<br />닫으면 내용이 삭제됩니다. 파일로 먼저 저장하세요.</>
-                : <>변경 사항이 저장되지 않았습니다.<br />저장하지 않고 닫으면 변경 내용이 사라집니다.</>
-              }
+              저장하지 않고 닫으면 변경 내용이 사라집니다.
             </div>
             <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
               <button
@@ -726,7 +723,7 @@ export function TabBar() {
                   border: "none", borderRadius: "6px", cursor: "pointer",
                 }}
               >
-                {isTemp ? "닫기" : "저장 안 함"}
+                저장 안 함
               </button>
               <button
                 onClick={() => {
@@ -747,7 +744,7 @@ export function TabBar() {
                   border: "none", borderRadius: "6px", cursor: "pointer",
                 }}
               >
-                {isTemp ? "저장" : "저장 후 닫기"}
+                저장 후 닫기
               </button>
             </div>
           </div>
