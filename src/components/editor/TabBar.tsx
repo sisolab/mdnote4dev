@@ -718,7 +718,6 @@ export function TabBar() {
               >
                 취소
               </button>
-              {!isTemp && (
               <button
                 onClick={() => { const id = closeConfirmId; setCloseConfirmId(null); requestAnimationFrame(() => closeTab(id)); }}
                 style={{
@@ -727,15 +726,13 @@ export function TabBar() {
                   border: "none", borderRadius: "6px", cursor: "pointer",
                 }}
               >
-                저장 안 함
+                {isTemp ? "닫기" : "저장 안 함"}
               </button>
-              )}
               <button
                 onClick={() => {
                   const tabId = closeConfirmId;
                   setActiveTab(tabId);
                   setCloseConfirmId(null);
-                  // 저장 이벤트 발송 후 탭 닫기
                   requestAnimationFrame(() => {
                     window.dispatchEvent(new KeyboardEvent("keydown", { ctrlKey: true, key: "s", bubbles: true }));
                     if (!isTemp) {
@@ -752,18 +749,6 @@ export function TabBar() {
               >
                 {isTemp ? "저장" : "저장 후 닫기"}
               </button>
-              {isTemp && (
-              <button
-                onClick={() => { closeTab(closeConfirmId); setCloseConfirmId(null); }}
-                style={{
-                  padding: "6px 16px", fontSize: "12px", fontWeight: 600,
-                  background: "var(--color-bg-hover)", color: "var(--color-text-primary)",
-                  border: "none", borderRadius: "6px", cursor: "pointer",
-                }}
-              >
-                닫기
-              </button>
-              )}
             </div>
           </div>
         </div>
