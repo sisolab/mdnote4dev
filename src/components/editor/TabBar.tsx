@@ -732,10 +732,8 @@ export function TabBar() {
                   setCloseConfirmId(null);
                   requestAnimationFrame(() => {
                     window.dispatchEvent(new KeyboardEvent("keydown", { ctrlKey: true, key: "s", bubbles: true }));
-                    if (!isTemp) {
-                      const onSaved = () => { requestAnimationFrame(() => closeTab(tabId)); window.removeEventListener("manual-save", onSaved); };
-                      window.addEventListener("manual-save", onSaved);
-                    }
+                    const onSaved = () => { requestAnimationFrame(() => closeTab(tabId)); window.removeEventListener("manual-save", onSaved); };
+                    window.addEventListener("manual-save", onSaved);
                   });
                 }}
                 style={{
