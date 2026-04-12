@@ -370,9 +370,47 @@ function DocStyleTab({ settings, updateSetting, applyPreset, spacingStyle, setSp
 
   return (
     <div style={{ flex: 1, overflowY: "auto", padding: "12px 16px" }}>
-      {/* 프리셋 저장 */}
+      {/* 프리셋 */}
       <SectionTitle>프리셋</SectionTitle>
-      <div style={{ display: "flex", gap: "4px", marginBottom: "8px" }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "10px" }}>
+        {savedPresets.map((p) => {
+          const active = isPresetMatch(p.settings);
+          return (
+            <div key={p.name} style={{ display: "flex", alignItems: "center", position: "relative" }}>
+              <button
+                onClick={() => applyPreset(p.settings)}
+                style={{
+                  display: "flex", alignItems: "center", gap: "5px",
+                  padding: "5px 24px 5px 12px", fontSize: "12px", fontWeight: active ? 600 : 400,
+                  borderRadius: "6px", cursor: "pointer",
+                  border: active ? "1.5px solid var(--color-accent)" : "1px solid var(--color-border-input)",
+                  background: active ? "var(--color-accent-subtle)" : "var(--color-bg-primary)",
+                  color: active ? "var(--color-accent)" : "var(--color-text-primary)",
+                  transition: "all 0.15s",
+                }}
+              >
+                {presetIcons[p.name] || <SlidersHorizontal size={12} />}
+                {p.name}
+              </button>
+              <button
+                onClick={() => removeSavedPreset(p.name)}
+                style={{
+                  position: "absolute", right: "5px", top: "50%", transform: "translateY(-50%)",
+                  width: "16px", height: "16px", display: "flex", alignItems: "center", justifyContent: "center",
+                  border: "none", background: "transparent", cursor: "pointer",
+                  color: "var(--color-text-muted)", borderRadius: "3px",
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.color = "var(--color-text-secondary)"; e.currentTarget.style.background = "var(--color-bg-hover)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.color = "var(--color-text-muted)"; e.currentTarget.style.background = "transparent"; }}
+              >
+                <X size={10} />
+              </button>
+            </div>
+          );
+        })}
+      </div>
+      {/* 프리셋 저장 */}
+      <div style={{ display: "flex", gap: "6px", marginBottom: "4px" }}>
         <input
           value={newPresetName}
           onChange={(e) => setNewPresetName(e.target.value)}
@@ -382,10 +420,10 @@ function DocStyleTab({ settings, updateSetting, applyPreset, spacingStyle, setSp
               setNewPresetName("");
             }
           }}
-          placeholder="프리셋 이름"
+          placeholder="현재 설정을 프리셋으로 저장..."
           style={{
-            flex: 1, fontSize: "11px", padding: "4px 8px",
-            borderRadius: "4px", border: "1px solid var(--color-border-input)",
+            flex: 1, fontSize: "12px", padding: "5px 10px",
+            borderRadius: "6px", border: "1px solid var(--color-border-input)",
             background: "var(--color-bg-primary)", color: "var(--color-text-primary)",
             outline: "none",
           }}
@@ -398,54 +436,18 @@ function DocStyleTab({ settings, updateSetting, applyPreset, spacingStyle, setSp
           }}
           disabled={!newPresetName.trim()}
           style={{
-            padding: "4px 10px", fontSize: "10px", fontWeight: 600,
-            borderRadius: "4px", border: "none", cursor: newPresetName.trim() ? "pointer" : "default",
+            padding: "5px 14px", fontSize: "12px", fontWeight: 600,
+            borderRadius: "6px", border: "none", cursor: newPresetName.trim() ? "pointer" : "default",
             background: newPresetName.trim() ? "var(--color-accent)" : "var(--color-bg-hover)",
             color: newPresetName.trim() ? "#fff" : "var(--color-text-muted)",
+            transition: "all 0.15s",
           }}
         >
           저장
         </button>
       </div>
-      {/* 프리셋 버튼 목록 */}
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", marginBottom: "16px" }}>
-        {savedPresets.map((p) => {
-          const active = isPresetMatch(p.settings);
-          return (
-            <div key={p.name} style={{ display: "flex", alignItems: "center", position: "relative" }}>
-              <button
-                onClick={() => applyPreset(p.settings)}
-                style={{
-                  display: "flex", alignItems: "center", gap: "4px",
-                  padding: "4px 10px", fontSize: "11px", fontWeight: active ? 600 : 400,
-                  borderRadius: "4px", cursor: "pointer",
-                  border: active ? "1.5px solid var(--color-accent)" : "1px solid var(--color-border-medium)",
-                  background: active ? "var(--color-accent-subtle)" : "var(--color-bg-primary)",
-                  color: active ? "var(--color-accent)" : "var(--color-text-secondary)",
-                  paddingRight: "22px",
-                  transition: "all 0.15s",
-                }}
-              >
-                {presetIcons[p.name] || <SlidersHorizontal size={11} />}
-                {p.name}
-              </button>
-              <button
-                onClick={() => removeSavedPreset(p.name)}
-                style={{
-                  position: "absolute", right: "3px", top: "50%", transform: "translateY(-50%)",
-                  width: "14px", height: "14px", display: "flex", alignItems: "center", justifyContent: "center",
-                  border: "none", background: "transparent", cursor: "pointer",
-                  color: "var(--color-text-muted)", borderRadius: "2px",
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.color = "var(--color-text-secondary)"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.color = "var(--color-text-muted)"; }}
-              >
-                <X size={9} />
-              </button>
-            </div>
-          );
-        })}
-      </div>
+
+      <div style={{ height: "1px", background: "var(--color-border-light)", margin: "16px 0" }} />
 
       {/* 타이포그래피 */}
       <SectionTitle>타이포그래피</SectionTitle>
@@ -491,36 +493,6 @@ function SaveModeSetting() {
   return (
     <>
       <div style={{ marginBottom: "4px" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-            <span style={{ fontSize: "13px", fontWeight: 500, color: "var(--color-text-primary)" }}>저장 모드</span>
-            <ResetButton onClick={() => { setPending("manual"); setSaveMode("manual"); }} visible={saveMode !== "manual"} />
-          </div>
-          {changed && (
-            <div style={{ display: "flex", gap: "4px" }}>
-              <button
-                onClick={() => setPending(saveMode)}
-                style={{
-                  padding: "3px 10px", fontSize: "11px", fontWeight: 500,
-                  background: "var(--color-bg-hover)", color: "var(--color-text-primary)",
-                  border: "none", borderRadius: "4px", cursor: "pointer",
-                }}
-              >
-                취소
-              </button>
-              <button
-                onClick={() => setSaveMode(pending)}
-                style={{
-                  padding: "3px 10px", fontSize: "11px", fontWeight: 600,
-                  background: "var(--color-accent)", color: "#fff",
-                  border: "none", borderRadius: "4px", cursor: "pointer",
-                }}
-              >
-                적용
-              </button>
-            </div>
-          )}
-        </div>
         <div style={{ display: "inline-flex", borderRadius: "6px", border: "1px solid var(--color-border-input)", overflow: "hidden" }}>
           {SAVE_MODE_OPTIONS.map((opt) => (
             <button
@@ -545,9 +517,33 @@ function SaveModeSetting() {
           ))}
         </div>
       </div>
-      <div style={{ fontSize: "10px", color: "var(--color-text-tertiary)", marginBottom: "4px" }}>
+      <div style={{ fontSize: "10px", color: "var(--color-text-tertiary)", marginTop: "4px", marginBottom: "4px" }}>
         {SAVE_MODE_OPTIONS.find((o) => o.value === pending)?.desc}
       </div>
+      {changed && (
+        <div style={{ display: "flex", gap: "6px", marginTop: "4px" }}>
+          <button
+            onClick={() => setPending(saveMode)}
+            style={{
+              padding: "4px 12px", fontSize: "12px", fontWeight: 500,
+              background: "var(--color-bg-hover)", color: "var(--color-text-primary)",
+              border: "none", borderRadius: "6px", cursor: "pointer",
+            }}
+          >
+            취소
+          </button>
+          <button
+            onClick={() => setSaveMode(pending)}
+            style={{
+              padding: "4px 12px", fontSize: "12px", fontWeight: 600,
+              background: "var(--color-accent)", color: "#fff",
+              border: "none", borderRadius: "6px", cursor: "pointer",
+            }}
+          >
+            적용
+          </button>
+        </div>
+      )}
     </>
   );
 }
