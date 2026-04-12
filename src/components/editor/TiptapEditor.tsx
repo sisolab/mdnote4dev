@@ -88,6 +88,23 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
       attributes: {
         class: "outline-none prose prose-sm max-w-none",
       },
+      handleClick: (view, _pos, event) => {
+        const link = (event.target as HTMLElement).closest("a[href]");
+        if (!link) return false;
+        const href = link.getAttribute("href") ?? "";
+        if (!href.startsWith("#")) return false;
+        event.preventDefault();
+        const slug = decodeURIComponent(href.substring(1));
+        const toSlug = (text: string) => text.toLowerCase().replace(/[^\w가-힣\s-]/g, "").replace(/\s+/g, "-").replace(/-+$/, "");
+        const headings = view.dom.querySelectorAll("h1,h2,h3,h4");
+        for (const h of headings) {
+          if (toSlug(h.textContent ?? "") === slug) {
+            h.scrollIntoView({ behavior: "smooth", block: "start" });
+            return true;
+          }
+        }
+        return true;
+      },
       handleKeyDown: (view, event) => {
         // Ctrl+1~5: 제목/일반텍스트
         if (event.ctrlKey && !event.altKey && !event.shiftKey && ["1","2","3","4","5"].includes(event.key)) {
@@ -246,12 +263,6 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
     },
     onTransaction: ({ editor: e }) => {
       setTick((t) => t + 1);
-      // heading에 slug ID 부여 (앵커 링크용)
-      e.view.dom.querySelectorAll("h1, h2, h3, h4").forEach((el) => {
-        const text = el.textContent ?? "";
-        const slug = text.toLowerCase().replace(/[^\w가-힣\s-]/g, "").replace(/\s+/g, "-").replace(/-+$/, "");
-        if (slug && el.id !== slug) el.id = slug;
-      });
       // 링크에 title 속성 추가 (URL 툴팁)
       e.view.dom.querySelectorAll("a[href]").forEach((a) => {
         if (!a.getAttribute("title")) {
@@ -286,24 +297,6 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
   // 툴바 active 상태 즉시 반영용
   const [, setTick] = useState(0);
 
-  // 앵커 링크 클릭 핸들러 (#heading-slug → 해당 heading으로 스크롤)
-  useEffect(() => {
-    if (!editor) return;
-    const el = editor.view.dom;
-    const handler = (e: MouseEvent) => {
-      const link = (e.target as HTMLElement).closest("a[href]");
-      if (!link) return;
-      const href = link.getAttribute("href") ?? "";
-      if (!href.startsWith("#")) return;
-      e.preventDefault();
-      e.stopPropagation();
-      const slug = href.substring(1);
-      const target = el.querySelector(`#${CSS.escape(slug)}`);
-      if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
-    };
-    el.addEventListener("click", handler);
-    return () => el.removeEventListener("click", handler);
-  }, [editor]);
 
   // 이미지 붙여넣기 핸들러
   useEffect(() => {
