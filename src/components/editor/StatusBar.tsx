@@ -73,14 +73,12 @@ function StatusDropdown({ label, items }: {
 interface StatusBarProps {
   filePath: string | null;
   fileSize: number;
-  lineCount: number;
-  charCount: number;
   tags: string[];
   onAddTag: (tag: string) => void;
   onRemoveTag: (tag: string) => void;
 }
 
-export function StatusBar({ filePath, fileSize, lineCount, charCount, tags: propTags, onAddTag, onRemoveTag }: StatusBarProps) {
+export function StatusBar({ filePath, fileSize, tags: propTags, onAddTag, onRemoveTag }: StatusBarProps) {
   const [input, setInput] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -172,7 +170,7 @@ export function StatusBar({ filePath, fileSize, lineCount, charCount, tags: prop
       flexShrink: 0, gap: "12px",
     }}>
       {/* 파일 정보 */}
-      <span style={{ flexShrink: 0, whiteSpace: "nowrap" }}>{shortenPath(filePath)}</span>
+      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>{shortenPath(filePath)}</span>
       <button
         onClick={() => invoke("open_in_explorer", { path: filePath.substring(0, filePath.lastIndexOf("\\")) })}
         style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--color-text-light)", padding: 0, display: "flex", flexShrink: 0 }}
@@ -183,11 +181,7 @@ export function StatusBar({ filePath, fileSize, lineCount, charCount, tags: prop
         <FolderOpen size={12} />
       </button>
       <div style={{ width: "1px", height: "14px", background: "var(--color-border-light)", flexShrink: 0 }} />
-      <span>{formatSize(fileSize)}</span>
-      <div style={{ width: "1px", height: "14px", background: "var(--color-border-light)", flexShrink: 0 }} />
-      <span>{lineCount} 줄</span>
-      <div style={{ width: "1px", height: "14px", background: "var(--color-border-light)", flexShrink: 0 }} />
-      <span>{charCount} 자</span>
+      <span style={{ flexShrink: 0, whiteSpace: "nowrap" }}>{formatSize(fileSize)}</span>
       <div style={{ width: "1px", height: "14px", background: "var(--color-border-light)", flexShrink: 0 }} />
 
       {/* 태그 아이콘 */}

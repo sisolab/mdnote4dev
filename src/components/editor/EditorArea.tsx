@@ -18,16 +18,12 @@ export function EditorArea() {
 
   const activeTab = tabs.find((t) => t.id === activeTabId);
   const [fileSize, setFileSize] = useState(0);
-  const [lineCount, setLineCount] = useState(0);
-  const [charCount, setCharCount] = useState(0);
   const [currentTags, setCurrentTags] = useState<string[]>([]);
 
   // 탭 변경 시 파일 정보 업데이트
   useEffect(() => {
     if (!activeTab) return;
     const content = activeTab.content;
-    setLineCount(content.split("\n").length);
-    setCharCount(content.length);
     const fm = parseFrontmatter(content);
     setCurrentTags(fm.tags);
 
@@ -167,8 +163,6 @@ export function EditorArea() {
         <StatusBar
           filePath={activeTab.filePath}
           fileSize={fileSize}
-          lineCount={lineCount}
-          charCount={charCount}
           tags={currentTags}
           onAddTag={handleAddTag}
           onRemoveTag={handleRemoveTag}
