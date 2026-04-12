@@ -278,6 +278,10 @@ body {
   margin: 0;
 }
 
+.tiptap li p:empty {
+  display: none;
+}
+
 .tiptap ul[data-type="taskList"] {
   list-style: none;
   padding-left: 0;
