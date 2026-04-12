@@ -15,8 +15,9 @@ import {
   type SpacingStyleName,
   type DesignPresets,
 } from "@/stores/settingsStore";
-import { Sun, Moon, BookOpen, CloudMoon, Minimize2, AlignCenter, Maximize2, SlidersHorizontal, RotateCcw, Type, X } from "lucide-react";
+import { Sun, Moon, BookOpen, CloudMoon, Minimize2, AlignCenter, Maximize2, SlidersHorizontal, RotateCcw, Type, X, FileText } from "lucide-react";
 import { FontPreview } from "./FontPreview";
+import { useAppStore } from "@/stores/appStore";
 
 function ResetButton({ onClick, visible }: { onClick: () => void; visible: boolean }) {
   if (!visible) return null;
@@ -560,7 +561,7 @@ const DESIGN_SECTIONS: { key: keyof DesignPresets; label: string; preview: (styl
         background: { background: "var(--color-bg-secondary)", padding: "4px 8px", borderRadius: "4px" },
         "accent-left": { borderLeft: "4px solid var(--color-accent)", paddingLeft: "8px" },
       };
-      return <div style={{ ...base, ...variants[style] }}>Hello World 72!</div>;
+      return <div style={{ ...base, ...variants[style] }}>Research Notes</div>;
     },
   },
   {
@@ -588,10 +589,10 @@ const DESIGN_SECTIONS: { key: keyof DesignPresets; label: string; preview: (styl
   {
     key: "blockquote", label: "인용문",
     preview: (style) => {
-      const base: React.CSSProperties = { borderLeft: "3px solid var(--color-accent)", paddingLeft: "12px", color: "var(--color-text-secondary)", fontSize: "13px", margin: 0, lineHeight: 1.6 };
-      if (style === "background") return <div style={{ ...base, background: "var(--color-bg-secondary)", padding: "8px 12px", borderRadius: "0 6px 6px 0" }}>좋은 디자인은 가능한 한 적게 디자인하는 것이다.</div>;
-      if (style === "quote-mark") return <div style={{ borderLeft: "none", paddingLeft: "28px", position: "relative", color: "var(--color-text-secondary)", fontSize: "13px", margin: 0, lineHeight: 1.6 }}><span style={{ position: "absolute", left: "2px", top: "-4px", fontSize: "28px", color: "var(--color-accent)", opacity: 0.4, lineHeight: 1 }}>{"\u201C"}</span>좋은 디자인은 가능한 한 적게 디자인하는 것이다.</div>;
-      return <div style={base}>좋은 디자인은 가능한 한 적게 디자인하는 것이다.</div>;
+      const text = "Good design is as little design as possible.";
+      if (style === "background") return <div style={{ borderLeft: "3px solid var(--color-accent)", background: "var(--color-bg-hover)", padding: "8px 12px", borderRadius: "0 6px 6px 0", color: "var(--color-text-secondary)", fontSize: "13px", margin: 0, lineHeight: 1.6 }}>{text}</div>;
+      if (style === "quote-mark") return <div style={{ paddingLeft: "28px", position: "relative", color: "var(--color-text-secondary)", fontSize: "13px", margin: 0, lineHeight: 1.6 }}><span style={{ position: "absolute", left: "2px", top: "-4px", fontSize: "28px", color: "var(--color-accent)", opacity: 0.4, lineHeight: 1 }}>{"\u201C"}</span>{text}</div>;
+      return <div style={{ borderLeft: "3px solid var(--color-accent)", paddingLeft: "12px", color: "var(--color-text-secondary)", fontSize: "13px", margin: 0, lineHeight: 1.6 }}>{text}</div>;
     },
   },
   {
@@ -617,12 +618,121 @@ const DESIGN_SECTIONS: { key: keyof DesignPresets; label: string; preview: (styl
   },
 ];
 
+const DESIGN_PREVIEW_MD = `# Typography & Layout Preview
+
+This document demonstrates how each design preset affects your notes. Open the **Settings > Design** tab and try different styles while viewing this page.
+
+## Getting Started
+
+Marknote is a local-first markdown editor built for researchers and developers. Your documents are **standard markdown files** stored on your own filesystem — no cloud required.
+
+### Key Features
+
+- WYSIWYG editing with live preview
+- File attachments and image paste
+- Tag-based organization
+- Multiple themes and accent colors
+
+### How It Works
+
+Every note is a plain \`.md\` file. Metadata like tags are stored in the frontmatter:
+
+\`\`\`yaml
+---
+tags: [research, notes, chemistry]
+---
+\`\`\`
+
+#### A Note on Portability
+
+Your files work in any markdown editor — Typora, VS Code, Obsidian, or even a plain text editor.
+
+---
+
+## Code Examples
+
+Inline code looks like \`npm install\` or \`Ctrl+S\` within a sentence.
+
+\`\`\`python
+from pathlib import Path
+
+def scan_notes(directory: str) -> list[dict]:
+    notes = []
+    for md_file in Path(directory).rglob("*.md"):
+        content = md_file.read_text(encoding="utf-8")
+        notes.append({"name": md_file.stem, "path": str(md_file)})
+    return sorted(notes, key=lambda n: n["name"])
+\`\`\`
+
+---
+
+## Quotes & References
+
+> Good design is as little design as possible. Less, but better — because it concentrates on the essential aspects.
+> — Dieter Rams
+
+> The best way to predict the future is to invent it. — Alan Kay
+
+---
+
+## Tables
+
+| Shortcut | Action | Context |
+|----------|--------|---------|
+| Ctrl+S | Save | Editor |
+| Ctrl+W | Close tab | Global |
+| Ctrl+1~4 | Heading | Editor |
+
+---
+
+- Bullet item one
+- Bullet item two
+  - Nested item
+
+1. First ordered
+2. Second ordered
+
+- [x] Completed task
+- [ ] Pending task
+
+---
+
+*End of preview*`;
+
 function DesignTab() {
   const { designPresets, setDesignPreset, resetDesign } = useSettingsStore();
   const isDefault = JSON.stringify(designPresets) === JSON.stringify(DEFAULT_DESIGN);
 
+  const openPreviewDoc = () => {
+    const { openTab, tabs } = useAppStore.getState();
+    const existing = tabs.find((t) => t.title === "Design Preview");
+    if (existing) {
+      useAppStore.getState().setActiveTab(existing.id);
+    } else {
+      openTab("", "Design Preview", DESIGN_PREVIEW_MD);
+    }
+  };
+
   return (
     <div style={{ flex: 1, overflowY: "auto", padding: "12px 16px" }}>
+      {/* 예제 문서 열기 */}
+      <button
+        onClick={openPreviewDoc}
+        style={{
+          display: "flex", alignItems: "center", gap: "6px", width: "100%",
+          padding: "8px 12px", fontSize: "12px", fontWeight: 500,
+          borderRadius: "6px", cursor: "pointer",
+          border: "1px solid var(--color-border-input)",
+          background: "var(--color-bg-primary)", color: "var(--color-text-primary)",
+          marginBottom: "16px", transition: "all 0.15s",
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--color-accent)"; e.currentTarget.style.color = "var(--color-accent)"; }}
+        onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--color-border-input)"; e.currentTarget.style.color = "var(--color-text-primary)"; }}
+      >
+        <FileText size={14} />
+        디자인 미리보기 문서 열기
+      </button>
+
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
         <SectionTitle>요소 디자인</SectionTitle>
         {!isDefault && (
@@ -638,7 +748,7 @@ function DesignTab() {
             {label}
           </div>
           {/* 미리보기 */}
-          <div style={{ padding: "12px 14px", borderRadius: "6px", background: "var(--color-bg-secondary)", marginBottom: "8px" }}>
+          <div style={{ padding: "12px 14px", marginBottom: "8px" }}>
             {preview(designPresets[key])}
           </div>
           {/* 스타일 선택 */}
