@@ -784,14 +784,14 @@ function FontTab({ currentFont, currentCodeFont, onApply, onApplyCodeFont }: {
 
   // 언어별 미리보기 텍스트
   const PREVIEW_TEXTS: Record<string, string> = {
-    popular: "The quick brown fox jumps over the lazy dog.",
-    en: "The quick brown fox jumps over the lazy dog.",
-    ko: "다람쥐 헌 쳇바퀴에 타고파. The quick brown fox.",
-    ja: "吾輩は猫である。名前はまだ無い。The quick brown fox.",
-    zh: "天地玄黄，宇宙洪荒。The quick brown fox.",
-    es: "El veloz murciélago hindú comía feliz. The quick brown fox.",
-    fr: "Le vif renard brun saute par-dessus le chien. The quick brown fox.",
-    de: "Der schnelle braune Fuchs springt über den Hund. The quick brown fox.",
+    popular: "The quick brown fox jumps over the lazy dog. 0123456789",
+    en: "Pack my box with five dozen liquor jugs. How vexingly quick daft zebras jump!",
+    ko: "키스의 고유조건은 입술끼리 , 만, 나, 는 것이다. ABCDabcd 0123",
+    ja: "いろはにほへと ちりぬるを わかよたれそ つねならむ。ABCD 0123",
+    zh: "天地玄黄，宇宙洪荒。日月盈昃，辰宿列张。ABCD 0123",
+    es: "El pingüino Wenceslao hizo kilómetros bajo exhaustiva lluvia y frío.",
+    fr: "Portez ce vieux whisky au juge blond qui fume sur son île intérieure.",
+    de: "Falsches Üben von Xylophonmusik quält jeden größeren Zwerg.",
   };
   const previewText = PREVIEW_TEXTS[selectedCategory] ?? PREVIEW_TEXTS.popular;
 
