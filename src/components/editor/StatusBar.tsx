@@ -328,7 +328,7 @@ export function StatusBar({ filePath, fileSize, tags: propTags, onAddTag, onRemo
                   borderRadius: "6px", boxShadow: "0 4px 12px rgba(0,0,0,0.12)", padding: "4px", minWidth: "120px",
                 }}>
                   <div style={{ padding: "4px 10px 6px", fontSize: "10px", color: "var(--color-text-tertiary)", fontWeight: 600 }}>
-                    탭 크기: 스페이스 수
+                    탭 크기
                   </div>
                   {([2, 4] as const).map((n) => (
                     <button key={n} onClick={(e) => { e.stopPropagation(); setTabSize(n); setTabOpen(false); }} style={{
@@ -337,7 +337,7 @@ export function StatusBar({ filePath, fileSize, tags: propTags, onAddTag, onRemo
                       background: tabSize === n ? "var(--color-accent-subtle)" : "transparent",
                       color: tabSize === n ? "var(--color-accent)" : "var(--color-text-secondary)", whiteSpace: "nowrap",
                     }}>
-                      {"┃".repeat(n === 2 ? 2 : 4).substring(0, 3)} {n}칸
+                      {"┃".repeat(n)} 스페이스 {n}칸
                       {n === 2 && <Home size={9} style={{ opacity: 0.5, flexShrink: 0 }} />}
                     </button>
                   ))}
