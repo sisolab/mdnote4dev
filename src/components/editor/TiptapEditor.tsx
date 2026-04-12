@@ -36,7 +36,6 @@ interface TiptapEditorProps {
 
 // 모듈 레벨: 탭 전환/리마운트해도 유지
 const globalTrashMap = new Map<string, string>(); // assetName → trashPath
-const editorStateCache = new Map<string, any>(); // tabId → EditorState (undo 보존)
 
 function stripFrontmatter(md: string): string {
   return md.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, "");
@@ -302,22 +301,6 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
   const [rawMode, setRawMode] = useState(false);
 
 
-  // EditorState 캐시 복원 (undo 히스토리 보존)
-  useEffect(() => {
-    if (!editor) return;
-    const tabId = mountedTabId.current;
-    const cachedState = tabId ? editorStateCache.get(tabId) : null;
-    if (cachedState) {
-      // requestAnimationFrame으로 DOM 렌더 후 복원
-      requestAnimationFrame(() => {
-        try {
-          editor.view.updateState(cachedState);
-          editorStateCache.delete(tabId!);
-        } catch {}
-      });
-    }
-  }, [editor]);
-
   // 이미지 붙여넣기 핸들러
   useEffect(() => {
     if (!editor) return;
@@ -531,10 +514,7 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
         const tabId = mountedTabId.current;
         const store = useAppStore.getState();
         const tab = tabId ? store.tabs.find((t) => t.id === tabId) : null;
-        if (!tab) return;
-        // EditorState 캐시 (undo 보존)
-        editorStateCache.set(tab.id, editor.state);
-        if (!tab.isDirty) return;
+        if (!tab?.isDirty) return;
         let body = editor.getMarkdown();
         body = body.replace(/http:\/\/asset\.localhost\/[^)"\s]*?\.assets(?:[/\\]|%5C|%2F)([^)"\s?]+)(?:\?[^)"\s]*)?/gi,
           (_m: string, f: string) => `./.assets/${decodeURIComponent(f)}`);
