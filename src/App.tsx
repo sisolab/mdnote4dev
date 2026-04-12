@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { getCurrentWindow, LogicalSize } from "@tauri-apps/api/window";
 import { readDir, readTextFile, stat, exists } from "@tauri-apps/plugin-fs";
 import { parseFrontmatter, assignTagColors } from "./utils/frontmatter";
@@ -65,25 +65,35 @@ function App() {
   const { sidebarCollapsed, sidebarWidth } = useAppStore();
   const editorMaxWidth = useSettingsStore((s) => s.settings.editorMaxWidth);
   const widthMode = useSettingsStore((s) => s.settings.widthMode);
+  const prevCollapsed = useRef(sidebarCollapsed);
   useEffect(() => {
     const appWindow = getCurrentWindow();
     const sidebar = sidebarCollapsed ? 0 : sidebarWidth;
     const editorMin = widthMode === "fixed" ? editorMaxWidth + 120 : 400;
     const minW = Math.max(720, sidebar + editorMin);
     appWindow.setMinSize(new LogicalSize(minW, 500));
-    // 현재 창이 최소 크기보다 작으면 부드럽게 늘려줌
+    // 사이드바 토글 시 창 크기 조절
+    const collapseChanged = prevCollapsed.current !== sidebarCollapsed;
+    prevCollapsed.current = sidebarCollapsed;
     (async () => {
       const factor = await appWindow.scaleFactor();
       const size = await appWindow.innerSize();
       const startW = size.width / factor;
       const height = size.height / factor;
-      if (startW < minW) {
+      let targetW = startW;
+      if (collapseChanged) {
+        // 접기: 사이드바 폭만큼 줄임, 펼치기: 사이드바 폭만큼 늘림
+        targetW = sidebarCollapsed ? startW - sidebarWidth : startW + sidebarWidth;
+      }
+      // 최소 크기 보장
+      targetW = Math.max(minW, targetW);
+      if (Math.abs(targetW - startW) > 1) {
         const duration = 250;
         const startTime = performance.now();
         const animate = (now: number) => {
           const progress = Math.min((now - startTime) / duration, 1);
           const ease = 1 - Math.pow(1 - progress, 3);
-          const w = startW + (minW - startW) * ease;
+          const w = startW + (targetW - startW) * ease;
           appWindow.setSize(new LogicalSize(Math.round(w), height));
           if (progress < 1) requestAnimationFrame(animate);
         };
