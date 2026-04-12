@@ -296,6 +296,7 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
 
   // 툴바 active 상태 즉시 반영용
   const [, setTick] = useState(0);
+  const [rawMode, setRawMode] = useState(false);
 
 
   // 이미지 붙여넣기 핸들러
@@ -576,7 +577,7 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
 
   return (
     <div className="flex flex-col h-full">
-      <Toolbar editor={editor} />
+      <Toolbar editor={editor} rawMode={rawMode} onToggleRawMode={() => setRawMode(!rawMode)} />
       <ImageToolbar editor={editor} />
       <TableToolbar editor={editor} />
       <FileToolbar editor={editor} />
@@ -640,7 +641,24 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
             : { width: "100%" }),
           ...editorStyle,
         }}>
-          <EditorContent editor={editor} />
+          {rawMode ? (
+            <pre style={{
+              fontFamily: "var(--editor-code-font-family, monospace)",
+              fontSize: "13px", lineHeight: 1.6, color: "var(--color-text-primary)",
+              whiteSpace: "pre-wrap", wordBreak: "break-word",
+              margin: 0, padding: 0, background: "transparent",
+            }}>
+              {(() => {
+                let md = editor.getMarkdown();
+                md = md.replace(/http:\/\/asset\.localhost\/[^)"\s]*?\.assets[/\\%]([^)"\s?]+)(?:\?[^)"\s]*)?/gi,
+                  (_m: string, f: string) => `./.assets/${decodeURIComponent(f)}`);
+                const fm = parseFrontmatter(contentRef.current);
+                return fm.raw ? `---\n${fm.raw}\n---\n${md}` : md;
+              })()}
+            </pre>
+          ) : (
+            <EditorContent editor={editor} />
+          )}
         </div>
       </div>
     </div>

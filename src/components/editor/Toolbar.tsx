@@ -5,7 +5,7 @@ import {
   Bold, Italic, Strikethrough, Code,
   List, ListOrdered, ListChecks,
   Star, StarOff,
-  Quote, SquareCode, Minus, Table, Smile, Paperclip, Home, Save, Check,
+  Quote, SquareCode, Minus, Table, Smile, Paperclip, Home, Save, Check, FileCode2,
 } from "lucide-react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { saveFileToAssets } from "@/utils/imageUtils";
@@ -13,6 +13,8 @@ import { useSettingsStore } from "@/stores/settingsStore";
 
 interface ToolbarProps {
   editor: Editor;
+  rawMode?: boolean;
+  onToggleRawMode?: () => void;
 }
 
 function ToolbarButton({
@@ -288,7 +290,7 @@ function ToolbarDropdown({
   );
 }
 
-export function Toolbar({ editor }: ToolbarProps) {
+export function Toolbar({ editor, rawMode, onToggleRawMode }: ToolbarProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [highlight, setHighlight] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
   const { selectedFile, favoriteFiles, addFavoriteFile, removeFavoriteFile, tabs, activeTabId } = useAppStore();
@@ -440,6 +442,15 @@ export function Toolbar({ editor }: ToolbarProps) {
 
       {/* 오른쪽: 저장 + 즐겨찾기 */}
       <div style={{ flex: 1, minWidth: "8px" }} />
+
+      <ToolbarButton
+        onClick={() => onToggleRawMode?.()}
+        active={rawMode}
+        title="원문 보기"
+        onHover={handleHover}
+      >
+        <FileCode2 size={15} />
+      </ToolbarButton>
 
       {saveMode !== "realtime" && (
       <ToolbarButton
