@@ -45,15 +45,60 @@
 - **문서 삭제**: 해당 접두사 이미지 전부 휴지통
 - **문서 이름변경**: 이미지 파일명 접두사 일괄 변경 + 마크다운 내 경로 업데이트
 
-### 마크다운 변환 (markdown.ts)
-- **markdownToHtml**: HTML 태그 보호 → 마크다운 파싱 → placeholder 복원 → 이미지 경로 변환
-- **htmlToMarkdown**: Turndown으로 변환 (체크박스, 이미지, 테이블 커스텀 규칙)
-- **HTML 블록 보호**: `<img>` 등 HTML 태그를 placeholder로 치환 후 마크다운 regex 실행, 이후 복원
-- **테이블**: Turndown table 규칙이 DOM에서 직접 마크다운 생성 (querySelectorAll)
+### 마크다운 변환
+- **@tiptap/markdown** 공식 확장으로 교체 (기존 커스텀 markdown.ts 파서 대체)
+- **파싱**: `editor.commands.setContent(md, { contentType: "markdown" })` — marked 기반
+- **직렬화**: `editor.getMarkdown()` — TipTap 노드 → 마크다운 텍스트
+- **커스텀 노드**: fileAttachment에 `renderMarkdown` 추가, 로드 시 `.assets/` 링크를 fileAttachment 노드로 후변환 (WIP)
+- **코드블록**: CodeBlockLowlight + lowlight common 언어 + ReactNodeViewRenderer로 언어 선택 UI
+- **기존 markdown.ts**: 아직 일부 유틸(extractAssetPaths 등)에서 사용, 점진적 제거 예정
+
+### 파일 첨부
+- **저장**: `.assets/` 폴더에 원본 파일명으로 복사 (`invoke("copy_file")`)
+- **마크다운**: `[filename](./.assets/filename)` 표준 링크로 저장
+- **에디터**: `FileAttachmentNode` 커스텀 블록 노드, ReactNodeViewRenderer로 카드 스타일 렌더링
+- **타입별 아이콘**: PDF→FileText, Word→FilePen, Excel→FileSpreadsheet, PPT→Presentation, MD→BookOpen, ZIP→FileArchive, 기타→File
+- **더블클릭**: 알려진 포맷 → `invoke("open_file")`, 나머지 → `invoke("open_in_explorer")`
+- **에셋 라이프사이클**: 에디터에서 삭제/undo 시 `.trash/` ↔ `.assets/` 이동 (globalTrashMap으로 추적)
+- **FileToolbar**: 첨부파일 선택 시 열기/위치열기/다른이름저장/복사/잘라내기/삭제
+
+### 첨부파일 탭 (AttachmentExplorer)
+- 검색탭 옆 고정 탭 (📎), 단축키 Ctrl+Shift+A
+- 검색/분류(확장자별/편집일별/용량별)/즐겨찾기/모든파일 섹션
+- 카드: inline-flex, 파일명 기준 폭, 즐겨찾기 별 + 클릭 시 컨텍스트 메뉴
+- 앱 시작 시 전체 .md 파일 스캔 → allAttachments 구축
+- 실시간 동기화: 에디터에서 첨부/삭제 시 allAttachments 즉시 업데이트
+
+### 단축키
+| 단축키 | 동작 |
+|--------|------|
+| Ctrl+1~4 | 제목 1~4 (토글) |
+| Ctrl+5 | 일반 텍스트 |
+| Ctrl+B/I | 굵게/기울임 (TipTap 내장) |
+| Ctrl+Shift+X | 취소선 |
+| Ctrl+S | 저장 |
+| Ctrl+W | 탭 닫기 |
+| Ctrl+N | 새 탭 |
+| Ctrl+Tab / Ctrl+Shift+Tab | 다음/이전 탭 |
+| Ctrl+Shift+F | 검색 탭 |
+| Ctrl+Shift+A | 첨부파일 탭 |
+| Tab / Shift+Tab | 코드블록 들여쓰기, 리스트 들여쓰기 |
+
+### 설정 시스템
+- **설정 패널**: 오른쪽 사이드 패널 (400px), 3탭 (설정/문서 스타일/줄 간격)
+- **문서 스타일 탭**: 에디터 프리셋(컴팩트/기본/여유로운/커스텀) + 타이포그래피 슬라이더 + 레이아웃 + 코드블록
+- **줄 간격 탭**: CSS 변수 기반 spacing (h1~h4/p/li/pre/bq/hr)
+- **스페이싱 프리셋**: Default(간결) / General(넉넉) — App.tsx에서 CSS 변수로 적용
+- **상태바**: 페이지 폭 모드/정렬/폭 텍스트 드롭다운 버튼
+
+### FS 감시
+- `useFsWatcher` 훅: tauri-plugin-fs `watch()` API로 즐겨찾기 폴더 실시간 감시
+- 파일 생성/삭제/이름변경 → 500ms 디바운스 → `refreshFileTree()`
+- Cargo.toml: `tauri-plugin-fs` features = ["watch"]
 
 ### 상태 persist
-- **appStore**: favorites, favoriteFiles, sidebarCollapsed, folderSort, fileSort, expandedFolders, tabs, activeTabId
-- **settingsStore**: settings (에디터 설정), themeMode, accentColor
+- **appStore**: favorites, favoriteFiles, favoriteAttachments, sidebarCollapsed, sidebarWidth, folderSort, fileSort, customFileOrder, expandedFolders, tabs, activeTabId
+- **settingsStore**: settings (에디터 설정), themeMode, accentColor, tabSize, spacingStyle
 - **expandedFolders**: Set → Array로 직렬화, 복원 시 Array → Set
 - **tabs**: content 제외하고 저장, 앱 시작 시 파일에서 다시 읽기
 
@@ -80,37 +125,47 @@
 ## 파일 구조
 ```
 src/
-├── App.tsx                    — 메인 앱, 테마 적용, 파일 스캔, 종료 처리
+├── App.tsx                        — 메인 앱, 테마/스페이싱 CSS 적용, 파일+첨부파일 스캔, 종료 처리, 글로벌 단축키
+├── hooks/
+│   └── useFsWatcher.ts            — 즐겨찾기 폴더 FS 실시간 감시
 ├── stores/
-│   ├── appStore.ts            — 파일/탭/즐겨찾기/태그/커스텀순서 상태
-│   ├── undoStore.ts           — undo/redo 히스토리 스택
-│   ├── settingsStore.ts       — 에디터/테마 설정
-│   └── themeData.ts           — 테마 CSS 변수 정의
+│   ├── appStore.ts                — 파일/탭/즐겨찾기/태그/첨부파일/커스텀순서 상태
+│   ├── undoStore.ts               — undo/redo 히스토리 스택
+│   ├── settingsStore.ts           — 에디터/테마/스페이싱 설정
+│   └── themeData.ts               — 테마 CSS 변수 정의
 ├── utils/
-│   ├── frontmatter.ts         — frontmatter 파싱/직렬화, 태그 색상
-│   ├── imageUtils.ts          — 이미지 저장/정리/이름변경/삭제
-│   ├── fileOps.ts             — 파일 이동/되돌리기 (경로/탭/즐겨찾기 업데이트)
-│   ├── trashUtils.ts          — 앱 내 .trash 관리 (이동/복원/비우기)
-│   └── pathUtils.ts           — 경로 유틸 (shortenPath 등)
+│   ├── frontmatter.ts             — frontmatter 파싱/직렬화, 태그 색상
+│   ├── imageUtils.ts              — 이미지/파일 저장/정리/이름변경/삭제
+│   ├── fileOps.ts                 — 파일 이동/되돌리기
+│   ├── trashUtils.ts              — 앱 내 .trash 관리
+│   └── pathUtils.ts               — 경로 유틸
 ├── components/
 │   ├── editor/
-│   │   ├── TiptapEditor.tsx   — 에디터 본체, 이미지 붙여넣기
-│   │   ├── EditorArea.tsx     — 에디터 영역 + 상태바 + 태그 관리
-│   │   ├── Toolbar.tsx        — 서식 툴바 + 표 그리드 팝업
-│   │   ├── TabBar.tsx         — 탭바 + 드래그 정렬
-│   │   ├── TagExplorer.tsx    — 검색 탭 (검색/태그/즐겨찾기/최근문서)
-│   │   ├── StatusBar.tsx      — 하단 상태바
-│   │   ├── ImageToolbar.tsx   — 이미지 플로팅 툴바
-│   │   ├── TableToolbar.tsx   — 테이블 플로팅 툴바
-│   │   ├── ImageExtension.ts  — TipTap 커스텀 Image 확장
-│   │   └── markdown.ts        — 마크다운 ↔ HTML 변환
+│   │   ├── TiptapEditor.tsx       — 에디터 본체, @tiptap/markdown, 이미지 붙여넣기, 에셋 추적
+│   │   ├── EditorArea.tsx         — 에디터 영역 + 상태바 + 탭 분기
+│   │   ├── Toolbar.tsx            — 서식 툴바 + 표/이모지/첨부 버튼 + 저장 버튼
+│   │   ├── TabBar.tsx             — 탭바 + 마우스 드래그 정렬 + 컨텍스트 메뉴
+│   │   ├── TagExplorer.tsx        — 검색 탭
+│   │   ├── AttachmentExplorer.tsx — 첨부파일 탭
+│   │   ├── StatusBar.tsx          — 하단 상태바 + 페이지 폭/정렬 드롭다운
+│   │   ├── ImageToolbar.tsx       — 이미지 플로팅 툴바 (크기/정렬/복사/잘라내기/삭제)
+│   │   ├── TableToolbar.tsx       — 테이블 플로팅 툴바
+│   │   ├── FileToolbar.tsx        — 첨부파일 플로팅 툴바
+│   │   ├── FileAttachment.tsx     — 커스텀 fileAttachment 노드 + NodeView
+│   │   ├── ImageExtension.ts      — 커스텀 Image 확장 (선택/화살키)
+│   │   ├── CodeBlockView.tsx      — 코드블록 NodeView (언어 선택 드롭다운)
+│   │   └── markdown.ts            — 레거시 마크다운 변환 (extractAssetPaths 등 유틸)
 │   ├── sidebar/
-│   │   ├── Sidebar.tsx        — 사이드바 + 폴더 관리
-│   │   └── FileTree.tsx       — 폴더 트리 + 파일 관리
+│   │   ├── Sidebar.tsx            — 사이드바 + 폴더 관리 + 정렬
+│   │   └── FileTree.tsx           — 폴더 트리 + 파일 관리 + 드래그 이동
 │   ├── settings/
-│   │   └── SettingsPanel.tsx  — 설정 패널
+│   │   ├── SettingsPanel.tsx      — 설정 패널 (3탭: 설정/문서 스타일/줄 간격)
+│   │   ├── StylePanel.tsx         — 줄 간격 슬라이더 컴포넌트
+│   │   ├── FontPreview.tsx        — 폰트 미리보기
+│   │   └── IconPicker.tsx         — 아이콘 선택기
 │   └── ui/
-│       ├── ContextMenu.tsx    — 우클릭 메뉴
-│       ├── ConfirmDialog.tsx  — 확인 다이얼로그
-│       └── Tooltip.tsx        — 툴팁
+│       ├── ContextMenu.tsx        — 우클릭 메뉴 (Portal)
+│       ├── ConfirmDialog.tsx      — 확인 다이얼로그
+│       ├── AnimatedCollapse.tsx   — 접기/펼치기 애니메이션
+│       └── Tooltip.tsx            — 툴팁
 ```
