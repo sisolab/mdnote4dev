@@ -168,7 +168,6 @@ export const CODE_FONT_GOOGLE_FAMILIES: Record<string, string> = {
   "source-code-pro": "Source Code Pro",
   "nanum-gothic-coding": "Nanum Gothic Coding",
   "ibm-plex-mono": "IBM Plex Mono",
-  "noto-sans-mono": "Noto Sans Mono",
   // cascadia, consolas → 로컬 전용 (Google Fonts 미제공)
 };
 

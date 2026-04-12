@@ -406,7 +406,6 @@ const CODE_FONT_FAMILIES: Record<string, string> = {
   "system-mono": 'monospace',
   "cascadia": '"Cascadia Code", "Fira Code", "Consolas", monospace',
   "ibm-plex-mono": '"IBM Plex Mono", "Consolas", monospace',
-  "noto-sans-mono": '"Noto Sans Mono", monospace',
   "fira-code": '"Fira Code", "Cascadia Code", "Consolas", monospace',
   "jetbrains-mono": '"JetBrains Mono", "Fira Code", "Consolas", monospace',
   "consolas": '"Consolas", "Cascadia Code", monospace',

@@ -764,9 +764,9 @@ function FontTab({ currentFont, currentCodeFont, onApply, onApplyCodeFont }: {
   const CODE_FONTS_BY_LANG: Record<string, { value: string; label: string }[]> = {
     popular: [...BASE_CODE, { value: "jetbrains-mono", label: "JetBrains Mono" }, { value: "ibm-plex-mono", label: "IBM Plex Mono" }],
     en: [...BASE_CODE, { value: "jetbrains-mono", label: "JetBrains Mono" }, { value: "ibm-plex-mono", label: "IBM Plex Mono" }],
-    ko: [...BASE_CODE, { value: "nanum-gothic-coding", label: "나눔고딕코딩" }, { value: "noto-sans-mono", label: "Noto Sans Mono" }],
-    ja: [...BASE_CODE, { value: "noto-sans-mono", label: "Noto Sans Mono" }],
-    zh: [...BASE_CODE, { value: "noto-sans-mono", label: "Noto Sans Mono" }],
+    ko: [...BASE_CODE, { value: "nanum-gothic-coding", label: "나눔고딕코딩" }],
+    ja: [...BASE_CODE],
+    zh: [...BASE_CODE],
     es: [...BASE_CODE, { value: "jetbrains-mono", label: "JetBrains Mono" }, { value: "ibm-plex-mono", label: "IBM Plex Mono" }],
     fr: [...BASE_CODE, { value: "jetbrains-mono", label: "JetBrains Mono" }, { value: "ibm-plex-mono", label: "IBM Plex Mono" }],
     de: [...BASE_CODE, { value: "jetbrains-mono", label: "JetBrains Mono" }, { value: "ibm-plex-mono", label: "IBM Plex Mono" }],
