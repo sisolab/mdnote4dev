@@ -142,6 +142,13 @@ export const FileAttachmentNode = Node.create({
     return ["file-attachment", mergeAttributes(HTMLAttributes)];
   },
 
+  // @tiptap/markdown 직렬화: 마크다운 링크로 저장
+  renderMarkdown(node: any) {
+    const filename = node.attrs.filename || "file";
+    const relativePath = node.attrs.relativePath || "";
+    return `[${filename}](${relativePath})\n\n`;
+  },
+
   addNodeView() {
     return ReactNodeViewRenderer(FileAttachmentView);
   },

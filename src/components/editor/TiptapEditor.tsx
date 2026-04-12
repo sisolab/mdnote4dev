@@ -168,7 +168,57 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
       },
     },
     onCreate: ({ editor: e }) => {
+      (e as any).__initializing = true;
       e.commands.setContent(stripFrontmatter(content), { contentType: "markdown" } as any);
+      // .assets/ 링크를 fileAttachment 노드로 변환 (이미지 제외)
+      const IMAGE_EXTS = /\.(png|jpg|jpeg|gif|webp|svg)$/i;
+      const replacements: { from: number; to: number; href: string; text: string }[] = [];
+      const seen = new Set<number>();
+      e.state.doc.descendants((node, pos) => {
+        if (!node.isText) return;
+        const linkMark = node.marks.find((m) => m.type.name === "link");
+        if (!linkMark) return;
+        const href = linkMark.attrs.href as string;
+        if (!href?.includes(".assets/") || IMAGE_EXTS.test(href)) return;
+        // 이 링크가 포함된 paragraph의 위치 찾기
+        const $pos = e.state.doc.resolve(pos);
+        const parentPos = $pos.before($pos.depth);
+        const parent = $pos.parent;
+        if (seen.has(parentPos)) return;
+        seen.add(parentPos);
+        replacements.push({
+          from: parentPos,
+          to: parentPos + parent.nodeSize,
+          href,
+          text: node.text ?? "",
+        });
+      });
+      if (replacements.length > 0) {
+        const tr = e.state.tr;
+        for (let i = replacements.length - 1; i >= 0; i--) {
+          const { from, to, href, text } = replacements[i];
+          const filename = decodeURIComponent(href.split("/").pop() ?? text ?? "file");
+          let fp = href;
+          if (filePath && href.startsWith("./")) {
+            const docDir = filePath.substring(0, filePath.lastIndexOf("\\"));
+            fp = `${docDir}\\${decodeURIComponent(href.substring(2)).replace(/\//g, "\\")}`;
+          }
+          const attachmentNode = e.schema.nodes.fileAttachment?.create({
+            filename, filepath: fp, relativePath: href, filesize: 0,
+          });
+          if (attachmentNode) {
+            tr.replaceWith(from, to, attachmentNode);
+          }
+        }
+        e.view.dispatch(tr);
+        // 변환으로 인한 isDirty 방지
+        setTimeout(() => {
+          const store = useAppStore.getState();
+          const tab = store.tabs.find((t) => t.id === store.activeTabId);
+          if (tab) store.markTabClean(tab.id);
+        }, 50);
+      }
+      requestAnimationFrame(() => { (e as any).__initializing = false; });
     },
     onTransaction: ({ editor: e }) => {
       setTick((t) => t + 1);
@@ -179,17 +229,27 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
         }
       });
       // 범위 선택에 포함된 이미지 하이라이트
+      if ((e as any).__initializing) return;
       const imgs = e.view.dom.querySelectorAll("img");
       const { from, to } = e.state.selection;
-      const isRange = to - from > 0;
-      imgs.forEach((img) => {
-        const pos = e.view.posAtDOM(img, 0);
-        if (isRange && pos >= from && pos <= to) {
-          img.classList.add("in-selection");
-        } else {
-          img.classList.remove("in-selection");
-        }
-      });
+      const isRange = to - from > 1;
+      if (!isRange) {
+        // 선택 범위 없으면 모든 하이라이트 제거
+        imgs.forEach((img) => img.classList.remove("in-selection"));
+      } else {
+        imgs.forEach((img) => {
+          try {
+            const pos = e.view.posAtDOM(img, 0);
+            if (pos > from && pos < to) {
+              img.classList.add("in-selection");
+            } else {
+              img.classList.remove("in-selection");
+            }
+          } catch {
+            img.classList.remove("in-selection");
+          }
+        });
+      }
     },
   });
 
