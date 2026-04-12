@@ -672,8 +672,8 @@ export function SettingsPanel() {
           <div style={{ height: "1px", background: "var(--color-border-light)", margin: "16px 0" }} />
 
           {/* 코드 */}
-          <SectionTitle>코드</SectionTitle>
-          <ChipSetting label="탭 크기" value={tabSize} options={[2, 4]} unit="칸" defaultValue={2} onChange={(v) => setTabSize(v as 2 | 4)} />
+          <SectionTitle>기타</SectionTitle>
+          <ChipSetting label="코드 탭 크기" value={tabSize} options={[2, 4]} unit="칸" defaultValue={2} onChange={(v) => setTabSize(v as 2 | 4)} />
 
         </div>
 
