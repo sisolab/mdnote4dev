@@ -334,9 +334,17 @@ export const useAppStore = create<AppState>()(
         })),
 
       pinTab: (id) =>
-        set((state) => ({
-          tabs: state.tabs.map((t) => t.id === id ? { ...t, pinned: true } : t),
-        })),
+        set((state) => {
+          const tab = state.tabs.find((t) => t.id === id);
+          if (!tab) return {};
+          const others = state.tabs.filter((t) => t.id !== id);
+          // 고정탭(검색/첨부) 뒤, 다��� pinned 탭 뒤에 삽입
+          const lastPinnedIdx = others.reduce((acc, t, i) =>
+            (t.type === "tag-explorer" || t.type === "attachment-explorer" || t.pinned) ? i + 1 : acc, 0);
+          const newTabs = [...others];
+          newTabs.splice(lastPinnedIdx, 0, { ...tab, pinned: true });
+          return { tabs: newTabs };
+        }),
       unpinTab: (id) =>
         set((state) => ({
           tabs: state.tabs.map((t) => t.id === id ? { ...t, pinned: false } : t),
