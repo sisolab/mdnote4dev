@@ -295,10 +295,10 @@ export function StatusBar({ filePath, fileSize, tags: propTags, onAddTag, onRemo
         />
         <div style={{ width: "1px", height: "14px", background: "var(--color-border-light)", flexShrink: 0 }} />
         <StatusDropdown
-          label={`┃${tabSize}`}
+          label={`탭 ${tabSize}`}
           items={[
-            { label: "┃2", active: tabSize === 2, isDefault: true, onClick: () => setTabSize(2) },
-            { label: "┃4", active: tabSize === 4, onClick: () => setTabSize(4) },
+            { label: "스페이스 2칸", active: tabSize === 2, isDefault: true, onClick: () => setTabSize(2) },
+            { label: "스페이스 4칸", active: tabSize === 4, onClick: () => setTabSize(4) },
           ]}
         />
         <div style={{ width: "1px", height: "14px", background: "var(--color-border-light)", flexShrink: 0 }} />
