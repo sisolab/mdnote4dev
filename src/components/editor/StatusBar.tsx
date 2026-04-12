@@ -88,7 +88,7 @@ export function StatusBar({ filePath, fileSize, tags: propTags, onAddTag, onRemo
   const tags = filePath
     ? Object.keys(allTags).filter((tag) => allTags[tag]?.includes(filePath))
     : propTags;
-  const { themeMode, settings, updateSetting } = useSettingsStore();
+  const { themeMode, settings, updateSetting, tabSize, setTabSize } = useSettingsStore();
   const isDark = themeMode === "dark" || themeMode === "charcoal";
 
   // 모든 태그 이름 (사용 빈도순)
@@ -292,6 +292,14 @@ export function StatusBar({ filePath, fileSize, tags: propTags, onAddTag, onRemo
             label: `${w}px`, active: settings.editorMaxWidth === w, isDefault: w === 720,
             onClick: () => updateSetting("editorMaxWidth", w),
           }))}
+        />
+        <div style={{ width: "1px", height: "14px", background: "var(--color-border-light)", flexShrink: 0 }} />
+        <StatusDropdown
+          label={`┃${tabSize}`}
+          items={[
+            { label: "┃2", active: tabSize === 2, isDefault: true, onClick: () => setTabSize(2) },
+            { label: "┃4", active: tabSize === 4, onClick: () => setTabSize(4) },
+          ]}
         />
         <div style={{ width: "1px", height: "14px", background: "var(--color-border-light)", flexShrink: 0 }} />
         <button

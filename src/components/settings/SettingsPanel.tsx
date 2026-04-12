@@ -48,59 +48,7 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   );
 }
 
-function SettingRow({ label, children, onReset, changed }: { label: string; children: React.ReactNode; onReset?: () => void; changed?: boolean }) {
-  return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", minHeight: "36px", padding: "4px 0", gap: "8px" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-        <span style={{ fontSize: "13px", fontWeight: 500, color: "var(--color-text-primary)" }}>{label}</span>
-        {onReset && <ResetButton onClick={onReset} visible={!!changed} />}
-      </div>
-      {children}
-    </div>
-  );
-}
 
-function formatNum(n: number, decimals?: number): string {
-  if (decimals !== undefined) return n.toFixed(decimals);
-  if (Number.isInteger(n)) return String(n);
-  return n.toFixed(1);
-}
-
-function ChipSetting({
-  label, value, options, unit, decimals, onChange, defaultValue,
-}: {
-  label: string; value: number; options: number[]; unit: string; decimals?: number; onChange: (v: number) => void; defaultValue?: number;
-}) {
-  return (
-    <SettingRow label={label} onReset={defaultValue !== undefined ? () => onChange(defaultValue) : undefined} changed={defaultValue !== undefined && Math.abs(value - defaultValue) > 0.001}>
-      <div style={{ display: "inline-flex", borderRadius: "6px", border: "1px solid var(--color-border-input)", overflow: "hidden" }}>
-        {options.map((opt) => (
-          <button
-            key={opt}
-            onClick={() => onChange(opt)}
-            style={{
-              padding: "7px 10px", fontSize: "12px", fontWeight: value === opt ? 600 : 400,
-              border: "none", cursor: "pointer", position: "relative",
-              fontFamily: "inherit",
-              background: "var(--color-bg-primary)",
-              color: value === opt ? "var(--color-accent)" : "var(--color-text-primary)",
-              transition: "all 0.15s",
-              fontVariantNumeric: "tabular-nums",
-              flexShrink: 0,
-            }}
-          >
-            {formatNum(opt, decimals)}{unit}
-            <div style={{
-              position: "absolute", bottom: "0", left: "50%", transform: "translateX(-50%)",
-              width: value === opt ? "60%" : "0%", height: "2px", borderRadius: "1px",
-              background: "var(--color-accent)", transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
-            }} />
-          </button>
-        ))}
-      </div>
-    </SettingRow>
-  );
-}
 
 function CompactSlider({
   label, value, min, max, step, unit, decimals, onChange, defaultValue,
@@ -800,7 +748,7 @@ function PreviewDocButton() {
 /* ── 메인 패널 ── */
 
 export function SettingsPanel() {
-  const { settings, updateSetting, applyPreset, resetToDefault, setShowSettings, themeMode, setThemeMode, accentColor, setAccentColor, tabSize, setTabSize, spacingStyle, setSpacingStyle, codeFontFamily, setCodeFontFamily } =
+  const { settings, updateSetting, applyPreset, resetToDefault, setShowSettings, themeMode, setThemeMode, accentColor, setAccentColor, spacingStyle, setSpacingStyle, codeFontFamily, setCodeFontFamily } =
     useSettingsStore();
 
   const [showFontPreview, setShowFontPreview] = useState(false);
@@ -928,11 +876,6 @@ export function SettingsPanel() {
           <SectionTitle>저장</SectionTitle>
           <SaveModeSetting />
 
-          <div style={{ height: "1px", background: "var(--color-border-light)", margin: "16px 0" }} />
-
-          {/* 코드 */}
-          <SectionTitle>기타</SectionTitle>
-          <ChipSetting label="코드 탭 크기" value={tabSize} options={[2, 4]} unit="칸" defaultValue={2} onChange={(v) => setTabSize(v as 2 | 4)} />
 
         </div>
 
