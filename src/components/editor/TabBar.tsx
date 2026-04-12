@@ -241,6 +241,7 @@ export function TabBar() {
             data-tab-id={tab.id}
             onClick={() => setActiveTab(tab.id)}
             onMouseEnter={(e) => handleHover(e.currentTarget)}
+            title="검색 (Alt+1)"
             style={{
               height: "40px",
               display: "flex",
@@ -273,48 +274,39 @@ export function TabBar() {
 
       <div style={{ width: "1px", height: "14px", background: "var(--color-border-light)", flexShrink: 0, margin: "0 2px" }} />
 
-      {/* 고정 첨부파일탭 */}
-      {tabs.filter((t) => t.type === "attachment-explorer").map((tab) => {
+      {/* 고정 탭 탐색기 (최근) */}
+      {tabs.filter((t) => t.type === "tab-explorer").map((tab) => {
         const isActive = tab.id === activeTabId;
         return (
-          <div
-            key={tab.id}
-            data-tab-id={tab.id}
-            onClick={() => setActiveTab(tab.id)}
+          <div key={tab.id} data-tab-id={tab.id} onClick={() => setActiveTab(tab.id)}
             onMouseEnter={(e) => handleHover(e.currentTarget)}
-            style={{
-              height: "40px",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              padding: "0 14px", cursor: "pointer",
-              position: "relative", zIndex: 1,
+            title="열린 탭 (Alt+2)"
+            style={{ height: "40px", display: "flex", alignItems: "center", justifyContent: "center",
+              padding: "0 14px", cursor: "pointer", position: "relative", zIndex: 1,
               color: isActive ? "var(--color-accent)" : "var(--color-text-secondary)",
-              transition: "color 0.1s", flexShrink: 0,
-            }}
-          >
-            <Paperclip size={13} />
-            <div style={{
-              position: "absolute", bottom: "0", left: "50%", transform: "translateX(-50%)",
-              width: isActive ? "80%" : "0%", height: "2px",
-              borderRadius: "1px", background: "var(--color-accent)",
-              transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
-            }} />
+              transition: "color 0.1s", flexShrink: 0 }}>
+            <LayoutList size={13} />
+            <div style={{ position: "absolute", bottom: "0", left: "50%", transform: "translateX(-50%)",
+              width: isActive ? "80%" : "0%", height: "2px", borderRadius: "1px",
+              background: "var(--color-accent)", transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)" }} />
           </div>
         );
       })}
 
       <div style={{ width: "1px", height: "14px", background: "var(--color-border-light)", flexShrink: 0, margin: "0 2px" }} />
 
-      {/* 고정 탭 탐색기 */}
-      {tabs.filter((t) => t.type === "tab-explorer").map((tab) => {
+      {/* 고정 첨부파일탭 */}
+      {tabs.filter((t) => t.type === "attachment-explorer").map((tab) => {
         const isActive = tab.id === activeTabId;
         return (
           <div key={tab.id} data-tab-id={tab.id} onClick={() => setActiveTab(tab.id)}
             onMouseEnter={(e) => handleHover(e.currentTarget)}
+            title="첨부파일 (Alt+3)"
             style={{ height: "40px", display: "flex", alignItems: "center", justifyContent: "center",
               padding: "0 14px", cursor: "pointer", position: "relative", zIndex: 1,
               color: isActive ? "var(--color-accent)" : "var(--color-text-secondary)",
               transition: "color 0.1s", flexShrink: 0 }}>
-            <LayoutList size={13} />
+            <Paperclip size={13} />
             <div style={{ position: "absolute", bottom: "0", left: "50%", transform: "translateX(-50%)",
               width: isActive ? "80%" : "0%", height: "2px", borderRadius: "1px",
               background: "var(--color-accent)", transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)" }} />

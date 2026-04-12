@@ -313,9 +313,17 @@ function App() {
   // 글로벌 단축키
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      const store = useAppStore.getState();
+
+      // Alt+1/2/3 — 특수탭 전환
+      if (e.altKey && !e.ctrlKey) {
+        if (e.key === "1") { e.preventDefault(); store.openTagExplorer(); return; }
+        if (e.key === "2") { e.preventDefault(); store.openTabExplorer(); return; }
+        if (e.key === "3") { e.preventDefault(); store.openAttachmentExplorer(); return; }
+      }
+
       if (!e.ctrlKey) return;
       const key = e.key.toLowerCase();
-      const store = useAppStore.getState();
 
       // Ctrl+Z / Ctrl+Shift+Z — 사이드바 undo/redo (에디터 외부)
       if (key === "z" && !document.activeElement?.closest(".tiptap")) {
@@ -351,27 +359,6 @@ function App() {
       if (key === "n") {
         e.preventDefault();
         store.newTab();
-        return;
-      }
-
-      // Ctrl+Shift+F — 검색 탭
-      if (key === "f" && e.shiftKey) {
-        e.preventDefault();
-        store.openTagExplorer();
-        return;
-      }
-
-      // Ctrl+Shift+A — 첨부파일 탭
-      if (key === "a" && e.shiftKey) {
-        e.preventDefault();
-        store.openAttachmentExplorer();
-        return;
-      }
-
-      // Ctrl+Shift+R — 열린 탭 탐색기
-      if (key === "r" && e.shiftKey) {
-        e.preventDefault();
-        store.openTabExplorer();
         return;
       }
 
