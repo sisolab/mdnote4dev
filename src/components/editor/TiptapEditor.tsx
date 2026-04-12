@@ -489,34 +489,39 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
     return () => { editor.off("update", handler); };
   }, [editor, collectAssetPaths]);
 
-  // 편집 시 isDirty 표시 + 탭 content 동기화 (디바운스)
-  const syncTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  // 편집 시 isDirty 표시
   useEffect(() => {
     if (!editor) return;
     const handler = () => {
       if ((editor as any).__initializing) return;
       const store = useAppStore.getState();
       const tab = store.tabs.find((t) => t.id === store.activeTabId);
-      if (!tab) return;
-      // 첫 편집: isDirty 설정
-      if (!tab.isDirty) {
+      if (tab && !tab.isDirty) {
         store.updateTabContent(tab.id, tab.content);
       }
-      // 디바운스: 1초 후 에디터 마크다운을 탭 content에 동기화
-      clearTimeout(syncTimer.current);
-      syncTimer.current = setTimeout(() => {
-        try {
-          let body = editor.getMarkdown();
-          body = body.replace(/http:\/\/asset\.localhost\/[^)"\s]*?\.assets(?:[/\\]|%5C|%2F)([^)"\s?]+)(?:\?[^)"\s]*)?/gi,
-            (_m: string, f: string) => `./.assets/${decodeURIComponent(f)}`);
-          const fm = parseFrontmatter(contentRef.current);
-          const md = fm.raw ? `---\n${fm.raw}\n---\n${body}` : body;
-          store.updateTabContent(tab.id, md);
-        } catch {}
-      }, 1000);
     };
     editor.on("update", handler);
-    return () => { editor.off("update", handler); clearTimeout(syncTimer.current); };
+    return () => { editor.off("update", handler); };
+  }, [editor]);
+
+  // 포커스 잃을 때 에디터 content → 탭에 동기화 (탭 전환 직전)
+  useEffect(() => {
+    if (!editor) return;
+    const syncToTab = () => {
+      try {
+        const store = useAppStore.getState();
+        const tab = store.tabs.find((t) => t.id === store.activeTabId);
+        if (!tab?.isDirty) return;
+        let body = editor.getMarkdown();
+        body = body.replace(/http:\/\/asset\.localhost\/[^)"\s]*?\.assets(?:[/\\]|%5C|%2F)([^)"\s?]+)(?:\?[^)"\s]*)?/gi,
+          (_m: string, f: string) => `./.assets/${decodeURIComponent(f)}`);
+        const fm = parseFrontmatter(contentRef.current);
+        const md = fm.raw ? `---\n${fm.raw}\n---\n${body}` : body;
+        store.updateTabContent(tab.id, md);
+      } catch {}
+    };
+    editor.on("blur", syncToTab);
+    return () => { editor.off("blur", syncToTab); };
   }, [editor]);
 
   // 자동 저장 (saveMode에 따라 동작)
