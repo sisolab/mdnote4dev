@@ -71,6 +71,25 @@ function App() {
     const editorMin = widthMode === "fixed" ? editorMaxWidth + 120 : 400;
     const minW = Math.max(720, sidebar + editorMin);
     appWindow.setMinSize(new LogicalSize(minW, 500));
+    // 현재 창이 최소 크기보다 작으면 부드럽게 늘려줌
+    (async () => {
+      const factor = await appWindow.scaleFactor();
+      const size = await appWindow.innerSize();
+      const startW = size.width / factor;
+      const height = size.height / factor;
+      if (startW < minW) {
+        const duration = 250;
+        const startTime = performance.now();
+        const animate = (now: number) => {
+          const progress = Math.min((now - startTime) / duration, 1);
+          const ease = 1 - Math.pow(1 - progress, 3);
+          const w = startW + (minW - startW) * ease;
+          appWindow.setSize(new LogicalSize(Math.round(w), height));
+          if (progress < 1) requestAnimationFrame(animate);
+        };
+        requestAnimationFrame(animate);
+      }
+    })();
   }, [sidebarCollapsed, sidebarWidth, editorMaxWidth, widthMode]);
 
   // 앱 시작 시 즐겨찾기 폴더의 .md 파일 태그 + 최근 문서 스캔
