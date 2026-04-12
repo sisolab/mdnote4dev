@@ -799,7 +799,7 @@ function FontTab({ currentFont, currentCodeFont, onApply, onApplyCodeFont }: {
     <div style={{ flex: 1, overflowY: "auto", padding: "12px 16px" }}>
       {/* 언어 선택 */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", marginBottom: "16px" }}>
-        {["popular", "zh", "es", "en", "fr", "de", "ja", "ko"].map((id) => {
+        {["popular", "en", "zh", "es", "fr", "de", "ja", "ko"].map((id) => {
           const cat = CATEGORIES.find((c) => c.id === id)!;
           const active = selectedCategory === id;
           return (
