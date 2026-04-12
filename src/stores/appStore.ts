@@ -264,7 +264,9 @@ export const useAppStore = create<AppState>()(
             if (newTabs.length === 0) {
               newActiveId = null;
             } else if (idx >= newTabs.length) {
-              newActiveId = newTabs[newTabs.length - 1].id;
+              // 검색탭 우선
+              const searchTab = newTabs.find((t) => t.type === "tag-explorer");
+              newActiveId = searchTab?.id ?? newTabs[newTabs.length - 1].id;
             } else {
               newActiveId = newTabs[idx].id;
             }

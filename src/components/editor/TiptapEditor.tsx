@@ -20,6 +20,7 @@ import { parseFrontmatter } from "@/utils/frontmatter";
 import { saveImageToAssets, getAssetsDir } from "@/utils/imageUtils";
 import { moveToTrash, findFavoriteRoot } from "@/utils/trashUtils";
 import { rename, exists, stat } from "@tauri-apps/plugin-fs";
+import { TextSelection } from "@tiptap/pm/state";
 import { useAppStore } from "@/stores/appStore";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { Toolbar } from "./Toolbar";
@@ -84,19 +85,20 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
         class: "outline-none prose prose-sm max-w-none",
       },
       handleKeyDown: (view, event) => {
-        // 인라인 코드 끝에서 오른쪽 화살표: 마크 밖으로 나가기
+        // 인라인 코드 끝에서 오른쪽 화살표: 마크 밖 + 한 칸 이동 동시
         if (event.key === "ArrowRight" && !event.ctrlKey && !event.shiftKey) {
-          const { $from } = view.state.selection;
+          const { from } = view.state.selection;
           const codeMark = view.state.schema.marks.code;
+          const $from = view.state.doc.resolve(from);
           if (codeMark && $from.marks().some((m) => m.type === codeMark)) {
-            // 코드 마크 안에 있고, 현재 위치가 텍스트 노드 끝이면
-            const after = $from.nodeAfter;
-            if (!after || (after.isText && !codeMark.isInSet(after.marks))) {
-              // 마크 밖 텍스트가 바로 뒤에 있으면 기본 동작
-            } else if (!after) {
-              // 노드 끝: 마크를 해제하고 커서 이동
+            const nodeAfter = $from.nodeAfter;
+            if (!nodeAfter || (nodeAfter.isText && !codeMark.isInSet(nodeAfter.marks))) {
+              // 마크 밖으로 나가면서 한 칸 이동
               event.preventDefault();
-              const tr = view.state.tr.removeStoredMark(codeMark);
+              const newPos = Math.min(from + 1, view.state.doc.content.size);
+              const tr = view.state.tr
+                .setSelection(TextSelection.create(view.state.doc, newPos))
+                .removeStoredMark(codeMark);
               view.dispatch(tr);
               return true;
             }
