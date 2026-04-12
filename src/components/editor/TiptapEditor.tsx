@@ -48,6 +48,7 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
   const contentRef = useRef(content);
   contentRef.current = content;
   const mountedTabId = useRef(useAppStore.getState().activeTabId);
+  const userEditCount = useRef(0); // 사용자 편집 횟수 (setContent 제외)
   const { settings, showSettings, codeFontFamily, designPresets } = useSettingsStore();
 
   const filePathRef = useRef(filePath);
@@ -498,6 +499,7 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
     if (!editor) return;
     const handler = () => {
       if ((editor as any).__initializing) return;
+      userEditCount.current++;
       const store = useAppStore.getState();
       const tab = store.tabs.find((t) => t.id === store.activeTabId);
       if (tab && !tab.isDirty) {
@@ -617,11 +619,12 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
       if (!e.ctrlKey || e.key !== "z" || e.shiftKey) return;
       if (!document.activeElement?.closest(".tiptap")) return;
 
-      // 네이티브 undo 있으면 TipTap에게 위임 + 이후 isDirty 체크
-      if (editor.can().undo()) {
+      // 네이티브 undo가 있고 사용자가 편집한 적 있으면 TipTap에게 위임
+      if (editor.can().undo() && userEditCount.current > 0) {
+        userEditCount.current--;
         const tabId = mountedTabId.current;
         requestAnimationFrame(() => {
-          if (tabId && !editor.can().undo()) {
+          if (tabId && !editor.can().undo() && userEditCount.current <= 0) {
             const stack = undoSnapshots.get(tabId);
             if (!stack || stack.length <= 1) {
               useAppStore.getState().markTabClean(tabId);
@@ -631,7 +634,7 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
         return; // TipTap이 처리
       }
 
-      // 네이티브 undo 비었음 → 스냅샷에서 복원
+      // 네이티브 undo 비었거나 setContent undo만 남음 → 스냅샷에서 복원
       const tabId = mountedTabId.current;
       if (!tabId) return;
       const stack = undoSnapshots.get(tabId);
