@@ -105,35 +105,54 @@ function CompactSlider({
   unit: string; decimals?: number; onChange: (v: number) => void; defaultValue: number;
 }) {
   const isModified = Math.abs(value - defaultValue) > 0.001;
-  // tick 표시용: step 수가 너무 많으면 간격 조절
   const totalSteps = Math.round((max - min) / step);
   const tickStep = totalSteps <= 20 ? step : step * Math.ceil(totalSteps / 20);
   const ticks: number[] = [];
   for (let v = min; v <= max + tickStep * 0.01; v += tickStep) ticks.push(v);
+  const pct = ((value - min) / (max - min)) * 100;
 
   return (
     <div style={{ display: "flex", alignItems: "center", gap: "8px", height: "28px" }}>
       <span style={{ fontSize: "11px", fontWeight: 500, color: "var(--color-text-primary)", width: "80px", flexShrink: 0 }}>{label}</span>
-      <div style={{ flex: 1, position: "relative", height: "20px", display: "flex", alignItems: "center" }}>
-        {/* tick marks */}
-        <div style={{ position: "absolute", left: "0", right: "0", top: "50%", transform: "translateY(-50%)", height: "4px", display: "flex", alignItems: "center", pointerEvents: "none" }}>
-          {ticks.map((t, i) => {
-            const pct = ((t - min) / (max - min)) * 100;
-            const isActive = Math.abs(t - value) < step * 0.01;
-            return (
-              <div key={i} style={{
-                position: "absolute", left: `${pct}%`, transform: "translateX(-50%)",
-                width: isActive ? "6px" : "4px", height: isActive ? "6px" : "4px", borderRadius: "50%",
-                background: t <= value ? "var(--color-accent)" : "var(--color-border-medium)",
-                transition: "all 0.1s",
-              }} />
-            );
-          })}
-        </div>
+      <div
+        style={{ flex: 1, position: "relative", height: "20px", cursor: "pointer" }}
+        onClick={(e) => {
+          const rect = e.currentTarget.getBoundingClientRect();
+          const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+          const raw = min + ratio * (max - min);
+          const snapped = Math.round(raw / step) * step;
+          onChange(Math.max(min, Math.min(max, parseFloat(snapped.toFixed(10)))));
+        }}
+      >
+        {/* 트랙 배경 */}
+        <div style={{ position: "absolute", left: 0, right: 0, top: "50%", transform: "translateY(-50%)", height: "3px", borderRadius: "2px", background: "var(--color-border-light)" }} />
+        {/* 활성 트랙 */}
+        <div style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)", width: `${pct}%`, height: "3px", borderRadius: "2px", background: "var(--color-accent)", transition: "width 0.05s" }} />
+        {/* tick dots */}
+        {ticks.map((t, i) => {
+          const tp = ((t - min) / (max - min)) * 100;
+          return (
+            <div key={i} style={{
+              position: "absolute", left: `${tp}%`, top: "50%", transform: "translate(-50%, -50%)",
+              width: "5px", height: "5px", borderRadius: "50%",
+              background: t <= value ? "var(--color-accent)" : "var(--color-border-medium)",
+              transition: "background 0.1s",
+            }} />
+          );
+        })}
+        {/* thumb */}
+        <div style={{
+          position: "absolute", left: `${pct}%`, top: "50%", transform: "translate(-50%, -50%)",
+          width: "12px", height: "12px", borderRadius: "50%",
+          background: "var(--color-accent)", border: "2px solid var(--color-bg-elevated)",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.2)", transition: "left 0.05s",
+          zIndex: 2,
+        }} />
+        {/* 투명 네이티브 range (드래그용) */}
         <input
           type="range" min={min} max={max} step={step} value={value}
           onChange={(e) => onChange(parseFloat(e.target.value))}
-          style={{ width: "100%", accentColor: "var(--color-accent)", position: "relative", zIndex: 1 }}
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0, cursor: "pointer", zIndex: 3 }}
         />
       </div>
       <span style={{ fontSize: "10px", color: "var(--color-accent)", fontWeight: 600, width: "44px", textAlign: "right", flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>
@@ -208,19 +227,19 @@ function PresetCard({ name, icon, color, settings, isActive, onApply }: {
 
 function SpacingSliders({ spacingStyle, setSpacingStyle }: { spacingStyle: SpacingStyleName; setSpacingStyle: (name: SpacingStyleName) => void }) {
   const ITEMS = [
-    { key: "h1Mt", label: "H1 위", min: 0, max: 3, step: 0.25, unit: "rem" },
-    { key: "h1Mb", label: "H1 아래", min: 0, max: 2, step: 0.25, unit: "rem" },
-    { key: "h2Mt", label: "H2 위", min: 0, max: 3, step: 0.25, unit: "rem" },
-    { key: "h2Mb", label: "H2 아래", min: 0, max: 2, step: 0.25, unit: "rem" },
-    { key: "h3Mt", label: "H3 위", min: 0, max: 3, step: 0.25, unit: "rem" },
-    { key: "h3Mb", label: "H3 아래", min: 0, max: 2, step: 0.25, unit: "rem" },
-    { key: "h4Mt", label: "H4 위", min: 0, max: 3, step: 0.25, unit: "rem" },
-    { key: "h4Mb", label: "H4 아래", min: 0, max: 2, step: 0.25, unit: "rem" },
-    { key: "p", label: "문단", min: 0, max: 2, step: 0.1, unit: "rem" },
-    { key: "li", label: "리스트", min: 0, max: 1, step: 0.05, unit: "rem" },
-    { key: "pre", label: "코드블록", min: 0, max: 2, step: 0.25, unit: "rem" },
-    { key: "bq", label: "인용문", min: 0, max: 2, step: 0.25, unit: "rem" },
-    { key: "hr", label: "수평선", min: 0, max: 3, step: 0.25, unit: "rem" },
+    { key: "h1Mt", label: "H1 위", min: 0.25, max: 2, step: 0.25, unit: "rem" },
+    { key: "h1Mb", label: "H1 아래", min: 0, max: 1, step: 0.25, unit: "rem" },
+    { key: "h2Mt", label: "H2 위", min: 0.25, max: 1.75, step: 0.25, unit: "rem" },
+    { key: "h2Mb", label: "H2 아래", min: 0, max: 1, step: 0.25, unit: "rem" },
+    { key: "h3Mt", label: "H3 위", min: 0.25, max: 1.5, step: 0.25, unit: "rem" },
+    { key: "h3Mb", label: "H3 아래", min: 0, max: 0.75, step: 0.25, unit: "rem" },
+    { key: "h4Mt", label: "H4 위", min: 0.25, max: 1.25, step: 0.25, unit: "rem" },
+    { key: "h4Mb", label: "H4 아래", min: 0, max: 0.75, step: 0.25, unit: "rem" },
+    { key: "p", label: "문단", min: 0, max: 0.8, step: 0.1, unit: "rem" },
+    { key: "li", label: "리스트", min: 0, max: 0.4, step: 0.05, unit: "rem" },
+    { key: "pre", label: "코드블록", min: 0.25, max: 1, step: 0.25, unit: "rem" },
+    { key: "bq", label: "인용문", min: 0.25, max: 1, step: 0.25, unit: "rem" },
+    { key: "hr", label: "수평선", min: 0.5, max: 2, step: 0.25, unit: "rem" },
   ];
 
   const preset = SPACING_STYLES[spacingStyle];
@@ -394,29 +413,29 @@ function DocStyleTab({ settings, updateSetting, applyPreset, spacingStyle, setSp
       {/* 타이포그래피 */}
       <SectionTitle>타이포그래피</SectionTitle>
       <SectionPresetButtons keys={typoKeys} settings={settings} color="#d4845a" onApply={applySectionPreset} />
-      <CompactSlider label="글자 크기" value={settings.fontSize} min={12} max={20} step={1} unit="px" defaultValue={DEFAULT_SETTINGS.fontSize} onChange={(v) => updateSetting("fontSize", v)} />
-      <CompactSlider label="줄 간격" value={settings.lineHeight} min={1.2} max={2.2} step={0.1} unit="" decimals={1} defaultValue={DEFAULT_SETTINGS.lineHeight} onChange={(v) => updateSetting("lineHeight", v)} />
-      <CompactSlider label="자간" value={settings.letterSpacing} min={-0.3} max={0.5} step={0.1} unit="px" decimals={1} defaultValue={DEFAULT_SETTINGS.letterSpacing} onChange={(v) => updateSetting("letterSpacing", v)} />
-      <CompactSlider label="문단 간격" value={settings.paragraphSpacing} min={0} max={1.0} step={0.1} unit="rem" decimals={1} defaultValue={DEFAULT_SETTINGS.paragraphSpacing} onChange={(v) => updateSetting("paragraphSpacing", v)} />
-      <CompactSlider label="제목 배율" value={settings.headingScale} min={1.1} max={1.6} step={0.1} unit="×" decimals={1} defaultValue={DEFAULT_SETTINGS.headingScale} onChange={(v) => updateSetting("headingScale", v)} />
+      <CompactSlider label="글자 크기" value={settings.fontSize} min={13} max={18} step={1} unit="px" defaultValue={DEFAULT_SETTINGS.fontSize} onChange={(v) => updateSetting("fontSize", v)} />
+      <CompactSlider label="줄 간격" value={settings.lineHeight} min={1.4} max={2.0} step={0.1} unit="" decimals={1} defaultValue={DEFAULT_SETTINGS.lineHeight} onChange={(v) => updateSetting("lineHeight", v)} />
+      <CompactSlider label="자간" value={settings.letterSpacing} min={-0.2} max={0.4} step={0.1} unit="px" decimals={1} defaultValue={DEFAULT_SETTINGS.letterSpacing} onChange={(v) => updateSetting("letterSpacing", v)} />
+      <CompactSlider label="문단 간격" value={settings.paragraphSpacing} min={0} max={0.8} step={0.1} unit="rem" decimals={1} defaultValue={DEFAULT_SETTINGS.paragraphSpacing} onChange={(v) => updateSetting("paragraphSpacing", v)} />
+      <CompactSlider label="제목 배율" value={settings.headingScale} min={1.1} max={1.5} step={0.1} unit="×" decimals={1} defaultValue={DEFAULT_SETTINGS.headingScale} onChange={(v) => updateSetting("headingScale", v)} />
 
       <div style={{ height: "1px", background: "var(--color-border-light)", margin: "12px 0" }} />
 
       {/* 레이아웃 */}
       <SectionTitle>레이아웃</SectionTitle>
       <SectionPresetButtons keys={layoutKeys} settings={settings} color="#1a73e8" onApply={applySectionPreset} />
-      <CompactSlider label="에디터 최대폭" value={settings.editorMaxWidth} min={560} max={960} step={20} unit="px" defaultValue={DEFAULT_SETTINGS.editorMaxWidth} onChange={(v) => updateSetting("editorMaxWidth", v)} />
-      <CompactSlider label="좌우 패딩" value={settings.editorPaddingX} min={24} max={72} step={4} unit="px" defaultValue={DEFAULT_SETTINGS.editorPaddingX} onChange={(v) => updateSetting("editorPaddingX", v)} />
-      <CompactSlider label="상하 패딩" value={settings.editorPaddingY} min={24} max={72} step={4} unit="px" defaultValue={DEFAULT_SETTINGS.editorPaddingY} onChange={(v) => updateSetting("editorPaddingY", v)} />
+      <CompactSlider label="에디터 최대폭" value={settings.editorMaxWidth} min={600} max={880} step={20} unit="px" defaultValue={DEFAULT_SETTINGS.editorMaxWidth} onChange={(v) => updateSetting("editorMaxWidth", v)} />
+      <CompactSlider label="좌우 패딩" value={settings.editorPaddingX} min={32} max={64} step={4} unit="px" defaultValue={DEFAULT_SETTINGS.editorPaddingX} onChange={(v) => updateSetting("editorPaddingX", v)} />
+      <CompactSlider label="상하 패딩" value={settings.editorPaddingY} min={32} max={64} step={4} unit="px" defaultValue={DEFAULT_SETTINGS.editorPaddingY} onChange={(v) => updateSetting("editorPaddingY", v)} />
 
       <div style={{ height: "1px", background: "var(--color-border-light)", margin: "12px 0" }} />
 
       {/* 코드 블록 */}
       <SectionTitle>코드 블록</SectionTitle>
       <SectionPresetButtons keys={codeKeys} settings={settings} color="#0d9488" onApply={applySectionPreset} />
-      <CompactSlider label="글자 크기" value={settings.codeFontSize} min={11} max={16} step={1} unit="px" defaultValue={DEFAULT_SETTINGS.codeFontSize} onChange={(v) => updateSetting("codeFontSize", v)} />
-      <CompactSlider label="줄 간격" value={settings.codeLineHeight} min={1.2} max={2.0} step={0.1} unit="" decimals={1} defaultValue={DEFAULT_SETTINGS.codeLineHeight} onChange={(v) => updateSetting("codeLineHeight", v)} />
-      <CompactSlider label="패딩" value={settings.codePadding} min={8} max={24} step={2} unit="px" defaultValue={DEFAULT_SETTINGS.codePadding} onChange={(v) => updateSetting("codePadding", v)} />
+      <CompactSlider label="글자 크기" value={settings.codeFontSize} min={12} max={15} step={1} unit="px" defaultValue={DEFAULT_SETTINGS.codeFontSize} onChange={(v) => updateSetting("codeFontSize", v)} />
+      <CompactSlider label="줄 간격" value={settings.codeLineHeight} min={1.3} max={1.8} step={0.1} unit="" decimals={1} defaultValue={DEFAULT_SETTINGS.codeLineHeight} onChange={(v) => updateSetting("codeLineHeight", v)} />
+      <CompactSlider label="패딩" value={settings.codePadding} min={8} max={20} step={2} unit="px" defaultValue={DEFAULT_SETTINGS.codePadding} onChange={(v) => updateSetting("codePadding", v)} />
 
       <div style={{ height: "1px", background: "var(--color-border-light)", margin: "12px 0" }} />
 
