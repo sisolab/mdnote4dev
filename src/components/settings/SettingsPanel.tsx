@@ -462,7 +462,7 @@ function DocStyleTab({ settings, updateSetting, applyPreset, spacingStyle, setSp
       {/* 레이아웃 */}
       <SectionTitle>레이아웃</SectionTitle>
       <SectionPresetButtons keys={layoutKeys} settings={settings} color="#1a73e8" onApply={applySectionPreset} />
-      <CompactSlider label="에디터 최대폭" value={settings.editorMaxWidth} min={600} max={880} step={20} unit="px" defaultValue={DEFAULT_SETTINGS.editorMaxWidth} onChange={(v) => updateSetting("editorMaxWidth", v)} />
+      <CompactSlider label="에디터 최대폭" value={settings.editorMaxWidth} min={600} max={880} step={40} unit="px" defaultValue={DEFAULT_SETTINGS.editorMaxWidth} onChange={(v) => updateSetting("editorMaxWidth", v)} />
       <CompactSlider label="좌우 패딩" value={settings.editorPaddingX} min={32} max={64} step={4} unit="px" defaultValue={DEFAULT_SETTINGS.editorPaddingX} onChange={(v) => updateSetting("editorPaddingX", v)} />
       <CompactSlider label="상하 패딩" value={settings.editorPaddingY} min={32} max={64} step={4} unit="px" defaultValue={DEFAULT_SETTINGS.editorPaddingY} onChange={(v) => updateSetting("editorPaddingY", v)} />
 

@@ -16,11 +16,14 @@ interface FontCategory {
   sample: string;
 }
 
+const SYSTEM_FONT: FontItem = { value: "system", label: "시스템 기본", family: "-apple-system, BlinkMacSystemFont, sans-serif", type: "sans" };
+
 const CATEGORIES: FontCategory[] = [
   {
     id: "popular",
     label: "Popular",
     fonts: [
+      SYSTEM_FONT,
       { value: "inter", label: "Inter", family: "Inter", type: "sans" },
       { value: "roboto", label: "Roboto", family: "Roboto", type: "sans" },
       { value: "merriweather", label: "Merriweather", family: "Merriweather", type: "serif" },
@@ -32,6 +35,7 @@ const CATEGORIES: FontCategory[] = [
     id: "en",
     label: "English",
     fonts: [
+      SYSTEM_FONT,
       { value: "inter", label: "Inter", family: "Inter", type: "sans" },
       { value: "roboto", label: "Roboto", family: "Roboto", type: "sans" },
       { value: "open-sans", label: "Open Sans", family: "Open Sans", type: "sans" },
@@ -45,6 +49,7 @@ const CATEGORIES: FontCategory[] = [
     id: "ko",
     label: "한국어",
     fonts: [
+      SYSTEM_FONT,
       { value: "noto-sans-kr", label: "Noto Sans KR", family: "Noto Sans KR", type: "sans" },
       { value: "noto-serif-kr", label: "Noto Serif KR", family: "Noto Serif KR", type: "serif" },
       { value: "ibm-plex-sans-kr", label: "IBM Plex Sans KR", family: "IBM Plex Sans KR", type: "sans" },
@@ -59,6 +64,7 @@ const CATEGORIES: FontCategory[] = [
     id: "ja",
     label: "日本語",
     fonts: [
+      SYSTEM_FONT,
       { value: "noto-sans-jp", label: "Noto Sans JP", family: "Noto Sans JP", type: "sans" },
       { value: "noto-serif-jp", label: "Noto Serif JP", family: "Noto Serif JP", type: "serif" },
       { value: "zen-kaku-gothic", label: "Zen Kaku Gothic", family: "Zen Kaku Gothic New", type: "sans" },
@@ -70,6 +76,7 @@ const CATEGORIES: FontCategory[] = [
     id: "es",
     label: "Español",
     fonts: [
+      SYSTEM_FONT,
       { value: "inter", label: "Inter", family: "Inter", type: "sans" },
       { value: "roboto", label: "Roboto", family: "Roboto", type: "sans" },
       { value: "lora", label: "Lora", family: "Lora", type: "serif" },
@@ -81,6 +88,7 @@ const CATEGORIES: FontCategory[] = [
     id: "fr",
     label: "Français",
     fonts: [
+      SYSTEM_FONT,
       { value: "inter", label: "Inter", family: "Inter", type: "sans" },
       { value: "roboto", label: "Roboto", family: "Roboto", type: "sans" },
       { value: "lora", label: "Lora", family: "Lora", type: "serif" },
@@ -92,6 +100,7 @@ const CATEGORIES: FontCategory[] = [
     id: "de",
     label: "Deutsch",
     fonts: [
+      SYSTEM_FONT,
       { value: "inter", label: "Inter", family: "Inter", type: "sans" },
       { value: "roboto", label: "Roboto", family: "Roboto", type: "sans" },
       { value: "lora", label: "Lora", family: "Lora", type: "serif" },
@@ -103,6 +112,7 @@ const CATEGORIES: FontCategory[] = [
     id: "pt",
     label: "Português",
     fonts: [
+      SYSTEM_FONT,
       { value: "inter", label: "Inter", family: "Inter", type: "sans" },
       { value: "roboto", label: "Roboto", family: "Roboto", type: "sans" },
       { value: "lora", label: "Lora", family: "Lora", type: "serif" },
@@ -114,6 +124,7 @@ const CATEGORIES: FontCategory[] = [
     id: "ar",
     label: "العربية",
     fonts: [
+      SYSTEM_FONT,
       { value: "noto-sans-arabic", label: "Noto Sans Arabic", family: "Noto Sans Arabic", type: "sans" },
       { value: "noto-serif-arabic", label: "Noto Naskh Arabic", family: "Noto Naskh Arabic", type: "serif" },
     ],
@@ -123,6 +134,7 @@ const CATEGORIES: FontCategory[] = [
     id: "hi",
     label: "हिन्दी",
     fonts: [
+      SYSTEM_FONT,
       { value: "noto-sans-devanagari", label: "Noto Sans Devanagari", family: "Noto Sans Devanagari", type: "sans" },
       { value: "noto-serif-devanagari", label: "Noto Serif Devanagari", family: "Noto Serif Devanagari", type: "serif" },
     ],
@@ -132,6 +144,7 @@ const CATEGORIES: FontCategory[] = [
     id: "zh",
     label: "中文",
     fonts: [
+      SYSTEM_FONT,
       { value: "noto-sans-sc", label: "Noto Sans SC", family: "Noto Sans SC", type: "sans" },
       { value: "noto-serif-sc", label: "Noto Serif SC", family: "Noto Serif SC", type: "serif" },
       { value: "noto-sans-tc", label: "Noto Sans TC", family: "Noto Sans TC", type: "sans" },
