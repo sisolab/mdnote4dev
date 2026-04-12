@@ -258,7 +258,6 @@ export const DESIGN_OPTIONS: Record<keyof DesignPresets, { value: string; label:
     { value: "default", label: "기본" },
     { value: "dotted", label: "점선" },
     { value: "dots", label: "가운데 점" },
-    { value: "fade", label: "페이드" },
   ],
 };
 
