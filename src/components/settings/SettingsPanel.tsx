@@ -75,7 +75,7 @@ function ChipSetting({
             key={opt}
             onClick={() => onChange(opt)}
             style={{
-              padding: "5px 10px", fontSize: "12px", fontWeight: value === opt ? 600 : 400,
+              padding: "7px 10px", fontSize: "12px", fontWeight: value === opt ? 600 : 400,
               border: "none", cursor: "pointer", position: "relative",
               fontFamily: "inherit",
               background: "var(--color-bg-primary)",
@@ -183,7 +183,7 @@ function ToggleButtons({ options, value, onChange }: {
           onClick={() => onChange(opt.value)}
           style={{
             display: "flex", alignItems: "center", justifyContent: "center", gap: "4px",
-            padding: "5px 10px", fontSize: "12px", fontWeight: value === opt.value ? 600 : 500, flexShrink: 0,
+            padding: "7px 10px", fontSize: "12px", fontWeight: value === opt.value ? 600 : 500, flexShrink: 0,
             border: "none", cursor: "pointer", position: "relative",
             fontFamily: "inherit", flex: 1,
             background: "var(--color-bg-primary)",
@@ -498,7 +498,7 @@ function SaveModeSetting() {
               key={opt.value}
               onClick={() => setPending(opt.value)}
               style={{
-                padding: "5px 10px", fontSize: "12px", fontWeight: pending === opt.value ? 600 : 400,
+                padding: "7px 10px", fontSize: "12px", fontWeight: pending === opt.value ? 600 : 400,
                 border: "none", cursor: "pointer", position: "relative",
                 fontFamily: "inherit",
                 background: "var(--color-bg-primary)",
