@@ -11,7 +11,6 @@ import {
   DEFAULT_DESIGN,
   getFontFamily,
   getCodeFontFamily,
-  CODE_FONT_OPTIONS,
   type EditorSettings,
   type SaveMode,
   type SpacingStyleName,
@@ -752,15 +751,55 @@ function FontTab({ currentFont, currentCodeFont, onApply, onApplyCodeFont }: {
     setLoadedFonts((prev) => { const n = new Set(prev); toLoad.forEach((f) => n.add(f)); return n; });
   }, []);
 
-  const previewFont = selectedFont ? `"${selectedFont.family}", sans-serif` : "inherit";
+  const previewFont = selectedFont ? `"${selectedFont.family}", sans-serif` : getFontFamily(currentFont);
   const previewCodeFont = getCodeFontFamily(selectedCodeFont);
-  const hasChanges = selectedFont || selectedCodeFont !== currentCodeFont;
+  const hasChanges = (selectedFont && selectedFont.value !== currentFont) || selectedCodeFont !== currentCodeFont;
+
+  // 언어별 코드 폰트
+  const CODE_FONTS_BY_LANG: Record<string, { value: string; label: string }[]> = {
+    popular: [
+      { value: "system-mono", label: "시스템 기본" },
+      { value: "cascadia", label: "Cascadia Code" },
+      { value: "fira-code", label: "Fira Code" },
+      { value: "jetbrains-mono", label: "JetBrains Mono" },
+      { value: "source-code-pro", label: "Source Code Pro" },
+      { value: "consolas", label: "Consolas" },
+    ],
+    ko: [
+      { value: "system-mono", label: "시스템 기본" },
+      { value: "d2coding", label: "D2Coding" },
+      { value: "nanum-gothic-coding", label: "나눔고딕코딩" },
+      { value: "cascadia", label: "Cascadia Code" },
+      { value: "fira-code", label: "Fira Code" },
+      { value: "jetbrains-mono", label: "JetBrains Mono" },
+    ],
+    ja: [
+      { value: "system-mono", label: "시스템 기본" },
+      { value: "cascadia", label: "Cascadia Code" },
+      { value: "fira-code", label: "Fira Code" },
+      { value: "jetbrains-mono", label: "JetBrains Mono" },
+    ],
+  };
+  const codeFontsForCategory = CODE_FONTS_BY_LANG[selectedCategory] ?? CODE_FONTS_BY_LANG.popular;
+
+  // 언어별 미리보기 텍스트
+  const PREVIEW_TEXTS: Record<string, string> = {
+    popular: "The quick brown fox jumps over the lazy dog.",
+    en: "The quick brown fox jumps over the lazy dog.",
+    ko: "다람쥐 헌 쳇바퀴에 타고파. The quick brown fox.",
+    ja: "吾輩は猫である。名前はまだ無い。The quick brown fox.",
+    zh: "天地玄黄，宇宙洪荒。The quick brown fox.",
+    es: "El veloz murciélago hindú comía feliz. The quick brown fox.",
+    fr: "Le vif renard brun saute par-dessus le chien. The quick brown fox.",
+    de: "Der schnelle braune Fuchs springt über den Hund. The quick brown fox.",
+  };
+  const previewText = PREVIEW_TEXTS[selectedCategory] ?? PREVIEW_TEXTS.popular;
 
   return (<>
     <div style={{ flex: 1, overflowY: "auto", padding: "12px 16px" }}>
       {/* 언어 선택 */}
-      <div className="hide-scrollbar" style={{ display: "flex", gap: "4px", overflowX: "auto", marginBottom: "16px", paddingBottom: "2px" }}>
-        {["popular", "ko", "en", "ja", "zh", "es", "fr", "de"].map((id) => {
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", marginBottom: "16px" }}>
+        {["popular", "zh", "es", "en", "fr", "de", "ja", "ko"].map((id) => {
           const cat = CATEGORIES.find((c) => c.id === id)!;
           const active = selectedCategory === id;
           return (
@@ -780,19 +819,18 @@ function FontTab({ currentFont, currentCodeFont, onApply, onApplyCodeFont }: {
       <SectionTitle>본문</SectionTitle>
       <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", marginBottom: "16px" }}>
         {category.fonts.map((font) => {
-          const isSelected = selectedFont?.value === font.value;
-          const isCurrent = currentFont === font.value;
+          const isSelected = selectedFont ? selectedFont.value === font.value : currentFont === font.value;
           return (
             <button key={font.value} onClick={() => setSelectedFont(font)} style={{
               padding: "5px 12px", fontSize: "12px", fontWeight: isSelected ? 600 : 400,
               fontFamily: `"${font.family}", sans-serif`,
               borderRadius: "6px", cursor: "pointer",
-              border: isSelected ? "1.5px solid var(--color-accent)" : isCurrent ? "1.5px solid var(--color-border-medium)" : "1px solid var(--color-border-input)",
+              border: isSelected ? "1.5px solid var(--color-accent)" : "1px solid var(--color-border-input)",
               background: isSelected ? "var(--color-accent-subtle)" : "var(--color-bg-primary)",
               color: isSelected ? "var(--color-accent)" : "var(--color-text-primary)",
               transition: "all 0.15s",
             }}>
-              {font.label}{isCurrent && !isSelected ? " ✓" : ""}
+              {font.label}
             </button>
           );
         })}
@@ -801,20 +839,19 @@ function FontTab({ currentFont, currentCodeFont, onApply, onApplyCodeFont }: {
       {/* 코드 폰트 */}
       <SectionTitle>코드</SectionTitle>
       <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", marginBottom: "16px" }}>
-        {CODE_FONT_OPTIONS.map((opt) => {
+        {codeFontsForCategory.map((opt) => {
           const isSelected = selectedCodeFont === opt.value;
-          const isCurrent = currentCodeFont === opt.value;
           return (
             <button key={opt.value} onClick={() => setSelectedCodeFont(opt.value)} style={{
               padding: "5px 12px", fontSize: "12px", fontWeight: isSelected ? 600 : 400,
               fontFamily: getCodeFontFamily(opt.value),
               borderRadius: "6px", cursor: "pointer",
-              border: isSelected ? "1.5px solid var(--color-accent)" : isCurrent && !isSelected ? "1.5px solid var(--color-border-medium)" : "1px solid var(--color-border-input)",
+              border: isSelected ? "1.5px solid var(--color-accent)" : "1px solid var(--color-border-input)",
               background: isSelected ? "var(--color-accent-subtle)" : "var(--color-bg-primary)",
               color: isSelected ? "var(--color-accent)" : "var(--color-text-primary)",
               transition: "all 0.15s",
             }}>
-              {opt.label}{isCurrent && !isSelected ? " ✓" : ""}
+              {opt.label}
             </button>
           );
         })}
@@ -830,7 +867,7 @@ function FontTab({ currentFont, currentCodeFont, onApply, onApplyCodeFont }: {
       }}>
         <div style={{ fontWeight: 700, fontSize: "18px", marginBottom: "6px" }}>Typography Preview</div>
         <div style={{ marginBottom: "8px" }}>
-          The quick brown fox jumps over the lazy dog. 다람쥐 헌 쳇바퀴에 타고파.
+          {previewText}
         </div>
         <div style={{ marginBottom: "6px" }}>
           <code style={{
