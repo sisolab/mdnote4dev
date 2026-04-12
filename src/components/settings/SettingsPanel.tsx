@@ -490,37 +490,62 @@ function SaveModeSetting() {
 
   return (
     <>
-      <SettingRow label="저장 모드" onReset={() => { setPending("manual"); setSaveMode("manual"); }} changed={saveMode !== "manual"}>
-        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-          <select
-            value={pending}
-            onChange={(e) => setPending(e.target.value as SaveMode)}
-            style={{
-              fontSize: "12px", fontWeight: 500, padding: "5px 10px",
-              borderRadius: "6px", border: "1px solid var(--color-border-input)",
-              background: "var(--color-bg-primary)", color: "var(--color-text-primary)",
-              cursor: "pointer",
-            }}
-          >
-            {SAVE_MODE_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-          </select>
+      <div style={{ marginBottom: "4px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+            <span style={{ fontSize: "13px", fontWeight: 500, color: "var(--color-text-primary)" }}>저장 모드</span>
+            <ResetButton onClick={() => { setPending("manual"); setSaveMode("manual"); }} visible={saveMode !== "manual"} />
+          </div>
           {changed && (
-            <button
-              onClick={() => setSaveMode(pending)}
-              style={{
-                padding: "4px 10px", fontSize: "11px", fontWeight: 600,
-                background: "var(--color-accent)", color: "#fff",
-                border: "none", borderRadius: "4px", cursor: "pointer",
-              }}
-            >
-              적용
-            </button>
+            <div style={{ display: "flex", gap: "4px" }}>
+              <button
+                onClick={() => setPending(saveMode)}
+                style={{
+                  padding: "3px 10px", fontSize: "11px", fontWeight: 500,
+                  background: "var(--color-bg-hover)", color: "var(--color-text-primary)",
+                  border: "none", borderRadius: "4px", cursor: "pointer",
+                }}
+              >
+                취소
+              </button>
+              <button
+                onClick={() => setSaveMode(pending)}
+                style={{
+                  padding: "3px 10px", fontSize: "11px", fontWeight: 600,
+                  background: "var(--color-accent)", color: "#fff",
+                  border: "none", borderRadius: "4px", cursor: "pointer",
+                }}
+              >
+                적용
+              </button>
+            </div>
           )}
         </div>
-      </SettingRow>
-      <div style={{ fontSize: "10px", color: "var(--color-text-tertiary)", marginTop: "-4px", marginBottom: "4px" }}>
+        <div style={{ display: "inline-flex", borderRadius: "6px", border: "1px solid var(--color-border-input)", overflow: "hidden" }}>
+          {SAVE_MODE_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => setPending(opt.value)}
+              style={{
+                padding: "5px 10px", fontSize: "12px", fontWeight: pending === opt.value ? 600 : 400,
+                border: "none", cursor: "pointer", position: "relative",
+                fontFamily: "inherit",
+                background: "var(--color-bg-primary)",
+                color: pending === opt.value ? "var(--color-accent)" : "var(--color-text-primary)",
+                transition: "all 0.15s",
+              }}
+            >
+              {opt.label}
+              <div style={{
+                position: "absolute", bottom: "0", left: "50%", transform: "translateX(-50%)",
+                width: pending === opt.value ? "60%" : "0%", height: "2px", borderRadius: "1px",
+                background: "var(--color-accent)", transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+              }} />
+            </button>
+          ))}
+        </div>
+      </div>
+      <div style={{ fontSize: "10px", color: "var(--color-text-tertiary)", marginBottom: "4px" }}>
         {SAVE_MODE_OPTIONS.find((o) => o.value === pending)?.desc}
       </div>
     </>
@@ -556,7 +581,7 @@ export function SettingsPanel() {
       {/* 헤더 */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderBottom: "1px solid var(--color-border-light)" }}>
         <div style={{ display: "flex", gap: "4px" }}>
-          {([["settings", "설정"], ["docstyle", "문서 스타일"]] as const).map(([tab, label]) => (
+          {([["settings", "설정"], ["docstyle", "스타일"]] as const).map(([tab, label]) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab as any)}
