@@ -1018,7 +1018,7 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
           onClick={() => setDeleteConfirm(null)}
           style={{
             position: "fixed", inset: 0, zIndex: 200,
-            display: "flex", alignItems: "start", justifyContent: "center", paddingTop: "120px",
+            display: "flex", alignItems: "center", justifyContent: "center",
             background: "rgba(0,0,0,0.35)", animation: "fadeIn 0.15s ease-out",
           }}
         >
@@ -1077,7 +1077,7 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
 
       {/* 멀티 파일 이동 확인창 */}
       {moveConfirm && createPortal(
-        <div onClick={() => setMoveConfirm(null)} style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", alignItems: "start", justifyContent: "center", paddingTop: "120px", background: "rgba(0,0,0,0.35)" }}>
+        <div onClick={() => setMoveConfirm(null)} style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.35)" }}>
           <div onClick={(e) => e.stopPropagation()} style={{ width: "360px", background: "var(--color-bg-elevated)", borderRadius: "12px", border: "1px solid var(--color-border-medium)", boxShadow: "0 8px 32px rgba(0,0,0,0.18)", padding: "24px" }}>
             <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--color-text-heading)", marginBottom: "8px" }}>파일 이동</div>
             <div style={{ fontSize: "12px", color: "var(--color-text-secondary)", marginBottom: "20px", lineHeight: 1.6 }}>

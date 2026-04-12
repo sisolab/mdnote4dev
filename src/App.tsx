@@ -357,7 +357,7 @@ function App() {
       {showExitConfirm && (
         <div style={{
           position: "fixed", inset: 0, zIndex: 300,
-          display: "flex", alignItems: "start", justifyContent: "center", paddingTop: "120px",
+          display: "flex", alignItems: "center", justifyContent: "center",
           background: "rgba(0,0,0,0.35)", animation: "fadeIn 0.15s ease-out",
         }}>
           <div style={{

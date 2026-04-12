@@ -275,7 +275,7 @@ export function TagExplorer() {
 
       {/* 태그 전체 삭제 확인 */}
       {deleteConfirmTag && (
-        <div onClick={() => setDeleteConfirmTag(null)} style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", alignItems: "start", justifyContent: "center", paddingTop: "120px", background: "rgba(0,0,0,0.35)" }}>
+        <div onClick={() => setDeleteConfirmTag(null)} style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.35)" }}>
           <div onClick={(e) => e.stopPropagation()} style={{ width: "340px", background: "var(--color-bg-elevated)", borderRadius: "12px", border: "1px solid var(--color-border-medium)", boxShadow: "0 8px 32px rgba(0,0,0,0.18)", padding: "24px" }}>
             <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--color-text-heading)", marginBottom: "8px" }}>태그 전체 삭제</div>
             <div style={{ fontSize: "12px", color: "var(--color-text-secondary)", marginBottom: "20px", lineHeight: 1.6 }}>
