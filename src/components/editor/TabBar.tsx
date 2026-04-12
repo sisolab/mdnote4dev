@@ -4,12 +4,12 @@ import { rename, readTextFile, writeTextFile } from "@tauri-apps/plugin-fs";
 import { open } from "@tauri-apps/plugin-dialog";
 import { useAppStore } from "@/stores/appStore";
 import { renameDocImages } from "@/utils/imageUtils";
-import { FolderOpen, Maximize2, Minimize2, Settings, Search, Paperclip } from "lucide-react";
+import { FolderOpen, Maximize2, Minimize2, Settings, Search, Paperclip, Pin } from "lucide-react";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
 
 export function TabBar() {
-  const { tabs, activeTabId, setActiveTab, closeTab, updateTabTitle, newTab, reorderTabs, toggleSidebar, sidebarCollapsed } = useAppStore();
+  const { tabs, activeTabId, setActiveTab, closeTab, updateTabTitle, newTab, reorderTabs, toggleSidebar, sidebarCollapsed, pinTab, unpinTab } = useAppStore();
   const { setShowSettings } = useSettingsStore();
   const containerRef = useRef<HTMLDivElement>(null);
   const [highlight, setHighlight] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
@@ -434,39 +434,58 @@ export function TabBar() {
                   )}
                 </div>
 
-                {/* 닫기 버튼 (태그탭은 닫기 불가) */}
-                {tab.type !== "tag-explorer" && tab.type !== "attachment-explorer" && <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const saveMode = useSettingsStore.getState().saveMode;
-                    if (!tab.filePath && tab.content) {
-                      setCloseConfirmId(tab.id);
-                    } else if (tab.isDirty && tab.filePath) {
-                      if (saveMode === "on-tab-close" || saveMode === "realtime") {
-                        // 자동 저장 후 닫기
-                        setActiveTab(tab.id);
-                        window.dispatchEvent(new KeyboardEvent("keydown", { ctrlKey: true, key: "s" }));
-                        const onSaved = () => { closeTab(tab.id); window.removeEventListener("manual-save", onSaved); };
-                        window.addEventListener("manual-save", onSaved);
-                      } else {
-                        setCloseConfirmId(tab.id);
-                      }
-                    } else {
-                      closeTab(tab.id);
-                    }
-                  }}
-                  style={{
-                    width: "16px", height: "16px",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    borderRadius: "3px", border: "none", background: "transparent",
-                    color: "var(--color-text-tertiary)", cursor: "pointer", flexShrink: 0,
-                    fontSize: "14px", lineHeight: 1, transition: "all 0.1s",
-                  }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-active)"; e.currentTarget.style.color = "var(--color-text-secondary)"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--color-text-muted)"; }}
-                >
-                  ×
-                </button>}
+                {/* 고정 핀 또는 닫기 버튼 */}
+                {tab.type !== "tag-explorer" && tab.type !== "attachment-explorer" && (
+                  tab.pinned ? (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); unpinTab(tab.id); }}
+                      title="고정 해제"
+                      style={{
+                        width: "16px", height: "16px",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        borderRadius: "3px", border: "none", background: "transparent",
+                        color: "var(--color-accent)", cursor: "pointer", flexShrink: 0,
+                        transition: "all 0.1s",
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-active)"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                    >
+                      <Pin size={11} />
+                    </button>
+                  ) : (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const saveMode = useSettingsStore.getState().saveMode;
+                        if (!tab.filePath && tab.content) {
+                          setCloseConfirmId(tab.id);
+                        } else if (tab.isDirty && tab.filePath) {
+                          if (saveMode === "on-tab-close" || saveMode === "realtime") {
+                            setActiveTab(tab.id);
+                            window.dispatchEvent(new KeyboardEvent("keydown", { ctrlKey: true, key: "s" }));
+                            const onSaved = () => { closeTab(tab.id); window.removeEventListener("manual-save", onSaved); };
+                            window.addEventListener("manual-save", onSaved);
+                          } else {
+                            setCloseConfirmId(tab.id);
+                          }
+                        } else {
+                          closeTab(tab.id);
+                        }
+                      }}
+                      style={{
+                        width: "16px", height: "16px",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        borderRadius: "3px", border: "none", background: "transparent",
+                        color: "var(--color-text-tertiary)", cursor: "pointer", flexShrink: 0,
+                        fontSize: "14px", lineHeight: 1, transition: "all 0.1s",
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-active)"; e.currentTarget.style.color = "var(--color-text-secondary)"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--color-text-muted)"; }}
+                    >
+                      ×
+                    </button>
+                  )
+                )}
               </div>
 
               {/* 드롭 인디케이터 */}
@@ -597,10 +616,16 @@ export function TabBar() {
         if (!tab) return null;
         const isSpecial = tab.type === "tag-explorer" || tab.type === "attachment-explorer";
         const menuItems: ContextMenuItem[] = [];
+        if (!isSpecial) {
+          menuItems.push({
+            label: tab.pinned ? "고정 해제" : "탭 고정",
+            onClick: () => tab.pinned ? unpinTab(tab.id) : pinTab(tab.id),
+          });
+        }
         if (!isSpecial && tab.filePath) {
           menuItems.push({ label: "이름 바꾸기", onClick: () => startRename(tab.id, tab.title) });
         }
-        if (!isSpecial) {
+        if (!isSpecial && !tab.pinned) {
           menuItems.push({ label: "닫기", onClick: () => {
             if ((tab.isDirty && tab.filePath) || (!tab.filePath && tab.content)) {
               setCloseConfirmId(tab.id);
@@ -616,7 +641,8 @@ export function TabBar() {
               t.id !== tab.id &&
               t.type !== "tag-explorer" &&
               t.type !== "attachment-explorer" &&
-              t.filePath // 저장되지 않은 임시 탭은 유지
+              !t.pinned &&
+              t.filePath
             );
             toClose.forEach((t) => closeTab(t.id));
           },

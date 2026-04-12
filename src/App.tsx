@@ -326,7 +326,7 @@ function App() {
         e.preventDefault();
         if (store.activeTabId) {
           const tab = store.tabs.find((t) => t.id === store.activeTabId);
-          if (tab && tab.type !== "tag-explorer" && tab.type !== "attachment-explorer") {
+          if (tab && tab.type !== "tag-explorer" && tab.type !== "attachment-explorer" && !tab.pinned) {
             const saveMode = useSettingsStore.getState().saveMode;
             if (tab.isDirty && tab.filePath && (saveMode === "on-tab-close" || saveMode === "realtime")) {
               // 자동 저장 후 닫기

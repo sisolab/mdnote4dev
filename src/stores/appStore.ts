@@ -34,6 +34,7 @@ export interface Tab {
   filePath: string | null; // null이면 임시 문서
   content: string;
   isDirty: boolean;
+  pinned?: boolean;
   type?: "document" | "tag-explorer" | "attachment-explorer";
   tagFilters?: string[]; // tag-explorer 탭에서 선택된 태그들
 }
@@ -99,6 +100,8 @@ interface AppState {
   updateTabFilePath: (id: string, filePath: string, title: string) => void;
   markTabClean: (id: string) => void;
   reorderTabs: (fromIndex: number, toIndex: number) => void;
+  pinTab: (id: string) => void;
+  unpinTab: (id: string) => void;
   openTagExplorer: (tag?: string) => void;
   openAttachmentExplorer: () => void;
 
@@ -328,6 +331,15 @@ export const useAppStore = create<AppState>()(
           tabs: state.tabs.map((t) =>
             t.id === id ? { ...t, isDirty: false } : t
           ),
+        })),
+
+      pinTab: (id) =>
+        set((state) => ({
+          tabs: state.tabs.map((t) => t.id === id ? { ...t, pinned: true } : t),
+        })),
+      unpinTab: (id) =>
+        set((state) => ({
+          tabs: state.tabs.map((t) => t.id === id ? { ...t, pinned: false } : t),
         })),
 
       reorderTabs: (fromIndex, toIndex) =>
