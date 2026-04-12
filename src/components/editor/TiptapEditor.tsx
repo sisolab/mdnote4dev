@@ -174,24 +174,37 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
       const IMAGE_EXTS = /\.(png|jpg|jpeg|gif|webp|svg)$/i;
       const replacements: { from: number; to: number; href: string; text: string }[] = [];
       const seen = new Set<number>();
+      // .assets/ 링크 패턴을 텍스트에서 직접 매칭 (link mark 또는 plain text 모두 대응)
+      const ASSET_LINK_RE = /^\[([^\]]+)\]\((\.[/\\]\.assets\/[^)]+)\)$/;
       e.state.doc.descendants((node, pos) => {
-        if (!node.isText) return;
-        const linkMark = node.marks.find((m) => m.type.name === "link");
-        if (!linkMark) return;
-        const href = linkMark.attrs.href as string;
-        if (!href?.includes(".assets/") || IMAGE_EXTS.test(href)) return;
-        // 이 링크가 포함된 paragraph의 위치 찾기
-        const $pos = e.state.doc.resolve(pos);
-        const parentPos = $pos.before($pos.depth);
-        const parent = $pos.parent;
-        if (seen.has(parentPos)) return;
-        seen.add(parentPos);
-        replacements.push({
-          from: parentPos,
-          to: parentPos + parent.nodeSize,
-          href,
-          text: node.text ?? "",
-        });
+        // 방법 1: link mark가 있는 경우
+        if (node.isText) {
+          const linkMark = node.marks.find((m) => m.type.name === "link");
+          if (linkMark) {
+            const href = linkMark.attrs.href as string;
+            if (href?.includes(".assets/") && !IMAGE_EXTS.test(href)) {
+              const $pos = e.state.doc.resolve(pos);
+              const parentPos = $pos.before($pos.depth);
+              if (!seen.has(parentPos)) {
+                seen.add(parentPos);
+                replacements.push({ from: parentPos, to: parentPos + $pos.parent.nodeSize, href, text: node.text ?? "" });
+              }
+            }
+            return;
+          }
+        }
+        // 방법 2: plain text로 남은 경우 ([filename](./.assets/...))
+        if (node.isText && node.text) {
+          const match = node.text.match(ASSET_LINK_RE);
+          if (match && !IMAGE_EXTS.test(match[2])) {
+            const $pos = e.state.doc.resolve(pos);
+            const parentPos = $pos.before($pos.depth);
+            if (!seen.has(parentPos)) {
+              seen.add(parentPos);
+              replacements.push({ from: parentPos, to: parentPos + $pos.parent.nodeSize, href: match[2], text: match[1] });
+            }
+          }
+        }
       });
       if (replacements.length > 0) {
         const tr = e.state.tr;
