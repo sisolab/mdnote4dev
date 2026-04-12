@@ -784,14 +784,14 @@ function FontTab({ currentFont, currentCodeFont, onApply, onApplyCodeFont }: {
 
   // 언어별 미리보기 텍스트
   const PREVIEW_TEXTS: Record<string, string> = {
-    popular: "The quick brown fox jumps over the lazy dog. 0123456789",
-    en: "Pack my box with five dozen liquor jugs. How vexingly quick daft zebras jump!",
-    ko: "키스의 고유조건은 입술끼리 , 만, 나, 는 것이다. ABCDabcd 0123",
-    ja: "いろはにほへと ちりぬるを わかよたれそ つねならむ。ABCD 0123",
-    zh: "天地玄黄，宇宙洪荒。日月盈昃，辰宿列张。ABCD 0123",
-    es: "El pingüino Wenceslao hizo kilómetros bajo exhaustiva lluvia y frío.",
-    fr: "Portez ce vieux whisky au juge blond qui fume sur son île intérieure.",
-    de: "Falsches Üben von Xylophonmusik quält jeden größeren Zwerg.",
+    popular: "A well-designed note app helps you think clearly and write better.",
+    en: "Good writing starts with a good typeface. Every detail matters in the end.",
+    ko: "좋은 글꼴은 문서의 분위기를 바꿉니다. 읽기 편한 글꼴을 골라보세요.",
+    ja: "良いフォントは文書の印象を変えます。読みやすい書体を選びましょう。",
+    zh: "好的字体能改变文档的氛围。请选择一个易于阅读的字体。",
+    es: "Una buena tipografía cambia la sensación del documento por completo.",
+    fr: "Une bonne police change l'atmosphère de tout le document.",
+    de: "Eine gute Schriftart verändert die Wirkung eines Dokuments grundlegend.",
   };
   const previewText = PREVIEW_TEXTS[selectedCategory] ?? PREVIEW_TEXTS.popular;
 
