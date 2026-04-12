@@ -365,7 +365,7 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
       const tab = store.tabs.find((t) => t.id === store.activeTabId);
       if (tab?.isDirty && editor && !editor.isDestroyed) {
         let body = editor.getMarkdown();
-        body = body.replace(/http:\/\/asset\.localhost\/[^)"\s]*?\.assets[/\\%]([^)"\s?]+)(?:\?[^)"\s]*)?/gi,
+        body = body.replace(/http:\/\/asset\.localhost\/[^)"\s]*?\.assets(?:[/\\]|%5C|%2F)([^)"\s?]+)(?:\?[^)"\s]*)?/gi,
           (_m: string, f: string) => `./.assets/${decodeURIComponent(f)}`);
         const fm = parseFrontmatter(contentRef.current);
         const md = fm.raw ? `---\n${fm.raw}\n---\n${body}` : body;
@@ -378,7 +378,7 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
     if (!editor) return;
     let body = editor.getMarkdown();
     // asset URL → 상대경로 복원 (http://asset.localhost/.../.assets/file → ./.assets/file)
-    body = body.replace(/http:\/\/asset\.localhost\/[^)"\s]*?\.assets[/\\%]([^)"\s?]+)(?:\?[^)"\s]*)?/gi,
+    body = body.replace(/http:\/\/asset\.localhost\/[^)"\s]*?\.assets(?:[/\\]|%5C|%2F)([^)"\s?]+)(?:\?[^)"\s]*)?/gi,
       (_match, filename) => `./.assets/${decodeURIComponent(filename)}`
     );
     // frontmatter 보존: 현재 탭 content에서 frontmatter를 그대로 유지
@@ -670,7 +670,7 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
             }}>
               {(() => {
                 let md = editor.getMarkdown();
-                md = md.replace(/http:\/\/asset\.localhost\/[^)"\s]*?\.assets[/\\%]([^)"\s?]+)(?:\?[^)"\s]*)?/gi,
+                md = md.replace(/http:\/\/asset\.localhost\/[^)"\s]*?\.assets(?:[/\\]|%5C|%2F)([^)"\s?]+)(?:\?[^)"\s]*)?/gi,
                   (_m: string, f: string) => `./.assets/${decodeURIComponent(f)}`);
                 const fm = parseFrontmatter(contentRef.current);
                 return fm.raw ? `---\n${fm.raw}\n---\n${md}` : md;

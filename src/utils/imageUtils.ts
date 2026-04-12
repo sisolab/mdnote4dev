@@ -82,7 +82,7 @@ export function extractAssetPaths(markdown: string): string[] {
     paths.push(match[1]);
   }
   // asset URL (http://asset.localhost/.../.assets/filename) — 미저장 content 대응
-  const assetUrlRegex = /http:\/\/asset\.localhost\/[^)"\s]*?\.assets[/\\%]([^)"\s?]+)/gi;
+  const assetUrlRegex = /http:\/\/asset\.localhost\/[^)"\s]*?\.assets(?:[/\\]|%5C|%2F)([^)"\s?]+)/gi;
   while ((match = assetUrlRegex.exec(markdown)) !== null) {
     paths.push(`./.assets/${decodeURIComponent(match[1])}`);
   }

@@ -730,22 +730,23 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
         assetRecords = [];
         const currentState = useAppStore.getState();
         for (const item of items) {
-          // .md 파일이면 관련 에셋도 .trash로 이동
+          // .md 파일이면 관련 에셋을 .trash로 이동 (문서명 접두사로 매칭)
           if (!item.isDirectory && /\.(md|markdown)$/i.test(item.name)) {
             try {
-              const content = currentState.tabs.find((t) => t.filePath === item.path)?.content ?? await readTextFile(item.path);
-              const { extractAssetPaths, getAssetsDir } = await import("@/utils/imageUtils");
-              const assetNames = extractAssetPaths(content).map((p) => p.replace(/^\.\/\.assets\//, ""));
+              const { getAssetsDir } = await import("@/utils/imageUtils");
               const assetsDir = getAssetsDir(item.path);
-              for (const name of assetNames) {
-                const assetPath = `${assetsDir}\\${name}`;
-                try {
-                  const { exists: fileExists } = await import("@tauri-apps/plugin-fs");
-                  if (await fileExists(assetPath)) {
-                    const record = await moveToTrash(assetPath, favRoot);
-                    assetRecords.push(record);
+              const { exists: fileExists, readDir: readAssetDir } = await import("@tauri-apps/plugin-fs");
+              if (await fileExists(assetsDir)) {
+                const docName = item.name.replace(/\.(md|markdown)$/i, "");
+                const entries = await readAssetDir(assetsDir);
+                for (const entry of entries) {
+                  if (entry.name?.startsWith(docName)) {
+                    try {
+                      const record = await moveToTrash(`${assetsDir}\\${entry.name}`, favRoot);
+                      assetRecords.push(record);
+                    } catch {}
                   }
-                } catch {}
+                }
               }
             } catch {}
           }
