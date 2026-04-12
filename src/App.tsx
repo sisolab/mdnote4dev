@@ -368,6 +368,13 @@ function App() {
         return;
       }
 
+      // Ctrl+Shift+R — 열린 탭 탐색기
+      if (key === "r" && e.shiftKey) {
+        e.preventDefault();
+        store.openTabExplorer();
+        return;
+      }
+
       // Ctrl+Tab / Ctrl+Shift+Tab — 탭 전환
       if (e.key === "Tab") {
         e.preventDefault();
