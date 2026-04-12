@@ -262,15 +262,16 @@ export const useAppStore = create<AppState>()(
           let newActiveId = state.activeTabId;
           if (state.activeTabId === id) {
             const searchTab = newTabs.find((t) => t.type === "tag-explorer");
-            if (newTabs.length === 0) {
-              newActiveId = null;
+            const docTabs = newTabs.filter((t) => t.type !== "tag-explorer" && t.type !== "attachment-explorer");
+            if (docTabs.length === 0) {
+              // 문서 탭 없으면 검색탭
+              newActiveId = searchTab?.id ?? newTabs[0]?.id ?? null;
             } else if (idx > 0 && idx <= newTabs.length) {
               // 이전 탭으로 포커스
               newActiveId = newTabs[Math.min(idx - 1, newTabs.length - 1)].id;
             } else if (newTabs[idx]) {
               newActiveId = newTabs[idx].id;
             } else {
-              // 문서 탭 없으면 검색탭
               newActiveId = searchTab?.id ?? newTabs[0]?.id ?? null;
             }
           }

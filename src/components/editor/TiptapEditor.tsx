@@ -455,10 +455,11 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
     return () => { editor.off("update", handler); };
   }, [editor, collectAssetPaths]);
 
-  // 편집 시 isDirty 표시
+  // 편집 시 isDirty 표시 (초기화 중에는 무시)
   useEffect(() => {
     if (!editor) return;
     const handler = () => {
+      if ((editor as any).__initializing) return;
       const store = useAppStore.getState();
       const tab = store.tabs.find((t) => t.id === store.activeTabId);
       if (tab && !tab.isDirty) {

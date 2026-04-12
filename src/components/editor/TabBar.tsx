@@ -4,7 +4,7 @@ import { rename, readTextFile, writeTextFile } from "@tauri-apps/plugin-fs";
 import { open } from "@tauri-apps/plugin-dialog";
 import { useAppStore } from "@/stores/appStore";
 import { renameDocImages } from "@/utils/imageUtils";
-import { Save, FolderOpen, Maximize2, Minimize2, Settings, Search, Paperclip } from "lucide-react";
+import { FolderOpen, Maximize2, Minimize2, Settings, Search, Paperclip } from "lucide-react";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
 
@@ -433,29 +433,6 @@ export function TabBar() {
                     </span>
                   )}
                 </div>
-
-                {/* 저장 버튼 (임시 문서만, 태그탭 제외) */}
-                {!tab.filePath && tab.type !== "tag-explorer" && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setActiveTab(tab.id);
-                      window.dispatchEvent(new KeyboardEvent("keydown", { ctrlKey: true, key: "s" }));
-                    }}
-                    title="저장"
-                    style={{
-                      width: "22px", height: "22px",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      borderRadius: "4px", border: "none", background: "transparent",
-                      color: "var(--color-accent)", cursor: "pointer", flexShrink: 0,
-                      transition: "all 0.1s",
-                    }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-active)"; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
-                  >
-                    <Save size={15} />
-                  </button>
-                )}
 
                 {/* 닫기 버튼 (태그탭은 닫기 불가) */}
                 {tab.type !== "tag-explorer" && tab.type !== "attachment-explorer" && <button
