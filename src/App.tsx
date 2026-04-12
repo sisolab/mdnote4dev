@@ -69,7 +69,7 @@ function App() {
   useEffect(() => {
     const appWindow = getCurrentWindow();
     const sidebar = sidebarCollapsed ? 0 : sidebarWidth;
-    const editorMin = widthMode === "fixed" ? editorMaxWidth + 120 : 400;
+    const editorMin = widthMode === "fixed" ? editorMaxWidth + 140 : 400;
     const minW = Math.max(720, sidebar + editorMin);
     appWindow.setMinSize(new LogicalSize(minW, 500));
     // 사이드바 토글 시 창 크기 조절
