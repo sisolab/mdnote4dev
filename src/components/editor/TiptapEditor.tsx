@@ -279,10 +279,7 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
           undoSnapshots.set(initTabId, [initMd]);
             }
       }
-      requestAnimationFrame(() => {
-        (e as any).__initializing = false;
-        e.commands.focus("end");
-      });
+      requestAnimationFrame(() => { (e as any).__initializing = false; });
     },
     onTransaction: ({ editor: e }) => {
       setTick((t) => t + 1);
