@@ -99,35 +99,35 @@ export interface ThemeColors {
 }
 
 export const ACCENT_OPTIONS: { value: AccentColor; label: string; color: string }[] = [
-  { value: "blue", label: "블루", color: "#1a73e8" },
-  { value: "navy", label: "네이비", color: "#1e3a5f" },
-  { value: "emerald", label: "에메랄드", color: "#0d9488" },
-  { value: "orange", label: "오렌지", color: "#ea580c" },
   { value: "red", label: "레드", color: "#dc2626" },
+  { value: "orange", label: "오렌지", color: "#ea580c" },
   { value: "yellow", label: "옐로우", color: "#ca8a04" },
+  { value: "emerald", label: "에메랄드", color: "#0d9488" },
+  { value: "blue", label: "블루", color: "#4a90d9" },
+  { value: "navy", label: "네이비", color: "#3b6baa" },
   { value: "purple", label: "퍼플", color: "#7c3aed" },
 ];
 
 export function getAccentColors(accent: AccentColor, isDark = false): ThemeColors {
   if (isDark) {
     switch (accent) {
-      case "navy": return { accent: "#6b9fd4", accentHover: "#93b8e0", accentSubtle: "rgba(107, 159, 212, 0.15)" };
-      case "emerald": return { accent: "#2dd4bf", accentHover: "#5eead4", accentSubtle: "rgba(45, 212, 191, 0.15)" };
-      case "orange": return { accent: "#fb923c", accentHover: "#fdba74", accentSubtle: "rgba(251, 146, 60, 0.15)" };
       case "red": return { accent: "#f87171", accentHover: "#fca5a5", accentSubtle: "rgba(248, 113, 113, 0.15)" };
+      case "orange": return { accent: "#fb923c", accentHover: "#fdba74", accentSubtle: "rgba(251, 146, 60, 0.15)" };
       case "yellow": return { accent: "#facc15", accentHover: "#fde047", accentSubtle: "rgba(250, 204, 21, 0.15)" };
+      case "emerald": return { accent: "#2dd4bf", accentHover: "#5eead4", accentSubtle: "rgba(45, 212, 191, 0.15)" };
+      case "navy": return { accent: "#7baed6", accentHover: "#a0c8e8", accentSubtle: "rgba(123, 174, 214, 0.15)" };
       case "purple": return { accent: "#a78bfa", accentHover: "#c4b5fd", accentSubtle: "rgba(167, 139, 250, 0.15)" };
-      default: return { accent: "#60a5fa", accentHover: "#93c5fd", accentSubtle: "rgba(96, 165, 250, 0.15)" };
+      default: return { accent: "#7ab3e8", accentHover: "#a0c9f0", accentSubtle: "rgba(122, 179, 232, 0.15)" };
     }
   }
   switch (accent) {
-    case "navy": return { accent: "#1e3a5f", accentHover: "#152d4a", accentSubtle: "rgba(30, 58, 95, 0.1)" };
-    case "emerald": return { accent: "#0d9488", accentHover: "#0f766e", accentSubtle: "rgba(13, 148, 136, 0.1)" };
-    case "orange": return { accent: "#ea580c", accentHover: "#c2410c", accentSubtle: "rgba(234, 88, 12, 0.1)" };
     case "red": return { accent: "#dc2626", accentHover: "#b91c1c", accentSubtle: "rgba(220, 38, 38, 0.1)" };
+    case "orange": return { accent: "#ea580c", accentHover: "#c2410c", accentSubtle: "rgba(234, 88, 12, 0.1)" };
     case "yellow": return { accent: "#ca8a04", accentHover: "#a16207", accentSubtle: "rgba(202, 138, 4, 0.1)" };
+    case "emerald": return { accent: "#0d9488", accentHover: "#0f766e", accentSubtle: "rgba(13, 148, 136, 0.1)" };
+    case "navy": return { accent: "#3b6baa", accentHover: "#2e5690", accentSubtle: "rgba(59, 107, 170, 0.1)" };
     case "purple": return { accent: "#7c3aed", accentHover: "#6d28d9", accentSubtle: "rgba(124, 58, 237, 0.1)" };
-    default: return { accent: "#1a73e8", accentHover: "#1557b0", accentSubtle: "rgba(26, 115, 232, 0.12)" };
+    default: return { accent: "#4a90d9", accentHover: "#3a7bc8", accentSubtle: "rgba(74, 144, 217, 0.12)" };
   }
 }
 
@@ -162,7 +162,7 @@ export const SAVE_MODE_OPTIONS: { value: SaveMode; label: string; desc: string }
   { value: "realtime", label: "실시간", desc: "편집할 때마다 즉시 저장" },
 ];
 
-export type SpacingStyleName = "default" | "general";
+export type SpacingStyleName = "compact" | "default" | "general";
 
 export interface SpacingStyle {
   h1Mt: string; h1Mb: string;
@@ -173,10 +173,20 @@ export interface SpacingStyle {
   pre: string; bq: string; hr: string;
 }
 
-export const SPACING_STYLES: Record<SpacingStyleName, { label: string; desc: string; values: SpacingStyle }> = {
+export const SPACING_STYLES: Record<SpacingStyleName, { label: string; values: SpacingStyle }> = {
+  compact: {
+    label: "컴팩트",
+    values: {
+      h1Mt: "0.75rem", h1Mb: "0.25rem",
+      h2Mt: "0.75rem", h2Mb: "0.25rem",
+      h3Mt: "0.5rem", h3Mb: "0.25rem",
+      h4Mt: "0.5rem", h4Mb: "0.15rem",
+      p: "0rem", li: "0rem",
+      pre: "0.25rem", bq: "0.25rem", hr: "0.5rem",
+    },
+  },
   default: {
-    label: "Default",
-    desc: "간결한 간격. 문단 간격 없음, 헤딩 위주로 구분",
+    label: "기본",
     values: {
       h1Mt: "1rem", h1Mb: "0.5rem",
       h2Mt: "1rem", h2Mb: "0.5rem",
@@ -187,8 +197,7 @@ export const SPACING_STYLES: Record<SpacingStyleName, { label: string; desc: str
     },
   },
   general: {
-    label: "General",
-    desc: "넉넉한 간격. 문단 사이 여백으로 읽기 편한 스타일",
+    label: "여유로운",
     values: {
       h1Mt: "1.5rem", h1Mb: "0.75rem",
       h2Mt: "1.25rem", h2Mb: "0.5rem",

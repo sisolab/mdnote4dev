@@ -105,14 +105,37 @@ function CompactSlider({
   unit: string; decimals?: number; onChange: (v: number) => void; defaultValue: number;
 }) {
   const isModified = Math.abs(value - defaultValue) > 0.001;
+  // tick 표시용: step 수가 너무 많으면 간격 조절
+  const totalSteps = Math.round((max - min) / step);
+  const tickStep = totalSteps <= 20 ? step : step * Math.ceil(totalSteps / 20);
+  const ticks: number[] = [];
+  for (let v = min; v <= max + tickStep * 0.01; v += tickStep) ticks.push(v);
+
   return (
     <div style={{ display: "flex", alignItems: "center", gap: "8px", height: "28px" }}>
       <span style={{ fontSize: "11px", fontWeight: 500, color: "var(--color-text-primary)", width: "80px", flexShrink: 0 }}>{label}</span>
-      <input
-        type="range" min={min} max={max} step={step} value={value}
-        onChange={(e) => onChange(parseFloat(e.target.value))}
-        style={{ flex: 1, accentColor: "var(--color-accent)" }}
-      />
+      <div style={{ flex: 1, position: "relative", height: "20px", display: "flex", alignItems: "center" }}>
+        {/* tick marks */}
+        <div style={{ position: "absolute", left: "0", right: "0", top: "50%", transform: "translateY(-50%)", height: "4px", display: "flex", alignItems: "center", pointerEvents: "none" }}>
+          {ticks.map((t, i) => {
+            const pct = ((t - min) / (max - min)) * 100;
+            const isActive = Math.abs(t - value) < step * 0.01;
+            return (
+              <div key={i} style={{
+                position: "absolute", left: `${pct}%`, transform: "translateX(-50%)",
+                width: isActive ? "6px" : "4px", height: isActive ? "6px" : "4px", borderRadius: "50%",
+                background: t <= value ? "var(--color-accent)" : "var(--color-border-medium)",
+                transition: "all 0.1s",
+              }} />
+            );
+          })}
+        </div>
+        <input
+          type="range" min={min} max={max} step={step} value={value}
+          onChange={(e) => onChange(parseFloat(e.target.value))}
+          style={{ width: "100%", accentColor: "var(--color-accent)", position: "relative", zIndex: 1 }}
+        />
+      </div>
       <span style={{ fontSize: "10px", color: "var(--color-accent)", fontWeight: 600, width: "44px", textAlign: "right", flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>
         {decimals ? value.toFixed(decimals) : value}{unit}
       </span>
@@ -237,28 +260,33 @@ function SpacingSliders({ spacingStyle, setSpacingStyle }: { spacingStyle: Spaci
 
   return (
     <>
-      <div style={{ display: "flex", gap: "6px", marginBottom: "8px" }}>
-        {(Object.entries(SPACING_STYLES) as [SpacingStyleName, typeof SPACING_STYLES.default][]).map(([key, style]) => (
-          <button
-            key={key}
-            onClick={() => selectPreset(key)}
-            style={{
-              padding: "4px 10px", fontSize: "10px", fontWeight: !isCustom && spacingStyle === key ? 600 : 400,
-              borderRadius: "4px", cursor: "pointer",
-              border: !isCustom && spacingStyle === key ? "1.5px solid var(--color-accent)" : "1px solid var(--color-border-medium)",
-              background: !isCustom && spacingStyle === key ? "var(--color-accent-subtle)" : "var(--color-bg-primary)",
-              color: !isCustom && spacingStyle === key ? "var(--color-accent)" : "var(--color-text-secondary)",
-            }}
-          >
-            {style.label}
-          </button>
-        ))}
+      <div style={{ display: "flex", gap: "4px", marginBottom: "6px" }}>
+        {(Object.entries(SPACING_STYLES) as [SpacingStyleName, typeof SPACING_STYLES.default][]).map(([key, style]) => {
+          const active = !isCustom && spacingStyle === key;
+          const color = "#8b5cf6";
+          return (
+            <button
+              key={key}
+              onClick={() => selectPreset(key)}
+              style={{
+                padding: "3px 10px", fontSize: "10px", fontWeight: active ? 600 : 400,
+                borderRadius: "4px", cursor: "pointer",
+                border: active ? `1.5px solid ${color}` : "1px solid var(--color-border-medium)",
+                background: active ? `${color}18` : "var(--color-bg-primary)",
+                color: active ? color : "var(--color-text-secondary)",
+                transition: "all 0.15s",
+              }}
+            >
+              {style.label}
+            </button>
+          );
+        })}
         <span style={{
-          padding: "4px 10px", fontSize: "10px", fontWeight: isCustom ? 600 : 400,
+          padding: "3px 10px", fontSize: "10px", fontWeight: isCustom ? 600 : 400,
           borderRadius: "4px",
-          border: isCustom ? "1.5px solid #7c3aed" : "1px solid var(--color-border-medium)",
-          background: isCustom ? "#7c3aed15" : "var(--color-bg-primary)",
-          color: isCustom ? "#7c3aed" : "var(--color-text-tertiary)",
+          border: isCustom ? "1.5px solid #888" : "1px solid var(--color-border-medium)",
+          background: isCustom ? "rgba(136,136,136,0.08)" : "var(--color-bg-primary)",
+          color: isCustom ? "var(--color-text-primary)" : "var(--color-text-tertiary)",
         }}>
           커스텀
         </span>
@@ -275,6 +303,47 @@ function SpacingSliders({ spacingStyle, setSpacingStyle }: { spacingStyle: Spaci
   );
 }
 
+function SectionPresetButtons({ keys, settings, color, onApply }: {
+  keys: (keyof EditorSettings)[]; settings: EditorSettings; color: string;
+  onApply: (partial: Partial<EditorSettings>) => void;
+}) {
+  const matchesPreset = (preset: EditorSettings) =>
+    keys.every((k) => Math.abs(Number(settings[k]) - Number(preset[k])) < 0.01);
+  const isCustom = !PRESETS.some((p) => matchesPreset(p.settings));
+
+  return (
+    <div style={{ display: "flex", gap: "4px", marginBottom: "6px" }}>
+      {PRESETS.map((preset) => {
+        const active = matchesPreset(preset.settings);
+        return (
+          <button key={preset.name}
+            onClick={() => { const p: any = {}; keys.forEach((k) => { p[k] = preset.settings[k]; }); onApply(p); }}
+            style={{
+              padding: "3px 10px", fontSize: "10px", fontWeight: active ? 600 : 400,
+              borderRadius: "4px", cursor: "pointer",
+              border: active ? `1.5px solid ${color}` : "1px solid var(--color-border-medium)",
+              background: active ? `${color}18` : "var(--color-bg-primary)",
+              color: active ? color : "var(--color-text-secondary)",
+              transition: "all 0.15s",
+            }}
+          >
+            {preset.name}
+          </button>
+        );
+      })}
+      <span style={{
+        padding: "3px 10px", fontSize: "10px", fontWeight: isCustom ? 600 : 400,
+        borderRadius: "4px",
+        border: isCustom ? "1.5px solid #888" : "1px solid var(--color-border-medium)",
+        background: isCustom ? "rgba(136,136,136,0.08)" : "var(--color-bg-primary)",
+        color: isCustom ? "var(--color-text-primary)" : "var(--color-text-tertiary)",
+      }}>
+        커스텀
+      </span>
+    </div>
+  );
+}
+
 function DocStyleTab({ settings, updateSetting, applyPreset, spacingStyle, setSpacingStyle }: {
   settings: EditorSettings; updateSetting: <K extends keyof EditorSettings>(key: K, value: EditorSettings[K]) => void;
   applyPreset: (preset: EditorSettings) => void; spacingStyle: SpacingStyleName; setSpacingStyle: (name: SpacingStyleName) => void;
@@ -282,10 +351,18 @@ function DocStyleTab({ settings, updateSetting, applyPreset, spacingStyle, setSp
   const isPresetActive = (preset: EditorSettings) =>
     JSON.stringify(settings) === JSON.stringify(preset);
 
+  const applySectionPreset = (partial: Partial<EditorSettings>) => {
+    Object.entries(partial).forEach(([k, v]) => updateSetting(k as keyof EditorSettings, v as any));
+  };
+
+  const typoKeys: (keyof EditorSettings)[] = ["fontSize", "lineHeight", "letterSpacing", "paragraphSpacing", "headingScale"];
+  const layoutKeys: (keyof EditorSettings)[] = ["editorMaxWidth", "editorPaddingX", "editorPaddingY"];
+  const codeKeys: (keyof EditorSettings)[] = ["codeFontSize", "codeLineHeight", "codePadding"];
+
   return (
     <div style={{ flex: 1, overflowY: "auto", padding: "12px 16px" }}>
       {/* 전체 프리셋 */}
-      <SectionTitle>프리셋</SectionTitle>
+      <SectionTitle>전체 프리셋</SectionTitle>
       <div style={{ display: "flex", gap: "8px", marginBottom: "16px" }}>
         {PRESETS.map((preset, i) => (
           <PresetCard
@@ -316,27 +393,30 @@ function DocStyleTab({ settings, updateSetting, applyPreset, spacingStyle, setSp
 
       {/* 타이포그래피 */}
       <SectionTitle>타이포그래피</SectionTitle>
-      <CompactSlider label="글자 크기" value={settings.fontSize} min={10} max={22} step={1} unit="px" defaultValue={DEFAULT_SETTINGS.fontSize} onChange={(v) => updateSetting("fontSize", v)} />
-      <CompactSlider label="줄 간격" value={settings.lineHeight} min={1.0} max={2.5} step={0.1} unit="" decimals={1} defaultValue={DEFAULT_SETTINGS.lineHeight} onChange={(v) => updateSetting("lineHeight", v)} />
-      <CompactSlider label="자간" value={settings.letterSpacing} min={-0.5} max={1.0} step={0.1} unit="px" decimals={1} defaultValue={DEFAULT_SETTINGS.letterSpacing} onChange={(v) => updateSetting("letterSpacing", v)} />
-      <CompactSlider label="문단 간격" value={settings.paragraphSpacing} min={0} max={1.5} step={0.1} unit="rem" decimals={1} defaultValue={DEFAULT_SETTINGS.paragraphSpacing} onChange={(v) => updateSetting("paragraphSpacing", v)} />
-      <CompactSlider label="제목 배율" value={settings.headingScale} min={1.0} max={2.0} step={0.1} unit="×" decimals={1} defaultValue={DEFAULT_SETTINGS.headingScale} onChange={(v) => updateSetting("headingScale", v)} />
+      <SectionPresetButtons keys={typoKeys} settings={settings} color="#d4845a" onApply={applySectionPreset} />
+      <CompactSlider label="글자 크기" value={settings.fontSize} min={12} max={20} step={1} unit="px" defaultValue={DEFAULT_SETTINGS.fontSize} onChange={(v) => updateSetting("fontSize", v)} />
+      <CompactSlider label="줄 간격" value={settings.lineHeight} min={1.2} max={2.2} step={0.1} unit="" decimals={1} defaultValue={DEFAULT_SETTINGS.lineHeight} onChange={(v) => updateSetting("lineHeight", v)} />
+      <CompactSlider label="자간" value={settings.letterSpacing} min={-0.3} max={0.5} step={0.1} unit="px" decimals={1} defaultValue={DEFAULT_SETTINGS.letterSpacing} onChange={(v) => updateSetting("letterSpacing", v)} />
+      <CompactSlider label="문단 간격" value={settings.paragraphSpacing} min={0} max={1.0} step={0.1} unit="rem" decimals={1} defaultValue={DEFAULT_SETTINGS.paragraphSpacing} onChange={(v) => updateSetting("paragraphSpacing", v)} />
+      <CompactSlider label="제목 배율" value={settings.headingScale} min={1.1} max={1.6} step={0.1} unit="×" decimals={1} defaultValue={DEFAULT_SETTINGS.headingScale} onChange={(v) => updateSetting("headingScale", v)} />
 
       <div style={{ height: "1px", background: "var(--color-border-light)", margin: "12px 0" }} />
 
       {/* 레이아웃 */}
       <SectionTitle>레이아웃</SectionTitle>
-      <CompactSlider label="에디터 최대폭" value={settings.editorMaxWidth} min={480} max={1200} step={20} unit="px" defaultValue={DEFAULT_SETTINGS.editorMaxWidth} onChange={(v) => updateSetting("editorMaxWidth", v)} />
-      <CompactSlider label="좌우 패딩" value={settings.editorPaddingX} min={16} max={96} step={4} unit="px" defaultValue={DEFAULT_SETTINGS.editorPaddingX} onChange={(v) => updateSetting("editorPaddingX", v)} />
-      <CompactSlider label="상하 패딩" value={settings.editorPaddingY} min={16} max={96} step={4} unit="px" defaultValue={DEFAULT_SETTINGS.editorPaddingY} onChange={(v) => updateSetting("editorPaddingY", v)} />
+      <SectionPresetButtons keys={layoutKeys} settings={settings} color="#1a73e8" onApply={applySectionPreset} />
+      <CompactSlider label="에디터 최대폭" value={settings.editorMaxWidth} min={560} max={960} step={20} unit="px" defaultValue={DEFAULT_SETTINGS.editorMaxWidth} onChange={(v) => updateSetting("editorMaxWidth", v)} />
+      <CompactSlider label="좌우 패딩" value={settings.editorPaddingX} min={24} max={72} step={4} unit="px" defaultValue={DEFAULT_SETTINGS.editorPaddingX} onChange={(v) => updateSetting("editorPaddingX", v)} />
+      <CompactSlider label="상하 패딩" value={settings.editorPaddingY} min={24} max={72} step={4} unit="px" defaultValue={DEFAULT_SETTINGS.editorPaddingY} onChange={(v) => updateSetting("editorPaddingY", v)} />
 
       <div style={{ height: "1px", background: "var(--color-border-light)", margin: "12px 0" }} />
 
       {/* 코드 블록 */}
       <SectionTitle>코드 블록</SectionTitle>
-      <CompactSlider label="글자 크기" value={settings.codeFontSize} min={10} max={18} step={1} unit="px" defaultValue={DEFAULT_SETTINGS.codeFontSize} onChange={(v) => updateSetting("codeFontSize", v)} />
-      <CompactSlider label="줄 간격" value={settings.codeLineHeight} min={1.0} max={2.5} step={0.1} unit="" decimals={1} defaultValue={DEFAULT_SETTINGS.codeLineHeight} onChange={(v) => updateSetting("codeLineHeight", v)} />
-      <CompactSlider label="패딩" value={settings.codePadding} min={4} max={32} step={2} unit="px" defaultValue={DEFAULT_SETTINGS.codePadding} onChange={(v) => updateSetting("codePadding", v)} />
+      <SectionPresetButtons keys={codeKeys} settings={settings} color="#0d9488" onApply={applySectionPreset} />
+      <CompactSlider label="글자 크기" value={settings.codeFontSize} min={11} max={16} step={1} unit="px" defaultValue={DEFAULT_SETTINGS.codeFontSize} onChange={(v) => updateSetting("codeFontSize", v)} />
+      <CompactSlider label="줄 간격" value={settings.codeLineHeight} min={1.2} max={2.0} step={0.1} unit="" decimals={1} defaultValue={DEFAULT_SETTINGS.codeLineHeight} onChange={(v) => updateSetting("codeLineHeight", v)} />
+      <CompactSlider label="패딩" value={settings.codePadding} min={8} max={24} step={2} unit="px" defaultValue={DEFAULT_SETTINGS.codePadding} onChange={(v) => updateSetting("codePadding", v)} />
 
       <div style={{ height: "1px", background: "var(--color-border-light)", margin: "12px 0" }} />
 
