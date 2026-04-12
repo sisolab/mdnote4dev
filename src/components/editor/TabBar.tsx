@@ -246,7 +246,7 @@ export function TabBar() {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              padding: "0 10px",
+              padding: "0 14px",
               cursor: "pointer",
               position: "relative",
               zIndex: 1,
@@ -285,7 +285,7 @@ export function TabBar() {
             style={{
               height: "40px",
               display: "flex", alignItems: "center", justifyContent: "center",
-              padding: "0 10px", cursor: "pointer",
+              padding: "0 14px", cursor: "pointer",
               position: "relative", zIndex: 1,
               color: isActive ? "var(--color-accent)" : "var(--color-text-secondary)",
               transition: "color 0.1s", flexShrink: 0,
@@ -311,7 +311,7 @@ export function TabBar() {
           <div key={tab.id} data-tab-id={tab.id} onClick={() => setActiveTab(tab.id)}
             onMouseEnter={(e) => handleHover(e.currentTarget)}
             style={{ height: "40px", display: "flex", alignItems: "center", justifyContent: "center",
-              padding: "0 10px", cursor: "pointer", position: "relative", zIndex: 1,
+              padding: "0 14px", cursor: "pointer", position: "relative", zIndex: 1,
               color: isActive ? "var(--color-accent)" : "var(--color-text-secondary)",
               transition: "color 0.1s", flexShrink: 0 }}>
             <LayoutList size={13} />
