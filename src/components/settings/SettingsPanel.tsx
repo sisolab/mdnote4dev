@@ -466,7 +466,7 @@ function DocStyleTab({ settings, updateSetting, applyPreset, spacingStyle, setSp
       {/* 레이아웃 */}
       <SectionTitle>레이아웃</SectionTitle>
       <SectionPresetButtons keys={layoutKeys} settings={settings} color="#1a73e8" onApply={applySectionPreset} />
-      <CompactSlider label="에디터 최대폭" value={settings.editorMaxWidth} min={600} max={880} step={40} unit="px" defaultValue={DEFAULT_SETTINGS.editorMaxWidth} onChange={(v) => updateSetting("editorMaxWidth", v)} />
+      <CompactSlider label="에디터 최대폭" value={settings.editorMaxWidth} min={480} max={960} step={60} unit="px" defaultValue={DEFAULT_SETTINGS.editorMaxWidth} onChange={(v) => updateSetting("editorMaxWidth", v)} />
       <CompactSlider label="좌우 패딩" value={settings.editorPaddingX} min={32} max={64} step={4} unit="px" defaultValue={DEFAULT_SETTINGS.editorPaddingX} onChange={(v) => updateSetting("editorPaddingX", v)} />
       <CompactSlider label="상하 패딩" value={settings.editorPaddingY} min={32} max={64} step={4} unit="px" defaultValue={DEFAULT_SETTINGS.editorPaddingY} onChange={(v) => updateSetting("editorPaddingY", v)} />
 
@@ -558,7 +558,6 @@ const DESIGN_SECTIONS: { key: keyof DesignPresets; label: string; preview: (styl
       const base: React.CSSProperties = { fontSize: "22px", fontWeight: 700, color: "var(--color-text-heading)", margin: 0, lineHeight: 1.3 };
       const variants: Record<string, React.CSSProperties> = {
         underline: { paddingBottom: "4px", borderBottom: "2px solid var(--color-border-medium)" },
-        background: { background: "var(--color-bg-secondary)", padding: "4px 8px", borderRadius: "4px" },
         "accent-left": { borderLeft: "4px solid var(--color-accent)", paddingLeft: "8px" },
         "gradient-line": { paddingBottom: "5px", borderBottom: "3px solid transparent", borderImage: "linear-gradient(90deg, var(--color-accent), transparent) 1" },
         "thin-large": { borderLeft: "4px solid var(--color-accent)", paddingLeft: "8px", background: "linear-gradient(90deg, var(--color-accent-subtle), transparent 70%)", borderRadius: "0 4px 4px 0" },
@@ -571,9 +570,9 @@ const DESIGN_SECTIONS: { key: keyof DesignPresets; label: string; preview: (styl
     preview: (style) => {
       const base: React.CSSProperties = { fontSize: "18px", fontWeight: 600, color: "var(--color-text-heading)", margin: 0, lineHeight: 1.35 };
       const variants: Record<string, React.CSSProperties> = {
-        underline: { paddingBottom: "3px", borderBottom: "1px solid var(--color-border-light)" },
+        underline: { paddingBottom: "4px", borderBottom: "2px solid var(--color-border-medium)" },
         "accent-left": { borderLeft: "3px solid var(--color-accent)", paddingLeft: "6px" },
-        highlight: { background: "linear-gradient(transparent 60%, var(--color-accent-subtle) 60%)", display: "inline" },
+        highlight: { borderBottom: "3px solid var(--color-accent-subtle)", paddingBottom: "2px", display: "inline-block" },
         uppercase: { background: "var(--color-bg-secondary)", padding: "3px 6px", borderRadius: "4px" },
       };
       return <div style={{ ...base, ...variants[style] }}>프로젝트 개요</div>;
@@ -598,7 +597,6 @@ const DESIGN_SECTIONS: { key: keyof DesignPresets; label: string; preview: (styl
       const text = "Good design is as little design as possible.";
       if (style === "background") return <div style={{ borderLeft: "3px solid var(--color-accent)", background: "var(--color-bg-hover)", padding: "8px 12px", borderRadius: "0 6px 6px 0", color: "var(--color-text-secondary)", fontSize: "13px", margin: 0, lineHeight: 1.6 }}>{text}</div>;
       if (style === "quote-mark") return <div style={{ paddingLeft: "28px", position: "relative", color: "var(--color-text-secondary)", fontSize: "13px", margin: 0, lineHeight: 1.6 }}><span style={{ position: "absolute", left: "2px", top: "-4px", fontSize: "28px", color: "var(--color-accent)", opacity: 0.4, lineHeight: 1 }}>{"\u201C"}</span>{text}</div>;
-      if (style === "card") return <div style={{ background: "var(--color-bg-secondary)", padding: "10px 14px", borderRadius: "8px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)", color: "var(--color-text-secondary)", fontSize: "13px", margin: 0, lineHeight: 1.6 }}>{text}</div>;
       if (style === "serif") return <div style={{ fontStyle: "italic", fontSize: "13.5px", paddingLeft: "16px", opacity: 0.85, color: "var(--color-text-secondary)", margin: 0, lineHeight: 1.6 }}>{text}</div>;
       return <div style={{ borderLeft: "3px solid var(--color-accent)", paddingLeft: "12px", color: "var(--color-text-secondary)", fontSize: "13px", margin: 0, lineHeight: 1.6 }}>{text}</div>;
     },
@@ -628,7 +626,6 @@ const DESIGN_SECTIONS: { key: keyof DesignPresets; label: string; preview: (styl
       if (style === "dotted") return <hr style={{ border: "none", borderTop: "2px dotted var(--color-border-medium)", margin: "8px auto", width: "100%" }} />;
       if (style === "thick") return <hr style={{ border: "none", borderTop: "4px solid var(--color-border-medium)", margin: "8px auto", width: "60%" }} />;
       if (style === "dots") return <div style={{ textAlign: "center", fontSize: "18px", letterSpacing: "6px", color: "var(--color-text-light)", margin: "4px 0" }}>···</div>;
-      if (style === "gradient") return <hr style={{ border: "none", height: "2px", background: "linear-gradient(90deg, transparent, var(--color-accent), transparent)", margin: "8px 0" }} />;
       if (style === "fade") return <hr style={{ border: "none", height: "1px", background: "linear-gradient(90deg, transparent 5%, var(--color-border-medium) 50%, transparent 95%)", margin: "8px 0" }} />;
       return <hr style={{ border: "none", borderTop: "3px solid var(--color-border-medium)", margin: "8px auto", width: "98%" }} />;
     },
@@ -945,11 +942,23 @@ export function SettingsPanel() {
           </button>
         </div>
       </>
-      ) : activeTab === "docstyle" ? (
+      ) : activeTab === "docstyle" ? (<>
         <DocStyleTab settings={settings} updateSetting={updateSetting} applyPreset={applyPreset} spacingStyle={spacingStyle} setSpacingStyle={setSpacingStyle} />
-      ) : (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-start", padding: "12px 16px", borderTop: "1px solid var(--color-border-light)" }}>
+          <button onClick={resetToDefault} style={{ fontSize: "12px", color: "var(--color-text-tertiary)", background: "transparent", border: "none", cursor: "pointer" }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = "var(--color-text-secondary)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = "var(--color-text-tertiary)"; }}
+          >기본값으로 초기화</button>
+        </div>
+      </>) : (<>
         <DesignTab />
-      )}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-start", padding: "12px 16px", borderTop: "1px solid var(--color-border-light)" }}>
+          <button onClick={() => useSettingsStore.getState().resetDesign()} style={{ fontSize: "12px", color: "var(--color-text-tertiary)", background: "transparent", border: "none", cursor: "pointer" }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = "var(--color-text-secondary)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = "var(--color-text-tertiary)"; }}
+          >기본값으로 초기화</button>
+        </div>
+      </>)}
 
       {showFontPreview && (
         <FontPreview

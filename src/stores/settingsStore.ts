@@ -223,7 +223,6 @@ export const DESIGN_OPTIONS: Record<keyof DesignPresets, { value: string; label:
   h1: [
     { value: "default", label: "기본" },
     { value: "underline", label: "하단선" },
-    { value: "background", label: "배경" },
     { value: "accent-left", label: "강조선" },
     { value: "gradient-line", label: "그라디언트" },
     { value: "thin-large", label: "강조 배경" },
@@ -246,7 +245,6 @@ export const DESIGN_OPTIONS: Record<keyof DesignPresets, { value: string; label:
     { value: "default", label: "기본" },
     { value: "background", label: "배경" },
     { value: "quote-mark", label: "큰따옴표" },
-    { value: "card", label: "카드" },
     { value: "serif", label: "기울임" },
   ],
   codeBlock: [
@@ -259,9 +257,7 @@ export const DESIGN_OPTIONS: Record<keyof DesignPresets, { value: string; label:
   hr: [
     { value: "default", label: "기본" },
     { value: "dotted", label: "점선" },
-    { value: "thick", label: "두꺼운" },
     { value: "dots", label: "가운데 점" },
-    { value: "gradient", label: "그라디언트" },
     { value: "fade", label: "페이드" },
   ],
 };
