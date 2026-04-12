@@ -760,10 +760,11 @@ function FontTab({ currentFont, currentCodeFont, onApply, onApplyCodeFont }: {
     { value: "system-mono", label: "시스템 기본" },
     { value: "cascadia", label: "Cascadia Code" },
     { value: "fira-code", label: "Fira Code" },
+    { value: "source-code-pro", label: "Source Code Pro" },
   ];
   const CODE_FONTS_BY_LANG: Record<string, { value: string; label: string }[]> = {
-    popular: [...BASE_CODE, { value: "jetbrains-mono", label: "JetBrains Mono" }, { value: "source-code-pro", label: "Source Code Pro" }],
-    en: [...BASE_CODE, { value: "jetbrains-mono", label: "JetBrains Mono" }, { value: "source-code-pro", label: "Source Code Pro" }],
+    popular: [...BASE_CODE, { value: "jetbrains-mono", label: "JetBrains Mono" }],
+    en: [...BASE_CODE, { value: "jetbrains-mono", label: "JetBrains Mono" }],
     ko: [...BASE_CODE, { value: "d2coding", label: "D2Coding" }, { value: "nanum-gothic-coding", label: "나눔고딕코딩" }],
     ja: [...BASE_CODE, { value: "jetbrains-mono", label: "JetBrains Mono" }],
     zh: [...BASE_CODE, { value: "jetbrains-mono", label: "JetBrains Mono" }],
