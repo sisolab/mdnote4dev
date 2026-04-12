@@ -515,7 +515,6 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
   const editorStyle = {
     "--editor-font-size": `${s.fontSize}px`,
     "--editor-line-height": `${s.lineHeight}`,
-    "--editor-paragraph-spacing": `${s.paragraphSpacing}rem`,
     "--editor-font-family": getFontFamily(s.fontFamily),
     "--editor-letter-spacing": `${s.letterSpacing}px`,
     "--editor-code-font-size": `${s.codeFontSize}px`,

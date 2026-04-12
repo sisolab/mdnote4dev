@@ -176,7 +176,7 @@ function ToggleButtons({ options, value, onChange }: {
   onChange: (v: string) => void;
 }) {
   return (
-    <div style={{ display: "flex", borderRadius: "6px", border: "1px solid var(--color-border-input)", overflow: "hidden" }}>
+    <div style={{ display: "inline-flex", borderRadius: "6px", border: "1px solid var(--color-border-input)", overflow: "hidden" }}>
       {options.map((opt) => (
         <button
           key={opt.value}
@@ -185,7 +185,7 @@ function ToggleButtons({ options, value, onChange }: {
             display: "flex", alignItems: "center", justifyContent: "center", gap: "5px",
             padding: "5px 12px", fontSize: "12px", fontWeight: value === opt.value ? 600 : 500,
             border: "none", cursor: "pointer", position: "relative",
-            fontFamily: "inherit",
+            fontFamily: "inherit", flex: 1,
             background: "var(--color-bg-primary)",
             color: value === opt.value ? "var(--color-accent)" : "var(--color-text-primary)",
             transition: "all 0.15s",
@@ -358,7 +358,7 @@ function DocStyleTab({ settings, updateSetting, applyPreset, spacingStyle, setSp
     Object.entries(partial).forEach(([k, v]) => updateSetting(k as keyof EditorSettings, v as any));
   };
 
-  const typoKeys: (keyof EditorSettings)[] = ["fontSize", "lineHeight", "letterSpacing", "paragraphSpacing", "headingScale"];
+  const typoKeys: (keyof EditorSettings)[] = ["fontSize", "lineHeight", "letterSpacing", "headingScale"];
   const layoutKeys: (keyof EditorSettings)[] = ["editorMaxWidth", "editorPaddingX", "editorPaddingY"];
   const codeKeys: (keyof EditorSettings)[] = ["codeFontSize", "codeLineHeight", "codePadding"];
 
@@ -453,9 +453,8 @@ function DocStyleTab({ settings, updateSetting, applyPreset, spacingStyle, setSp
       <SectionTitle>타이포그래피</SectionTitle>
       <SectionPresetButtons keys={typoKeys} settings={settings} color="#d4845a" onApply={applySectionPreset} />
       <CompactSlider label="글자 크기" value={settings.fontSize} min={13} max={18} step={1} unit="px" defaultValue={DEFAULT_SETTINGS.fontSize} onChange={(v) => updateSetting("fontSize", v)} />
-      <CompactSlider label="줄 간격" value={settings.lineHeight} min={1.4} max={2.0} step={0.1} unit="" decimals={1} defaultValue={DEFAULT_SETTINGS.lineHeight} onChange={(v) => updateSetting("lineHeight", v)} />
+      <CompactSlider label="행 높이" value={settings.lineHeight} min={1.4} max={2.0} step={0.1} unit="" decimals={1} defaultValue={DEFAULT_SETTINGS.lineHeight} onChange={(v) => updateSetting("lineHeight", v)} />
       <CompactSlider label="자간" value={settings.letterSpacing} min={-0.2} max={0.4} step={0.1} unit="px" decimals={1} defaultValue={DEFAULT_SETTINGS.letterSpacing} onChange={(v) => updateSetting("letterSpacing", v)} />
-      <CompactSlider label="문단 간격" value={settings.paragraphSpacing} min={0} max={0.8} step={0.1} unit="rem" decimals={1} defaultValue={DEFAULT_SETTINGS.paragraphSpacing} onChange={(v) => updateSetting("paragraphSpacing", v)} />
       <CompactSlider label="제목 배율" value={settings.headingScale} min={1.1} max={1.5} step={0.1} unit="×" decimals={1} defaultValue={DEFAULT_SETTINGS.headingScale} onChange={(v) => updateSetting("headingScale", v)} />
 
       <div style={{ height: "1px", background: "var(--color-border-light)", margin: "16px 0" }} />
@@ -582,7 +581,8 @@ export function SettingsPanel() {
               key={tab}
               onClick={() => setActiveTab(tab as any)}
               style={{
-                padding: "4px 12px", fontSize: "12px", fontWeight: activeTab === tab ? 600 : 400,
+                padding: "6px 0", fontSize: "12px", fontWeight: activeTab === tab ? 600 : 400,
+                width: "72px", textAlign: "center",
                 borderRadius: "4px", border: "none", cursor: "pointer",
                 background: activeTab === tab ? "var(--color-accent-subtle)" : "transparent",
                 color: activeTab === tab ? "var(--color-accent)" : "var(--color-text-secondary)",
