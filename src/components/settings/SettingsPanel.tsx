@@ -176,14 +176,14 @@ function ToggleButtons({ options, value, onChange }: {
   onChange: (v: string) => void;
 }) {
   return (
-    <div style={{ display: "inline-flex", borderRadius: "6px", border: "1px solid var(--color-border-input)", overflow: "hidden" }}>
+    <div style={{ display: "inline-flex", borderRadius: "6px", border: "1px solid var(--color-border-input)", overflow: "hidden", whiteSpace: "nowrap" }}>
       {options.map((opt) => (
         <button
           key={opt.value}
           onClick={() => onChange(opt.value)}
           style={{
             display: "flex", alignItems: "center", justifyContent: "center", gap: "4px",
-            padding: "5px 10px", fontSize: "12px", fontWeight: value === opt.value ? 600 : 500,
+            padding: "5px 10px", fontSize: "12px", fontWeight: value === opt.value ? 600 : 500, flexShrink: 0,
             border: "none", cursor: "pointer", position: "relative",
             fontFamily: "inherit", flex: 1,
             background: "var(--color-bg-primary)",
@@ -615,7 +615,7 @@ export function SettingsPanel() {
             <ToggleButtons
               options={[
                 { value: "light", label: "라이트", icon: <Sun size={12} /> },
-                { value: "newspaper", label: "페이퍼", icon: <BookOpen size={12} /> },
+                { value: "newspaper", label: "뉴스페이퍼", icon: <BookOpen size={12} /> },
                 { value: "charcoal", label: "차콜", icon: <CloudMoon size={12} /> },
                 { value: "dark", label: "다크", icon: <Moon size={12} /> },
               ]}
