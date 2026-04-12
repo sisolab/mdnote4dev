@@ -203,27 +203,6 @@ function ToggleButtons({ options, value, onChange }: {
   );
 }
 
-function PresetCard({ name, icon, color, settings, isActive, onApply }: {
-  name: string; icon?: React.ReactNode; color: string; settings: EditorSettings; isActive: boolean; onApply: (s: EditorSettings) => void;
-}) {
-  return (
-    <button
-      onClick={() => onApply(settings)}
-      style={{
-        flex: 1, padding: "8px 8px", borderRadius: "8px", textAlign: "center" as const,
-        border: isActive ? `1.5px solid ${color}` : "1px solid var(--color-border-light)",
-        background: isActive ? `${color}15` : "var(--color-bg-elevated)",
-        cursor: "pointer", transition: "all 0.15s",
-        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "4px",
-      }}
-    >
-      {icon && <span style={{ color }}>{icon}</span>}
-      <span style={{ fontSize: "10px", fontWeight: 600, color }}>
-        {name}
-      </span>
-    </button>
-  );
-}
 
 function SpacingSliders({ spacingStyle, setSpacingStyle }: { spacingStyle: SpacingStyleName; setSpacingStyle: (name: SpacingStyleName) => void }) {
   const ITEMS = [
@@ -367,8 +346,13 @@ function DocStyleTab({ settings, updateSetting, applyPreset, spacingStyle, setSp
   settings: EditorSettings; updateSetting: <K extends keyof EditorSettings>(key: K, value: EditorSettings[K]) => void;
   applyPreset: (preset: EditorSettings) => void; spacingStyle: SpacingStyleName; setSpacingStyle: (name: SpacingStyleName) => void;
 }) {
-  const isPresetActive = (preset: EditorSettings) =>
-    JSON.stringify(settings) === JSON.stringify(preset);
+  const { savedPresets, addSavedPreset, removeSavedPreset } = useSettingsStore();
+  const [newPresetName, setNewPresetName] = useState("");
+
+  const isPresetMatch = (preset: EditorSettings) => {
+    const keys: (keyof EditorSettings)[] = Object.keys(DEFAULT_SETTINGS) as any;
+    return keys.every((k) => k === "fontFamily" || Math.abs(Number(settings[k]) - Number(preset[k])) < 0.01);
+  };
 
   const applySectionPreset = (partial: Partial<EditorSettings>) => {
     Object.entries(partial).forEach(([k, v]) => updateSetting(k as keyof EditorSettings, v as any));
@@ -378,36 +362,89 @@ function DocStyleTab({ settings, updateSetting, applyPreset, spacingStyle, setSp
   const layoutKeys: (keyof EditorSettings)[] = ["editorMaxWidth", "editorPaddingX", "editorPaddingY"];
   const codeKeys: (keyof EditorSettings)[] = ["codeFontSize", "codeLineHeight", "codePadding"];
 
+  const presetIcons: Record<string, React.ReactNode> = {
+    "컴팩트": <Minimize2 size={12} />,
+    "기본": <AlignCenter size={12} />,
+    "여유로운": <Maximize2 size={12} />,
+  };
+
   return (
     <div style={{ flex: 1, overflowY: "auto", padding: "12px 16px" }}>
-      {/* 전체 프리셋 */}
-      <SectionTitle>전체 프리셋</SectionTitle>
-      <div style={{ display: "flex", gap: "8px", marginBottom: "16px" }}>
-        {PRESETS.map((preset, i) => (
-          <PresetCard
-            key={preset.name}
-            name={preset.name}
-            icon={[<Minimize2 size={14} />, <AlignCenter size={14} />, <Maximize2 size={14} />][i]}
-            color={["#d4845a", "#1a73e8", "#5ab8ad"][i]}
-            settings={preset.settings}
-            isActive={isPresetActive(preset.settings)}
-            onApply={applyPreset}
-          />
-        ))}
-        {(() => {
-          const isCustom = !PRESETS.some((p) => isPresetActive(p.settings));
+      {/* 프리셋 저장 */}
+      <SectionTitle>프리셋</SectionTitle>
+      <div style={{ display: "flex", gap: "4px", marginBottom: "8px" }}>
+        <input
+          value={newPresetName}
+          onChange={(e) => setNewPresetName(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && newPresetName.trim()) {
+              addSavedPreset({ name: newPresetName.trim(), settings: { ...settings } });
+              setNewPresetName("");
+            }
+          }}
+          placeholder="프리셋 이름"
+          style={{
+            flex: 1, fontSize: "11px", padding: "4px 8px",
+            borderRadius: "4px", border: "1px solid var(--color-border-input)",
+            background: "var(--color-bg-primary)", color: "var(--color-text-primary)",
+            outline: "none",
+          }}
+        />
+        <button
+          onClick={() => {
+            if (!newPresetName.trim()) return;
+            addSavedPreset({ name: newPresetName.trim(), settings: { ...settings } });
+            setNewPresetName("");
+          }}
+          disabled={!newPresetName.trim()}
+          style={{
+            padding: "4px 10px", fontSize: "10px", fontWeight: 600,
+            borderRadius: "4px", border: "none", cursor: newPresetName.trim() ? "pointer" : "default",
+            background: newPresetName.trim() ? "var(--color-accent)" : "var(--color-bg-hover)",
+            color: newPresetName.trim() ? "#fff" : "var(--color-text-muted)",
+          }}
+        >
+          저장
+        </button>
+      </div>
+      {/* 프리셋 버튼 목록 */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", marginBottom: "16px" }}>
+        {savedPresets.map((p) => {
+          const active = isPresetMatch(p.settings);
           return (
-            <div style={{
-              flex: 1, padding: "8px 8px", borderRadius: "8px", textAlign: "center",
-              border: isCustom ? "1.5px solid #7c3aed" : "1px solid var(--color-border-light)",
-              background: isCustom ? "#7c3aed15" : "var(--color-bg-elevated)",
-              display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "4px",
-            }}>
-              <SlidersHorizontal size={14} style={{ color: isCustom ? "#7c3aed" : "#a78bfa" }} />
-              <span style={{ fontSize: "10px", fontWeight: 600, color: isCustom ? "#7c3aed" : "var(--color-text-primary)" }}>커스텀</span>
+            <div key={p.name} style={{ display: "flex", alignItems: "center", position: "relative" }}>
+              <button
+                onClick={() => applyPreset(p.settings)}
+                style={{
+                  display: "flex", alignItems: "center", gap: "4px",
+                  padding: "4px 10px", fontSize: "11px", fontWeight: active ? 600 : 400,
+                  borderRadius: "4px", cursor: "pointer",
+                  border: active ? "1.5px solid var(--color-accent)" : "1px solid var(--color-border-medium)",
+                  background: active ? "var(--color-accent-subtle)" : "var(--color-bg-primary)",
+                  color: active ? "var(--color-accent)" : "var(--color-text-secondary)",
+                  paddingRight: "22px",
+                  transition: "all 0.15s",
+                }}
+              >
+                {presetIcons[p.name] || <SlidersHorizontal size={11} />}
+                {p.name}
+              </button>
+              <button
+                onClick={() => removeSavedPreset(p.name)}
+                style={{
+                  position: "absolute", right: "3px", top: "50%", transform: "translateY(-50%)",
+                  width: "14px", height: "14px", display: "flex", alignItems: "center", justifyContent: "center",
+                  border: "none", background: "transparent", cursor: "pointer",
+                  color: "var(--color-text-muted)", borderRadius: "2px",
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.color = "var(--color-text-secondary)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.color = "var(--color-text-muted)"; }}
+              >
+                <X size={9} />
+              </button>
             </div>
           );
-        })()}
+        })}
       </div>
 
       {/* 타이포그래피 */}

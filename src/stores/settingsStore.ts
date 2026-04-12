@@ -209,6 +209,12 @@ export const SPACING_STYLES: Record<SpacingStyleName, { label: string; values: S
   },
 };
 
+export interface SavedPreset {
+  name: string;
+  settings: EditorSettings;
+  builtIn?: boolean;
+}
+
 interface SettingsState {
   settings: EditorSettings;
   showSettings: boolean;
@@ -219,6 +225,7 @@ interface SettingsState {
   spacingStyle: SpacingStyleName;
   codeFontFamily: string;
   saveMode: SaveMode;
+  savedPresets: SavedPreset[];
   updateSetting: <K extends keyof EditorSettings>(key: K, value: EditorSettings[K]) => void;
   applyPreset: (preset: EditorSettings) => void;
   resetToDefault: () => void;
@@ -230,6 +237,8 @@ interface SettingsState {
   setSpacingStyle: (name: SpacingStyleName) => void;
   setCodeFontFamily: (font: string) => void;
   setSaveMode: (mode: SaveMode) => void;
+  addSavedPreset: (preset: SavedPreset) => void;
+  removeSavedPreset: (name: string) => void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -244,6 +253,7 @@ export const useSettingsStore = create<SettingsState>()(
       spacingStyle: "default" as SpacingStyleName,
       codeFontFamily: "cascadia",
       saveMode: "manual" as SaveMode,
+      savedPresets: PRESETS.map((p) => ({ name: p.name, settings: p.settings, builtIn: true })) as SavedPreset[],
 
       updateSetting: (key, value) =>
         set((state) => ({
@@ -267,6 +277,12 @@ export const useSettingsStore = create<SettingsState>()(
       setSpacingStyle: (name) => set({ spacingStyle: name }),
       setCodeFontFamily: (font) => set({ codeFontFamily: font }),
       setSaveMode: (mode) => set({ saveMode: mode }),
+      addSavedPreset: (preset) => set((state) => ({
+        savedPresets: [...state.savedPresets.filter((p) => p.name !== preset.name), preset],
+      })),
+      removeSavedPreset: (name) => set((state) => ({
+        savedPresets: state.savedPresets.filter((p) => p.name !== name),
+      })),
     }),
     {
       name: "marknote-settings",
@@ -278,6 +294,7 @@ export const useSettingsStore = create<SettingsState>()(
         spacingStyle: state.spacingStyle,
         codeFontFamily: state.codeFontFamily,
         saveMode: state.saveMode,
+        savedPresets: state.savedPresets,
       }),
     }
   )
