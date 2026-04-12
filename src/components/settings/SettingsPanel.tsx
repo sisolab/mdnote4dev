@@ -789,6 +789,7 @@ function FontTab({ currentFont, currentCodeFont, onApply, onApplyCodeFont }: {
 
   return (<>
     <div style={{ flex: 1, overflowY: "auto", padding: "12px 16px" }}>
+      <PreviewDocButton />
       {/* 언어 선택 */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", marginBottom: "16px" }}>
         {["popular", "en", "zh", "es", "fr", "de", "ja", "ko"].map((id) => {
