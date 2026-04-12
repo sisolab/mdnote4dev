@@ -112,10 +112,10 @@ function CompactSlider({
   const pct = ((value - min) / (max - min)) * 100;
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: "8px", height: "28px" }}>
-      <span style={{ fontSize: "11px", fontWeight: 500, color: "var(--color-text-primary)", width: "80px", flexShrink: 0 }}>{label}</span>
+    <div style={{ display: "flex", alignItems: "center", gap: "10px", minHeight: "36px", padding: "2px 0" }}>
+      <span style={{ fontSize: "13px", fontWeight: 500, color: "var(--color-text-primary)", width: "86px", flexShrink: 0 }}>{label}</span>
       <div
-        style={{ flex: 1, position: "relative", height: "20px", cursor: "pointer" }}
+        style={{ flex: 1, position: "relative", height: "24px", cursor: "pointer" }}
         onClick={(e) => {
           const rect = e.currentTarget.getBoundingClientRect();
           const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
@@ -143,7 +143,7 @@ function CompactSlider({
         {/* thumb */}
         <div style={{
           position: "absolute", left: `${pct}%`, top: "50%", transform: "translate(-50%, -50%)",
-          width: "12px", height: "12px", borderRadius: "50%",
+          width: "13px", height: "13px", borderRadius: "50%",
           background: "var(--color-accent)", border: "2px solid var(--color-bg-elevated)",
           boxShadow: "0 1px 3px rgba(0,0,0,0.2)", transition: "left 0.05s",
           zIndex: 2,
@@ -155,17 +155,17 @@ function CompactSlider({
           style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0, cursor: "pointer", zIndex: 3 }}
         />
       </div>
-      <span style={{ fontSize: "10px", color: "var(--color-accent)", fontWeight: 600, width: "44px", textAlign: "right", flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>
+      <span style={{ fontSize: "12px", color: "var(--color-accent)", fontWeight: 600, width: "48px", textAlign: "right", flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>
         {decimals ? value.toFixed(decimals) : value}{unit}
       </span>
       {isModified ? (
         <button onClick={() => onChange(defaultValue)} title="기본값으로" style={{
-          width: "14px", height: "14px", display: "flex", alignItems: "center", justifyContent: "center",
+          width: "16px", height: "16px", display: "flex", alignItems: "center", justifyContent: "center",
           border: "none", background: "transparent", cursor: "pointer", color: "var(--color-text-tertiary)", flexShrink: 0,
         }}>
-          <RotateCcw size={9} />
+          <RotateCcw size={10} />
         </button>
-      ) : <div style={{ width: "14px", flexShrink: 0 }} />}
+      ) : <div style={{ width: "16px", flexShrink: 0 }} />}
     </div>
   );
 }
@@ -258,7 +258,7 @@ function SpacingSliders({ spacingStyle, setSpacingStyle }: { spacingStyle: Spaci
 
   return (
     <>
-      <div style={{ display: "flex", gap: "4px", marginBottom: "6px" }}>
+      <div style={{ display: "flex", gap: "6px", marginBottom: "10px" }}>
         {(Object.entries(SPACING_STYLES) as [SpacingStyleName, typeof SPACING_STYLES.default][]).map(([key, style]) => {
           const active = !isCustom && spacingStyle === key;
           const color = "#8b5cf6";
@@ -267,8 +267,8 @@ function SpacingSliders({ spacingStyle, setSpacingStyle }: { spacingStyle: Spaci
               key={key}
               onClick={() => selectPreset(key)}
               style={{
-                padding: "3px 10px", fontSize: "10px", fontWeight: active ? 600 : 400,
-                borderRadius: "4px", cursor: "pointer",
+                padding: "5px 12px", fontSize: "11px", fontWeight: active ? 600 : 400,
+                borderRadius: "5px", cursor: "pointer",
                 border: active ? `1.5px solid ${color}` : "1px solid var(--color-border-medium)",
                 background: active ? `${color}18` : "var(--color-bg-primary)",
                 color: active ? color : "var(--color-text-secondary)",
@@ -280,8 +280,8 @@ function SpacingSliders({ spacingStyle, setSpacingStyle }: { spacingStyle: Spaci
           );
         })}
         <span style={{
-          padding: "3px 10px", fontSize: "10px", fontWeight: isCustom ? 600 : 400,
-          borderRadius: "4px",
+          padding: "5px 12px", fontSize: "11px", fontWeight: isCustom ? 600 : 400,
+          borderRadius: "5px",
           border: isCustom ? "1.5px solid #888" : "1px solid var(--color-border-medium)",
           background: isCustom ? "rgba(136,136,136,0.08)" : "var(--color-bg-primary)",
           color: isCustom ? "var(--color-text-primary)" : "var(--color-text-tertiary)",
@@ -310,15 +310,15 @@ function SectionPresetButtons({ keys, settings, color, onApply }: {
   const isCustom = !PRESETS.some((p) => matchesPreset(p.settings));
 
   return (
-    <div style={{ display: "flex", gap: "4px", marginBottom: "6px" }}>
+    <div style={{ display: "flex", gap: "6px", marginBottom: "10px" }}>
       {PRESETS.map((preset) => {
         const active = matchesPreset(preset.settings);
         return (
           <button key={preset.name}
             onClick={() => { const p: any = {}; keys.forEach((k) => { p[k] = preset.settings[k]; }); onApply(p); }}
             style={{
-              padding: "3px 10px", fontSize: "10px", fontWeight: active ? 600 : 400,
-              borderRadius: "4px", cursor: "pointer",
+              padding: "5px 12px", fontSize: "11px", fontWeight: active ? 600 : 400,
+              borderRadius: "5px", cursor: "pointer",
               border: active ? `1.5px solid ${color}` : "1px solid var(--color-border-medium)",
               background: active ? `${color}18` : "var(--color-bg-primary)",
               color: active ? color : "var(--color-text-secondary)",
@@ -330,8 +330,8 @@ function SectionPresetButtons({ keys, settings, color, onApply }: {
         );
       })}
       <span style={{
-        padding: "3px 10px", fontSize: "10px", fontWeight: isCustom ? 600 : 400,
-        borderRadius: "4px",
+        padding: "5px 12px", fontSize: "11px", fontWeight: isCustom ? 600 : 400,
+        borderRadius: "5px",
         border: isCustom ? "1.5px solid #888" : "1px solid var(--color-border-medium)",
         background: isCustom ? "rgba(136,136,136,0.08)" : "var(--color-bg-primary)",
         color: isCustom ? "var(--color-text-primary)" : "var(--color-text-tertiary)",
@@ -456,7 +456,7 @@ function DocStyleTab({ settings, updateSetting, applyPreset, spacingStyle, setSp
       <CompactSlider label="문단 간격" value={settings.paragraphSpacing} min={0} max={0.8} step={0.1} unit="rem" decimals={1} defaultValue={DEFAULT_SETTINGS.paragraphSpacing} onChange={(v) => updateSetting("paragraphSpacing", v)} />
       <CompactSlider label="제목 배율" value={settings.headingScale} min={1.1} max={1.5} step={0.1} unit="×" decimals={1} defaultValue={DEFAULT_SETTINGS.headingScale} onChange={(v) => updateSetting("headingScale", v)} />
 
-      <div style={{ height: "1px", background: "var(--color-border-light)", margin: "12px 0" }} />
+      <div style={{ height: "1px", background: "var(--color-border-light)", margin: "16px 0" }} />
 
       {/* 레이아웃 */}
       <SectionTitle>레이아웃</SectionTitle>
@@ -465,7 +465,7 @@ function DocStyleTab({ settings, updateSetting, applyPreset, spacingStyle, setSp
       <CompactSlider label="좌우 패딩" value={settings.editorPaddingX} min={32} max={64} step={4} unit="px" defaultValue={DEFAULT_SETTINGS.editorPaddingX} onChange={(v) => updateSetting("editorPaddingX", v)} />
       <CompactSlider label="상하 패딩" value={settings.editorPaddingY} min={32} max={64} step={4} unit="px" defaultValue={DEFAULT_SETTINGS.editorPaddingY} onChange={(v) => updateSetting("editorPaddingY", v)} />
 
-      <div style={{ height: "1px", background: "var(--color-border-light)", margin: "12px 0" }} />
+      <div style={{ height: "1px", background: "var(--color-border-light)", margin: "16px 0" }} />
 
       {/* 코드 블록 */}
       <SectionTitle>코드 블록</SectionTitle>
@@ -474,7 +474,7 @@ function DocStyleTab({ settings, updateSetting, applyPreset, spacingStyle, setSp
       <CompactSlider label="줄 간격" value={settings.codeLineHeight} min={1.3} max={1.8} step={0.1} unit="" decimals={1} defaultValue={DEFAULT_SETTINGS.codeLineHeight} onChange={(v) => updateSetting("codeLineHeight", v)} />
       <CompactSlider label="패딩" value={settings.codePadding} min={8} max={20} step={2} unit="px" defaultValue={DEFAULT_SETTINGS.codePadding} onChange={(v) => updateSetting("codePadding", v)} />
 
-      <div style={{ height: "1px", background: "var(--color-border-light)", margin: "12px 0" }} />
+      <div style={{ height: "1px", background: "var(--color-border-light)", margin: "16px 0" }} />
 
       {/* 줄 간격 */}
       <SectionTitle>줄 간격</SectionTitle>
