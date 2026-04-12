@@ -255,7 +255,7 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
           const src = img.getAttribute("src") ?? "";
           if (src.startsWith("./") && src.includes(".assets")) {
             const absPath = `${docDir}\\${src.substring(2).replace(/\//g, "\\")}`;
-            img.setAttribute("src", convertFileSrc(absPath));
+            img.setAttribute("src", convertFileSrc(absPath) + `?t=${Date.now()}`);
           }
         });
       }
