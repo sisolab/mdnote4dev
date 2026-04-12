@@ -753,7 +753,6 @@ function FontTab({ currentFont, currentCodeFont, onApply, onApplyCodeFont }: {
 
   const previewFont = selectedFont ? `"${selectedFont.family}", sans-serif` : getFontFamily(currentFont);
   const previewCodeFont = getCodeFontFamily(selectedCodeFont);
-  const hasChanges = (selectedFont && selectedFont.value !== currentFont) || selectedCodeFont !== currentCodeFont;
 
   // 언어별 코드 폰트
   const BASE_CODE = [
@@ -814,7 +813,7 @@ function FontTab({ currentFont, currentCodeFont, onApply, onApplyCodeFont }: {
         {category.fonts.map((font) => {
           const isSelected = selectedFont ? selectedFont.value === font.value : currentFont === font.value;
           return (
-            <button key={font.value} onClick={() => setSelectedFont(font)} style={{
+            <button key={font.value} onClick={() => { setSelectedFont(font); onApply(font.value); }} style={{
               padding: "5px 12px", fontSize: "12px", fontWeight: isSelected ? 600 : 400,
               fontFamily: `"${font.family}", sans-serif`,
               borderRadius: "6px", cursor: "pointer",
@@ -835,7 +834,7 @@ function FontTab({ currentFont, currentCodeFont, onApply, onApplyCodeFont }: {
         {codeFontsForCategory.map((opt) => {
           const isSelected = selectedCodeFont === opt.value;
           return (
-            <button key={opt.value} onClick={() => setSelectedCodeFont(opt.value)} style={{
+            <button key={opt.value} onClick={() => { setSelectedCodeFont(opt.value); onApplyCodeFont(opt.value); }} style={{
               padding: "5px 12px", fontSize: "12px", fontWeight: isSelected ? 600 : 400,
               fontFamily: getCodeFontFamily(opt.value),
               borderRadius: "6px", cursor: "pointer",
@@ -887,22 +886,14 @@ function FontTab({ currentFont, currentCodeFont, onApply, onApplyCodeFont }: {
 
     {/* 하단 */}
     <div style={{
-      display: "flex", alignItems: "center", justifyContent: "space-between",
+      display: "flex", alignItems: "center", justifyContent: "flex-start",
       padding: "12px 16px", borderTop: "1px solid var(--color-border-light)",
     }}>
-      <button onClick={() => { setSelectedFont({ value: "system", label: "시스템 기본", family: "-apple-system, BlinkMacSystemFont, sans-serif", type: "sans" }); setSelectedCodeFont("cascadia"); }}
+      <button onClick={() => { onApply("system"); onApplyCodeFont("cascadia"); setSelectedFont(null); setSelectedCodeFont("cascadia"); }}
         style={{ fontSize: "12px", color: "var(--color-text-tertiary)", background: "transparent", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: "3px" }}
-      ><RotateCcw size={10} /> 기본값으로</button>
-      <button
-        onClick={() => { if (selectedFont) onApply(selectedFont.value); if (selectedCodeFont !== currentCodeFont) onApplyCodeFont(selectedCodeFont); }}
-        disabled={!hasChanges}
-        style={{
-          padding: "6px 16px", fontSize: "12px", fontWeight: 600,
-          background: hasChanges ? "var(--color-accent)" : "var(--color-bg-active)",
-          color: hasChanges ? "#fff" : "var(--color-text-tertiary)",
-          border: "none", borderRadius: "6px", cursor: hasChanges ? "pointer" : "default",
-        }}
-      >적용하기</button>
+        onMouseEnter={(e) => { e.currentTarget.style.color = "var(--color-text-secondary)"; }}
+        onMouseLeave={(e) => { e.currentTarget.style.color = "var(--color-text-tertiary)"; }}
+      ><RotateCcw size={10} /> 기본값으로 초기화</button>
     </div>
   </>);
 }
