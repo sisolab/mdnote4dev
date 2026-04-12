@@ -255,7 +255,7 @@ function App() {
       // 미저장 문서 확인 (임시 문서 + isDirty 문서)
       const unsaved = tabs.filter((t) =>
         t.type !== "tag-explorer" && t.type !== "attachment-explorer" &&
-        ((!t.filePath && t.content) || (t.filePath && t.isDirty))
+        (t.isDirty || (!t.filePath && t.content))
       );
       if (unsaved.length > 0) {
         setShowExitConfirm(true);
