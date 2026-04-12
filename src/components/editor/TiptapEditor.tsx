@@ -514,9 +514,9 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
     if (!editor) return;
     const tabId = mountedTabId.current;
     if (!tabId) return;
-    // 초기 스냅샷 (문서 열 때)
+    // 초기 스냅샷 (문서 열 때, body만)
     if (!undoSnapshots.has(tabId)) {
-      undoSnapshots.set(tabId, [content]);
+      undoSnapshots.set(tabId, [stripFrontmatter(content)]);
     }
     const handler = () => {
       if ((editor as any).__initializing) return;
@@ -616,32 +616,40 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
     const handler = (e: KeyboardEvent) => {
       if (!e.ctrlKey || e.key !== "z" || e.shiftKey) return;
       if (!document.activeElement?.closest(".tiptap")) return;
+
+      // 네이티브 undo 있으면 TipTap에게 위임 + 이후 isDirty 체크
+      if (editor.can().undo()) {
+        const tabId = mountedTabId.current;
+        requestAnimationFrame(() => {
+          if (tabId && !editor.can().undo()) {
+            const stack = undoSnapshots.get(tabId);
+            if (!stack || stack.length <= 1) {
+              useAppStore.getState().markTabClean(tabId);
+            }
+          }
+        });
+        return; // TipTap이 처리
+      }
+
+      // 네이티브 undo 비었음 → 스냅샷에서 복원
       const tabId = mountedTabId.current;
       if (!tabId) return;
       const stack = undoSnapshots.get(tabId);
-
-      if (editor.can().undo()) {
-        // 네이티브 undo — TipTap이 처리한 뒤 isDirty 체크
-        requestAnimationFrame(() => {
-          if (!editor.can().undo() && stack && stack.length <= 1) {
-            useAppStore.getState().markTabClean(tabId);
-          }
-        });
-        return;
-      }
-
       if (!stack || stack.length <= 1) return;
       e.preventDefault();
+      e.stopImmediatePropagation();
       stack.pop();
       const prev = stack[stack.length - 1];
+      (editor as any).__initializing = true;
       editor.commands.setContent(stripFrontmatter(prev), { contentType: "markdown" } as any);
-      // 원본까지 돌아왔으면 isDirty 해제
+      requestAnimationFrame(() => { (editor as any).__initializing = false; });
       if (stack.length <= 1) {
         useAppStore.getState().markTabClean(tabId);
       }
     };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
+    // capture phase로 ProseMirror보다 먼저 실행
+    window.addEventListener("keydown", handler, true);
+    return () => window.removeEventListener("keydown", handler, true);
   }, [editor]);
 
   if (!editor) return null;
