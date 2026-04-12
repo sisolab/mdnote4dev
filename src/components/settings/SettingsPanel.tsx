@@ -756,29 +756,20 @@ function FontTab({ currentFont, currentCodeFont, onApply, onApplyCodeFont }: {
   const hasChanges = (selectedFont && selectedFont.value !== currentFont) || selectedCodeFont !== currentCodeFont;
 
   // 언어별 코드 폰트
+  const BASE_CODE = [
+    { value: "system-mono", label: "시스템 기본" },
+    { value: "cascadia", label: "Cascadia Code" },
+    { value: "fira-code", label: "Fira Code" },
+  ];
   const CODE_FONTS_BY_LANG: Record<string, { value: string; label: string }[]> = {
-    popular: [
-      { value: "system-mono", label: "시스템 기본" },
-      { value: "cascadia", label: "Cascadia Code" },
-      { value: "fira-code", label: "Fira Code" },
-      { value: "jetbrains-mono", label: "JetBrains Mono" },
-      { value: "source-code-pro", label: "Source Code Pro" },
-      { value: "consolas", label: "Consolas" },
-    ],
-    ko: [
-      { value: "system-mono", label: "시스템 기본" },
-      { value: "d2coding", label: "D2Coding" },
-      { value: "nanum-gothic-coding", label: "나눔고딕코딩" },
-      { value: "cascadia", label: "Cascadia Code" },
-      { value: "fira-code", label: "Fira Code" },
-      { value: "jetbrains-mono", label: "JetBrains Mono" },
-    ],
-    ja: [
-      { value: "system-mono", label: "시스템 기본" },
-      { value: "cascadia", label: "Cascadia Code" },
-      { value: "fira-code", label: "Fira Code" },
-      { value: "jetbrains-mono", label: "JetBrains Mono" },
-    ],
+    popular: [...BASE_CODE, { value: "jetbrains-mono", label: "JetBrains Mono" }, { value: "source-code-pro", label: "Source Code Pro" }],
+    en: [...BASE_CODE, { value: "jetbrains-mono", label: "JetBrains Mono" }, { value: "source-code-pro", label: "Source Code Pro" }],
+    ko: [...BASE_CODE, { value: "d2coding", label: "D2Coding" }, { value: "nanum-gothic-coding", label: "나눔고딕코딩" }],
+    ja: [...BASE_CODE, { value: "jetbrains-mono", label: "JetBrains Mono" }],
+    zh: [...BASE_CODE, { value: "jetbrains-mono", label: "JetBrains Mono" }],
+    es: [...BASE_CODE, { value: "jetbrains-mono", label: "JetBrains Mono" }],
+    fr: [...BASE_CODE, { value: "jetbrains-mono", label: "JetBrains Mono" }],
+    de: [...BASE_CODE, { value: "jetbrains-mono", label: "JetBrains Mono" }],
   };
   const codeFontsForCategory = CODE_FONTS_BY_LANG[selectedCategory] ?? CODE_FONTS_BY_LANG.popular;
 
