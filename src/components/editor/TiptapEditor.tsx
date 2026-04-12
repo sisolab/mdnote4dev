@@ -271,6 +271,15 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
           }
         });
       }
+      // 초기 스냅샷 (content 로드 완료 후)
+      const initTabId = useAppStore.getState().activeTabId;
+      if (initTabId && !undoSnapshots.has(initTabId)) {
+        const initMd = e.getMarkdown();
+        if (initMd.trim()) {
+          undoSnapshots.set(initTabId, [initMd]);
+          console.log("[undo] init snapshot for", initTabId, "len:", initMd.length);
+        }
+      }
       requestAnimationFrame(() => { (e as any).__initializing = false; });
     },
     onTransaction: ({ editor: e }) => {
@@ -524,11 +533,7 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
     if (!editor) return;
     const tabId = mountedTabId.current;
     if (!tabId) return;
-    // 초기 스냅샷 (문서 열 때, body만)
-    if (!undoSnapshots.has(tabId)) {
-      undoSnapshots.set(tabId, [stripFrontmatter(content)]);
-      console.log("[undo] init snapshot for", tabId, "stack:", 1);
-    }
+    // 초기 스냅샷은 onCreate에서 설정 (content가 로드된 후)
     const handler = () => {
       if ((editor as any).__initializing) return;
       clearTimeout(snapshotTimer.current);
