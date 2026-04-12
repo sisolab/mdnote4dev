@@ -359,25 +359,6 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
       lastMarkdown.current = content;
       editor.commands.setContent(stripFrontmatter(content), { contentType: "markdown" } as any);
     }
-    // 탭 전환 시 (언마운트) 편집 내용을 탭에 저장
-    const currentFilePath = filePath;
-    return () => {
-      try {
-        if (!editor) return;
-        const store = useAppStore.getState();
-        const tab = currentFilePath
-          ? store.tabs.find((t) => t.filePath === currentFilePath)
-          : null;
-        if (tab?.isDirty) {
-          let body = editor.getMarkdown();
-          body = body.replace(/http:\/\/asset\.localhost\/[^)"\s]*?\.assets(?:[/\\]|%5C|%2F)([^)"\s?]+)(?:\?[^)"\s]*)?/gi,
-            (_m: string, f: string) => `./.assets/${decodeURIComponent(f)}`);
-          const fm = parseFrontmatter(contentRef.current);
-          const md = fm.raw ? `---\n${fm.raw}\n---\n${body}` : body;
-          store.updateTabContent(tab.id, md);
-        }
-      } catch {}
-    };
   }, [content, editor]);
 
   const handleSave = useCallback(() => {
@@ -508,19 +489,34 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
     return () => { editor.off("update", handler); };
   }, [editor, collectAssetPaths]);
 
-  // 편집 시 isDirty 표시 (초기화 중에는 무시)
+  // 편집 시 isDirty 표시 + 탭 content 동기화 (디바운스)
+  const syncTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   useEffect(() => {
     if (!editor) return;
     const handler = () => {
       if ((editor as any).__initializing) return;
       const store = useAppStore.getState();
       const tab = store.tabs.find((t) => t.id === store.activeTabId);
-      if (tab && !tab.isDirty) {
+      if (!tab) return;
+      // 첫 편집: isDirty 설정
+      if (!tab.isDirty) {
         store.updateTabContent(tab.id, tab.content);
       }
+      // 디바운스: 1초 후 에디터 마크다운을 탭 content에 동기화
+      clearTimeout(syncTimer.current);
+      syncTimer.current = setTimeout(() => {
+        try {
+          let body = editor.getMarkdown();
+          body = body.replace(/http:\/\/asset\.localhost\/[^)"\s]*?\.assets(?:[/\\]|%5C|%2F)([^)"\s?]+)(?:\?[^)"\s]*)?/gi,
+            (_m: string, f: string) => `./.assets/${decodeURIComponent(f)}`);
+          const fm = parseFrontmatter(contentRef.current);
+          const md = fm.raw ? `---\n${fm.raw}\n---\n${body}` : body;
+          store.updateTabContent(tab.id, md);
+        } catch {}
+      }, 1000);
     };
     editor.on("update", handler);
-    return () => { editor.off("update", handler); };
+    return () => { editor.off("update", handler); clearTimeout(syncTimer.current); };
   }, [editor]);
 
   // 자동 저장 (saveMode에 따라 동작)
