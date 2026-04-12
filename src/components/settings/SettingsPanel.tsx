@@ -182,8 +182,8 @@ function ToggleButtons({ options, value, onChange }: {
           key={opt.value}
           onClick={() => onChange(opt.value)}
           style={{
-            display: "flex", alignItems: "center", justifyContent: "center", gap: "5px",
-            padding: "5px 12px", fontSize: "12px", fontWeight: value === opt.value ? 600 : 500,
+            display: "flex", alignItems: "center", justifyContent: "center", gap: "4px",
+            padding: "5px 10px", fontSize: "12px", fontWeight: value === opt.value ? 600 : 500,
             border: "none", cursor: "pointer", position: "relative",
             fontFamily: "inherit", flex: 1,
             background: "var(--color-bg-primary)",
@@ -615,7 +615,7 @@ export function SettingsPanel() {
             <ToggleButtons
               options={[
                 { value: "light", label: "라이트", icon: <Sun size={12} /> },
-                { value: "newspaper", label: "뉴스페이퍼", icon: <BookOpen size={12} /> },
+                { value: "newspaper", label: "페이퍼", icon: <BookOpen size={12} /> },
                 { value: "charcoal", label: "차콜", icon: <CloudMoon size={12} /> },
                 { value: "dark", label: "다크", icon: <Moon size={12} /> },
               ]}
