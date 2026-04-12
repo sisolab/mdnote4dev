@@ -5,6 +5,17 @@ import { TextSelection } from "@tiptap/pm/state";
 export const CustomImage = Image.extend({
   selectable: true,
 
+  // @tiptap/markdown 직렬화: width/align 속성 보존을 위해 HTML <img> 태그로 출력
+  renderMarkdown(node: any) {
+    const src = node.attrs.src || "";
+    const w = node.attrs.width;
+    const align = node.attrs.align || "left";
+    const attrs = [`src="${src}"`];
+    if (w != null && w > 0) attrs.push(`width="${w}"`);
+    if (align && align !== "left") attrs.push(`align="${align}"`);
+    return `<img ${attrs.join(" ")}>\n\n`;
+  },
+
   addProseMirrorPlugins() {
     return [
       new Plugin({

@@ -231,6 +231,17 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
           if (tab) store.markTabClean(tab.id);
         }, 50);
       }
+      // 이미지 상대경로 → asset URL 변환 (Tauri에서 상대경로 렌더링 불가)
+      if (filePath) {
+        const docDir = filePath.substring(0, filePath.lastIndexOf("\\"));
+        e.view.dom.querySelectorAll("img").forEach((img) => {
+          const src = img.getAttribute("src") ?? "";
+          if (src.startsWith("./") && src.includes(".assets")) {
+            const absPath = `${docDir}\\${src.substring(2).replace(/\//g, "\\")}`;
+            img.setAttribute("src", convertFileSrc(absPath));
+          }
+        });
+      }
       requestAnimationFrame(() => { (e as any).__initializing = false; });
     },
     onTransaction: ({ editor: e }) => {
@@ -333,7 +344,11 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
 
   const handleSave = useCallback(() => {
     if (!editor) return;
-    const body = editor.getMarkdown();
+    let body = editor.getMarkdown();
+    // asset URL → 상대경로 복원 (http://asset.localhost/.../.assets/file → ./.assets/file)
+    body = body.replace(/http:\/\/asset\.localhost\/[^)"\s]*?\.assets[/\\%]([^)"\s?]+)(?:\?[^)"\s]*)?/gi,
+      (_match, filename) => `./.assets/${decodeURIComponent(filename)}`
+    );
     // frontmatter 보존: 현재 탭 content에서 frontmatter를 그대로 유지
     const fm = parseFrontmatter(contentRef.current);
     const md = fm.raw ? `---\n${fm.raw}\n---\n${body}` : body;

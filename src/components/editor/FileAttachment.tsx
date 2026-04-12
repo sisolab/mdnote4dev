@@ -146,7 +146,9 @@ export const FileAttachmentNode = Node.create({
   renderMarkdown(node: any) {
     const filename = node.attrs.filename || "file";
     const relativePath = node.attrs.relativePath || "";
-    return `[${filename}](${relativePath})\n\n`;
+    // 괄호 등 특수문자가 마크다운 링크 문법과 충돌하지 않도록 인코딩
+    const safePath = relativePath.replace(/\(/g, "%28").replace(/\)/g, "%29");
+    return `[${filename}](${safePath})\n\n`;
   },
 
   addNodeView() {
