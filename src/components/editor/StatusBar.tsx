@@ -303,49 +303,14 @@ export function StatusBar({ filePath, fileSize, tags: propTags, onAddTag, onRemo
           }))}
         />
         <div style={{ width: "1px", height: "14px", background: "var(--color-border-light)", flexShrink: 0 }} />
-        {(() => {
-          const [tabOpen, setTabOpen] = useState(false);
-          const tabRef = useRef<HTMLDivElement>(null);
-          useEffect(() => {
-            if (!tabOpen) return;
-            const h = (e: MouseEvent) => { if (tabRef.current && !tabRef.current.contains(e.target as Node)) setTabOpen(false); };
-            setTimeout(() => window.addEventListener("click", h), 0);
-            return () => window.removeEventListener("click", h);
-          }, [tabOpen]);
-          return (
-            <div ref={tabRef} style={{ position: "relative" }}>
-              <button onClick={() => setTabOpen(!tabOpen)} style={{
-                padding: "2px 6px", fontSize: "11px", fontWeight: 500, border: "none", background: "transparent",
-                cursor: "pointer", color: tabOpen ? "var(--color-accent)" : "var(--color-text-secondary)", borderRadius: "3px",
-              }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-hover)"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
-              >탭 {tabSize}</button>
-              {tabOpen && (
-                <div style={{
-                  position: "absolute", bottom: "100%", right: 0, marginBottom: "4px", zIndex: 9999,
-                  background: "var(--color-bg-elevated)", border: "1px solid var(--color-border-medium)",
-                  borderRadius: "6px", boxShadow: "0 4px 12px rgba(0,0,0,0.12)", padding: "4px", minWidth: "120px",
-                }}>
-                  <div style={{ padding: "4px 10px 6px", fontSize: "10px", color: "var(--color-text-tertiary)", fontWeight: 600 }}>
-                    코드블록 탭 크기
-                  </div>
-                  {([2, 4] as const).map((n) => (
-                    <button key={n} onClick={(e) => { e.stopPropagation(); setTabSize(n); setTabOpen(false); }} style={{
-                      display: "flex", alignItems: "center", gap: "6px", width: "100%", padding: "5px 10px", borderRadius: "3px",
-                      border: "none", cursor: "pointer", textAlign: "left", fontSize: "11px", fontWeight: tabSize === n ? 600 : 400,
-                      background: tabSize === n ? "var(--color-accent-subtle)" : "transparent",
-                      color: tabSize === n ? "var(--color-accent)" : "var(--color-text-secondary)", whiteSpace: "nowrap",
-                    }}>
-                      {"┃".repeat(n)} 스페이스 {n}칸
-                      {n === 2 && <Home size={9} style={{ opacity: 0.5, flexShrink: 0 }} />}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          );
-        })()}
+        <StatusDropdown
+          label={`탭 ${tabSize}`}
+          title="코드블록 탭 크기"
+          items={[
+            { label: "┃┃ 스페이스 2칸", active: tabSize === 2, isDefault: true, onClick: () => setTabSize(2) },
+            { label: "┃┃┃┃ 스페이스 4칸", active: tabSize === 4, onClick: () => setTabSize(4) },
+          ]}
+        />
         <div style={{ width: "1px", height: "14px", background: "var(--color-border-light)", flexShrink: 0 }} />
         <button
           onClick={() => setCollapsed(true)}
