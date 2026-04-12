@@ -62,11 +62,14 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
           HTMLAttributes: { class: "tiptap-link" },
         },
       }),
-      Code.configure({}).extend({
-        // exitable 비활성화 — 화살키 커서 이동이 자연스럽게 동작
+      Code.extend({
         exitable: false,
-        // 입력 규칙 비활성화 — 백틱 앞 글자 사라지는 문제 방지
         addInputRules() { return []; },
+        addKeyboardShortcuts() {
+          return {
+            "Mod-e": () => this.editor.commands.toggleCode(),
+          };
+        },
       }),
       CodeBlockLowlight.extend({
         addNodeView() {
@@ -390,14 +393,20 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
     return () => { editor.off("update", handler); };
   }, [editor, collectAssetPaths]);
 
-  // TODO: 자동 저장 — @tiptap/markdown 안정화 후 복원
-  // const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
-  // useEffect(() => {
-  //   if (!editor) return;
-  //   const handler = () => { clearTimeout(saveTimer.current); saveTimer.current = setTimeout(handleSave, 500); };
-  //   editor.on("update", handler);
-  //   return () => { editor.off("update", handler); clearTimeout(saveTimer.current); };
-  // }, [editor, handleSave]);
+  // 실시간 자동 저장 (타이핑 멈추고 500ms 후)
+  const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  useEffect(() => {
+    if (!editor) return;
+    const handler = () => {
+      clearTimeout(saveTimer.current);
+      saveTimer.current = setTimeout(handleSave, 500);
+    };
+    editor.on("update", handler);
+    return () => {
+      editor.off("update", handler);
+      clearTimeout(saveTimer.current);
+    };
+  }, [editor, handleSave]);
 
   // Ctrl+S 즉시 저장도 유지
   useEffect(() => {
