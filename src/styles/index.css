@@ -278,6 +278,10 @@ body {
   margin: 0;
 }
 
+.tiptap li p:has(> br:only-child) {
+  display: none;
+}
+
 .tiptap li p:empty {
   display: none;
 }
