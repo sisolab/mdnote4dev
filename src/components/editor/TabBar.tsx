@@ -397,9 +397,10 @@ export function TabBar() {
                   position: "relative",
                   zIndex: 1,
                   color: !tab.filePath ? "var(--color-text-light)" : isActive ? "var(--color-accent)" : "var(--color-text-secondary)",
-                  fontWeight: tab.filePath ? 600 : 400,
+                  fontWeight: isActive ? 500 : 400,
                   fontStyle: tab.filePath ? "normal" : "italic",
                   fontSize: "13px",
+                  letterSpacing: "-0.01em",
                   transition: "color 0.1s",
                 }}
               >
