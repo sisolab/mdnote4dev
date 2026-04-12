@@ -15,12 +15,12 @@ import { CustomImage } from "./ImageExtension";
 import { FileAttachmentNode } from "./FileAttachment";
 import { Typography } from "@tiptap/extension-typography";
 import { useEffect, useCallback, useRef, useState } from "react";
-import { htmlToMarkdown, markdownToHtml } from "./markdown";
+import { Markdown } from "@tiptap/markdown";
 import { parseFrontmatter } from "@/utils/frontmatter";
 import { saveImageToAssets, getAssetsDir } from "@/utils/imageUtils";
 import { moveToTrash, findFavoriteRoot } from "@/utils/trashUtils";
 import { rename, exists, stat } from "@tauri-apps/plugin-fs";
-import { TextSelection } from "@tiptap/pm/state";
+import { Code } from "@tiptap/extension-code";
 import { useAppStore } from "@/stores/appStore";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { Toolbar } from "./Toolbar";
@@ -38,6 +38,10 @@ interface TiptapEditorProps {
 // 모듈 레벨: 탭 전환/리마운트해도 유지
 const globalTrashMap = new Map<string, string>(); // assetName → trashPath
 
+function stripFrontmatter(md: string): string {
+  return md.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, "");
+}
+
 export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
   const lastMarkdown = useRef(content);
   const contentRef = useRef(content);
@@ -52,10 +56,17 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
       StarterKit.configure({
         heading: { levels: [1, 2, 3, 4] },
         codeBlock: false, // CodeBlockLowlight로 대체
+        code: false, // 커스텀 Code로 대체 (입력 규칙 글자 먹힘 방지)
         link: {
           openOnClick: false,
           HTMLAttributes: { class: "tiptap-link" },
         },
+      }),
+      Code.configure({}).extend({
+        // exitable 비활성화 — 화살키 커서 이동이 자연스럽게 동작
+        exitable: false,
+        // 입력 규칙 비활성화 — 백틱 앞 글자 사라지는 문제 방지
+        addInputRules() { return []; },
       }),
       CodeBlockLowlight.extend({
         addNodeView() {
@@ -78,33 +89,14 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
       CustomImage,
       FileAttachmentNode,
       Typography,
+      Markdown,
     ],
-    content: markdownToHtml(content, filePath),
+    content: stripFrontmatter(content),
     editorProps: {
       attributes: {
         class: "outline-none prose prose-sm max-w-none",
       },
       handleKeyDown: (view, event) => {
-        // 인라인 코드 끝에서 오른쪽 화살표: 마크 밖 + 한 칸 이동 동시
-        if (event.key === "ArrowRight" && !event.ctrlKey && !event.shiftKey) {
-          const { from } = view.state.selection;
-          const codeMark = view.state.schema.marks.code;
-          const $from = view.state.doc.resolve(from);
-          if (codeMark && $from.marks().some((m) => m.type === codeMark)) {
-            const nodeAfter = $from.nodeAfter;
-            if (!nodeAfter || (nodeAfter.isText && !codeMark.isInSet(nodeAfter.marks))) {
-              // 마크 밖으로 나가면서 한 칸 이동
-              event.preventDefault();
-              const newPos = Math.min(from + 1, view.state.doc.content.size);
-              const tr = view.state.tr
-                .setSelection(TextSelection.create(view.state.doc, newPos))
-                .removeStoredMark(codeMark);
-              view.dispatch(tr);
-              return true;
-            }
-          }
-        }
-
         // Ctrl+1~5: 제목/일반텍스트
         if (event.ctrlKey && !event.altKey && !event.shiftKey && ["1","2","3","4","5"].includes(event.key)) {
           event.preventDefault();
@@ -267,13 +259,13 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
     if (!editor) return;
     if (content !== lastMarkdown.current) {
       lastMarkdown.current = content;
-      editor.commands.setContent(markdownToHtml(content, filePath));
+      editor.commands.setContent(stripFrontmatter(content));
     }
   }, [content, editor]);
 
   const handleSave = useCallback(() => {
     if (!editor) return;
-    const body = htmlToMarkdown(editor.getHTML());
+    const body = editor.getMarkdown();
     // frontmatter 보존: 현재 탭 content에서 frontmatter를 그대로 유지
     const fm = parseFrontmatter(contentRef.current);
     const md = fm.raw ? `---\n${fm.raw}\n---\n${body}` : body;
