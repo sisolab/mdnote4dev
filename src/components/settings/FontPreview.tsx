@@ -159,14 +159,13 @@ function buildFontUrl(families: string[]): string {
   return `https://fonts.googleapis.com/css2?${params}&display=swap`;
 }
 
-// 코드 폰트 → Google Fonts 패밀리명 매핑 (로컬 설치 안 되어있을 때 로드)
+// 코드 폰트 → Google Fonts 패밀리명 매핑 (Google Fonts에 있는 것만)
 const CODE_FONT_GOOGLE_FAMILIES: Record<string, string> = {
-  "cascadia": "Cascadia Code",        // Google Fonts에 없음 — 로컬만
   "fira-code": "Fira Code",
   "jetbrains-mono": "JetBrains Mono",
   "source-code-pro": "Source Code Pro",
   "nanum-gothic-coding": "Nanum Gothic Coding",
-  "d2coding": "D2Coding",             // Google Fonts에 없음 — 로컬만
+  // cascadia, d2coding, consolas → 로컬 전용 (Google Fonts 미제공)
 };
 
 function renderMarkdown(md: string, codeFontCss?: string): string {
@@ -248,19 +247,21 @@ export function FontPreview({
     if (!googleFamily || loadedFonts.has(googleFamily)) return;
     const link = document.createElement("link");
     link.rel = "stylesheet";
-    link.href = buildFontUrl([googleFamily]);
+    link.href = `https://fonts.googleapis.com/css2?family=${googleFamily.replace(/ /g, "+")}&display=swap`;
     document.head.appendChild(link);
     setLoadedFonts((prev) => { const n = new Set(prev); n.add(googleFamily); return n; });
   }, [selectedCodeFont, loadedFonts]);
 
-  // 모든 코드 폰트를 미리 로드 (선택 전에도 2열 폰트명이 해당 폰트로 표시되도록)
+  // 모든 코드 폰트를 미리 로드 (각각 개별 요청으로 — 하나가 실패해도 나머지 로드)
   useEffect(() => {
     const toLoad = Object.values(CODE_FONT_GOOGLE_FAMILIES).filter((f) => f && !loadedFonts.has(f));
     if (toLoad.length === 0) return;
-    const link = document.createElement("link");
-    link.rel = "stylesheet";
-    link.href = buildFontUrl(toLoad);
-    document.head.appendChild(link);
+    toLoad.forEach((family) => {
+      const link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = `https://fonts.googleapis.com/css2?family=${family.replace(/ /g, "+")}&display=swap`;
+      document.head.appendChild(link);
+    });
     setLoadedFonts((prev) => { const n = new Set(prev); toLoad.forEach((f) => n.add(f)); return n; });
   }, []);
 
