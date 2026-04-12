@@ -563,7 +563,7 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
       <TableToolbar editor={editor} />
       <FileToolbar editor={editor} />
       <div
-        className="flex-1 overflow-auto"
+        className="flex-1 overflow-y-auto overflow-x-hidden"
         style={{ padding: "24px 48px", cursor: "text" }}
         onMouseDown={(e) => {
           // 에디터 내부 콘텐츠가 아닌 빈 영역 클릭 시 클릭 위치에 가장 가까운 곳에 포커스
