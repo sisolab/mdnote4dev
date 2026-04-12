@@ -115,7 +115,7 @@ export function getAccentColors(accent: AccentColor, isDark = false): ThemeColor
       case "orange": return { accent: "#fb923c", accentHover: "#fdba74", accentSubtle: "rgba(251, 146, 60, 0.15)" };
       case "yellow": return { accent: "#facc15", accentHover: "#fde047", accentSubtle: "rgba(250, 204, 21, 0.15)" };
       case "emerald": return { accent: "#2dd4bf", accentHover: "#5eead4", accentSubtle: "rgba(45, 212, 191, 0.15)" };
-      case "navy": return { accent: "#7baed6", accentHover: "#a0c8e8", accentSubtle: "rgba(123, 174, 214, 0.15)" };
+      case "navy": return { accent: "#8a9bb5", accentHover: "#a8b5c8", accentSubtle: "rgba(138, 155, 181, 0.15)" };
       case "purple": return { accent: "#a78bfa", accentHover: "#c4b5fd", accentSubtle: "rgba(167, 139, 250, 0.15)" };
       default: return { accent: "#7ab3e8", accentHover: "#a0c9f0", accentSubtle: "rgba(122, 179, 232, 0.15)" };
     }
