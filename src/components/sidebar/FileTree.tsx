@@ -874,11 +874,16 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
         { label: "삭제", onClick: () => handleDelete(items), danger: true },
       ];
     }
+    const isMarkdown = /\.(md|markdown)$/i.test(entry.name);
     const { favoriteFiles: favFiles, addFavoriteFile: addFav, removeFavoriteFile: removeFav } = useAppStore.getState();
     const isFav = favFiles.includes(entry.path);
+    const favItems: ContextMenuItem[] = [];
+    if (isMarkdown) {
+      favItems.push({ label: isFav ? "즐겨찾기 해제" : "즐겨찾기 등록", onClick: () => isFav ? removeFav(entry.path) : addFav(entry.path) });
+      favItems.push({ divider: true, label: "", onClick: () => {} });
+    }
     return [
-      { label: isFav ? "즐겨찾기 해제" : "즐겨찾기 등록", onClick: () => isFav ? removeFav(entry.path) : addFav(entry.path) },
-      { divider: true, label: "", onClick: () => {} },
+      ...favItems,
       { label: "파일 위치 열기", onClick: () => invoke("open_in_explorer", { path: entry.path.substring(0, entry.path.lastIndexOf("\\")) }) },
       { label: "경로 복사", onClick: () => navigator.clipboard.writeText(entry.path) },
       { label: "복제", onClick: () => handleDuplicateFile(entry) },

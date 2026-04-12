@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import {
   useSettingsStore,
   PRESETS,
-  FONT_OPTIONS,
   ACCENT_OPTIONS,
   DEFAULT_SETTINGS,
   SAVE_MODE_OPTIONS,
@@ -16,7 +15,7 @@ import {
   type SpacingStyleName,
   type DesignPresets,
 } from "@/stores/settingsStore";
-import { Sun, Moon, BookOpen, CloudMoon, Minimize2, AlignCenter, Maximize2, SlidersHorizontal, RotateCcw, Type, X, FileText } from "lucide-react";
+import { Sun, Moon, BookOpen, CloudMoon, Minimize2, AlignCenter, Maximize2, SlidersHorizontal, RotateCcw, X, FileText } from "lucide-react";
 import { CATEGORIES, CODE_FONT_GOOGLE_FAMILIES, buildFontUrl, type FontItem } from "./FontPreview";
 import { useAppStore } from "@/stores/appStore";
 
@@ -1025,29 +1024,6 @@ export function SettingsPanel() {
               ))}
             </div>
           </div>
-
-          <div style={{ height: "1px", background: "var(--color-border-light)", margin: "16px 0" }} />
-
-          {/* 글꼴 */}
-          <SectionTitle>글꼴</SectionTitle>
-          <button
-            onClick={() => setActiveTab("font")}
-            style={{
-              display: "flex", alignItems: "center", gap: "8px",
-              padding: "8px 16px", fontSize: "13px", fontWeight: 500,
-              fontFamily: getFontFamily(settings.fontFamily),
-              borderRadius: "6px", cursor: "pointer",
-              border: "1px solid var(--color-border-light)",
-              background: "var(--color-bg-elevated)",
-              color: "var(--color-text-primary)",
-              transition: "all 0.15s",
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--color-accent)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--color-border-light)"; }}
-          >
-            <Type size={14} style={{ color: "var(--color-accent)" }} />
-            {FONT_OPTIONS.find((o) => o.value === settings.fontFamily)?.label ?? settings.fontFamily}
-          </button>
 
           <div style={{ height: "1px", background: "var(--color-border-light)", margin: "16px 0" }} />
 
