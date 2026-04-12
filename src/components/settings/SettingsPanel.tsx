@@ -762,14 +762,14 @@ function FontTab({ currentFont, currentCodeFont, onApply, onApplyCodeFont }: {
     { value: "source-code-pro", label: "Source Code Pro" },
   ];
   const CODE_FONTS_BY_LANG: Record<string, { value: string; label: string }[]> = {
-    popular: [...BASE_CODE, { value: "jetbrains-mono", label: "JetBrains Mono" }],
-    en: [...BASE_CODE, { value: "jetbrains-mono", label: "JetBrains Mono" }],
-    ko: [...BASE_CODE, { value: "d2coding", label: "D2Coding" }, { value: "nanum-gothic-coding", label: "나눔고딕코딩" }],
-    ja: [...BASE_CODE, { value: "jetbrains-mono", label: "JetBrains Mono" }],
-    zh: [...BASE_CODE, { value: "jetbrains-mono", label: "JetBrains Mono" }],
-    es: [...BASE_CODE, { value: "jetbrains-mono", label: "JetBrains Mono" }],
-    fr: [...BASE_CODE, { value: "jetbrains-mono", label: "JetBrains Mono" }],
-    de: [...BASE_CODE, { value: "jetbrains-mono", label: "JetBrains Mono" }],
+    popular: [...BASE_CODE, { value: "jetbrains-mono", label: "JetBrains Mono" }, { value: "ibm-plex-mono", label: "IBM Plex Mono" }],
+    en: [...BASE_CODE, { value: "jetbrains-mono", label: "JetBrains Mono" }, { value: "ibm-plex-mono", label: "IBM Plex Mono" }],
+    ko: [...BASE_CODE, { value: "nanum-gothic-coding", label: "나눔고딕코딩" }, { value: "noto-sans-mono", label: "Noto Sans Mono" }],
+    ja: [...BASE_CODE, { value: "noto-sans-mono", label: "Noto Sans Mono" }],
+    zh: [...BASE_CODE, { value: "noto-sans-mono", label: "Noto Sans Mono" }],
+    es: [...BASE_CODE, { value: "jetbrains-mono", label: "JetBrains Mono" }, { value: "ibm-plex-mono", label: "IBM Plex Mono" }],
+    fr: [...BASE_CODE, { value: "jetbrains-mono", label: "JetBrains Mono" }, { value: "ibm-plex-mono", label: "IBM Plex Mono" }],
+    de: [...BASE_CODE, { value: "jetbrains-mono", label: "JetBrains Mono" }, { value: "ibm-plex-mono", label: "IBM Plex Mono" }],
   };
   const codeFontsForCategory = CODE_FONTS_BY_LANG[selectedCategory] ?? CODE_FONTS_BY_LANG.popular;
 

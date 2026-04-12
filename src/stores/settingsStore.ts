@@ -145,6 +145,7 @@ export const FONT_OPTIONS = [
 export const CODE_FONT_OPTIONS = [
   { value: "system-mono", label: "시스템 기본" },
   { value: "cascadia", label: "Cascadia Code" },
+  { value: "ibm-plex-mono", label: "IBM Plex Mono" },
   { value: "fira-code", label: "Fira Code" },
   { value: "jetbrains-mono", label: "JetBrains Mono" },
   { value: "consolas", label: "Consolas" },
@@ -404,6 +405,8 @@ export function getFontFamily(value: string): string {
 const CODE_FONT_FAMILIES: Record<string, string> = {
   "system-mono": 'monospace',
   "cascadia": '"Cascadia Code", "Fira Code", "Consolas", monospace',
+  "ibm-plex-mono": '"IBM Plex Mono", "Consolas", monospace',
+  "noto-sans-mono": '"Noto Sans Mono", monospace',
   "fira-code": '"Fira Code", "Cascadia Code", "Consolas", monospace',
   "jetbrains-mono": '"JetBrains Mono", "Fira Code", "Consolas", monospace',
   "consolas": '"Consolas", "Cascadia Code", monospace',
