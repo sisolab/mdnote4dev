@@ -36,6 +36,8 @@ export async function moveToTrash(
 
 /** .trash에서 원래 위치로 복원 */
 export async function restoreFromTrash(trashPath: string, originalPath: string): Promise<void> {
+  const dir = originalPath.substring(0, originalPath.lastIndexOf("\\"));
+  if (!(await exists(dir))) await mkdir(dir, { recursive: true });
   await rename(trashPath, originalPath);
 }
 

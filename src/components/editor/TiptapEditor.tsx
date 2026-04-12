@@ -359,6 +359,19 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
       lastMarkdown.current = content;
       editor.commands.setContent(stripFrontmatter(content), { contentType: "markdown" } as any);
     }
+    // 탭 전환 시 (언마운트) 편집 내용을 탭에 저장
+    return () => {
+      const store = useAppStore.getState();
+      const tab = store.tabs.find((t) => t.id === store.activeTabId);
+      if (tab?.isDirty && editor && !editor.isDestroyed) {
+        let body = editor.getMarkdown();
+        body = body.replace(/http:\/\/asset\.localhost\/[^)"\s]*?\.assets[/\\%]([^)"\s?]+)(?:\?[^)"\s]*)?/gi,
+          (_m: string, f: string) => `./.assets/${decodeURIComponent(f)}`);
+        const fm = parseFrontmatter(contentRef.current);
+        const md = fm.raw ? `---\n${fm.raw}\n---\n${body}` : body;
+        store.updateTabContent(tab.id, md);
+      }
+    };
   }, [content, editor]);
 
   const handleSave = useCallback(() => {

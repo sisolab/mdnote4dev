@@ -1,6 +1,27 @@
 import { useEffect, useState } from "react";
 import { Editor } from "@tiptap/react";
-import { Plus, Minus, Trash2, Copy, Scissors } from "lucide-react";
+import { Plus, Minus, Trash2, Copy, Scissors, Check } from "lucide-react";
+
+function tableToMarkdown(table: HTMLTableElement): string {
+  const rows = Array.from(table.querySelectorAll("tr"));
+  if (rows.length === 0) return "";
+  const data = rows.map((row) =>
+    Array.from(row.querySelectorAll("th, td")).map((cell) => cell.textContent?.trim() ?? "")
+  );
+  const colCount = Math.max(...data.map((r) => r.length));
+  const lines = data.map((row) => `| ${row.concat(Array(colCount - row.length).fill("")).join(" | ")} |`);
+  if (lines.length > 0) {
+    const sep = `| ${Array(colCount).fill("---").join(" | ")} |`;
+    lines.splice(1, 0, sep);
+  }
+  return lines.join("\n");
+}
+
+function getTableEl(): HTMLTableElement | null {
+  const sel = window.getSelection();
+  const node = sel?.anchorNode instanceof HTMLElement ? sel.anchorNode : sel?.anchorNode?.parentElement;
+  return node?.closest("table") ?? null;
+}
 
 interface TableToolbarProps {
   editor: Editor;
@@ -8,6 +29,7 @@ interface TableToolbarProps {
 
 export function TableToolbar({ editor }: TableToolbarProps) {
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const update = () => {
@@ -69,12 +91,31 @@ export function TableToolbar({ editor }: TableToolbarProps) {
         <Minus size={12} /><span>행</span>
       </button>
       <div style={{ width: "1px", height: "16px", background: "var(--color-border-light)", margin: "0 2px" }} />
-      <button onClick={() => { document.execCommand("copy"); }} style={btnStyle}
+      <button onClick={() => {
+        const tableEl = getTableEl();
+        if (tableEl) {
+          const md = tableToMarkdown(tableEl);
+          const html = tableEl.outerHTML;
+          navigator.clipboard.write([new ClipboardItem({
+            "text/plain": new Blob([md], { type: "text/plain" }),
+            "text/html": new Blob([html], { type: "text/html" }),
+          })]);
+          setCopied(true);
+          setTimeout(() => setCopied(false), 800);
+        }
+      }} style={btnStyle}
         onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-hover)"; }}
         onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }} title="복사">
-        <Copy size={12} />
+        {copied ? <Check size={12} style={{ color: "#22c55e" }} /> : <Copy size={12} />}
       </button>
-      <button onClick={() => { document.execCommand("cut"); }} style={btnStyle}
+      <button onClick={() => {
+        const tableEl = getTableEl();
+        if (tableEl) {
+          const md = tableToMarkdown(tableEl);
+          navigator.clipboard.writeText(md);
+          editor.chain().focus().deleteTable().run();
+        }
+      }} style={btnStyle}
         onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-bg-hover)"; }}
         onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }} title="잘라내기">
         <Scissors size={12} />

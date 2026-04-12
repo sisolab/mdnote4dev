@@ -278,11 +278,11 @@ body {
   margin: 0;
 }
 
-.tiptap li p:has(> br:only-child) {
+.tiptap li p:has(> br:only-child):not(:only-child) {
   display: none;
 }
 
-.tiptap li p:empty {
+.tiptap li p:empty:not(:only-child) {
   display: none;
 }
 

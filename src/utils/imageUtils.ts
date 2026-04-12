@@ -81,11 +81,13 @@ export function extractAssetPaths(markdown: string): string[] {
   while ((match = linkRegex.exec(markdown)) !== null) {
     paths.push(match[1]);
   }
+  // asset URL (http://asset.localhost/.../.assets/filename) — 미저장 content 대응
+  const assetUrlRegex = /http:\/\/asset\.localhost\/[^)"\s]*?\.assets[/\\%]([^)"\s?]+)/gi;
+  while ((match = assetUrlRegex.exec(markdown)) !== null) {
+    paths.push(`./.assets/${decodeURIComponent(match[1])}`);
+  }
   return paths;
 }
-
-/** @deprecated use extractAssetPaths */
-export const extractImagePaths = extractAssetPaths;
 
 /** 해당 문서의 미참조 에셋(이미지+파일)을 휴지통으로 이동 */
 export async function cleanupOrphanedImages(docFilePath: string, markdown: string): Promise<void> {
