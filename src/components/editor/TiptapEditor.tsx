@@ -36,6 +36,8 @@ interface TiptapEditorProps {
 
 // 모듈 레벨: 탭 전환/리마운트해도 유지
 const globalTrashMap = new Map<string, string>(); // assetName → trashPath
+const undoSnapshots = new Map<string, string[]>(); // tabId → markdown snapshots (max 10)
+const UNDO_MAX = 10;
 
 function stripFrontmatter(md: string): string {
   return md.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, "");
@@ -506,6 +508,35 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
     return () => { editor.off("update", handler); };
   }, [editor]);
 
+  // undo 스냅샷: 편집할 때마다 디바운스로 마크다운 저장 (탭 전환 후 undo용)
+  const snapshotTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  useEffect(() => {
+    if (!editor) return;
+    const tabId = mountedTabId.current;
+    if (!tabId) return;
+    // 초기 스냅샷 (문서 열 때)
+    if (!undoSnapshots.has(tabId)) {
+      undoSnapshots.set(tabId, [content]);
+    }
+    const handler = () => {
+      if ((editor as any).__initializing) return;
+      clearTimeout(snapshotTimer.current);
+      snapshotTimer.current = setTimeout(() => {
+        try {
+          const md = editor.getMarkdown();
+          const stack = undoSnapshots.get(tabId) ?? [];
+          // 마지막 스냅샷과 같으면 스킵
+          if (stack.length > 0 && stack[stack.length - 1] === md) return;
+          stack.push(md);
+          if (stack.length > UNDO_MAX + 1) stack.shift(); // +1: 현재 상태 포함
+          undoSnapshots.set(tabId, stack);
+        } catch {}
+      }, 2000);
+    };
+    editor.on("update", handler);
+    return () => { editor.off("update", handler); clearTimeout(snapshotTimer.current); };
+  }, [editor]);
+
   // 포커스 잃을 때 에디터 content → 탭에 동기화 (탭 전환 직전)
   useEffect(() => {
     if (!editor) return;
@@ -578,6 +609,26 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [handleSave]);
+
+  // Ctrl+Z: 네이티브 undo 비었으면 스냅샷에서 복원
+  useEffect(() => {
+    if (!editor) return;
+    const handler = (e: KeyboardEvent) => {
+      if (!e.ctrlKey || e.key !== "z" || e.shiftKey) return;
+      if (!document.activeElement?.closest(".tiptap")) return;
+      if (editor.can().undo()) return; // 네이티브 undo 있으면 TipTap이 처리
+      const tabId = mountedTabId.current;
+      if (!tabId) return;
+      const stack = undoSnapshots.get(tabId);
+      if (!stack || stack.length <= 1) return; // 1개 = 현재 상태만
+      e.preventDefault();
+      stack.pop(); // 현재 상태 제거
+      const prev = stack[stack.length - 1]; // 이전 상태
+      editor.commands.setContent(stripFrontmatter(prev), { contentType: "markdown" } as any);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [editor]);
 
   if (!editor) return null;
 
