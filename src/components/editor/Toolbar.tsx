@@ -5,7 +5,7 @@ import {
   Bold, Italic, Strikethrough, Code,
   List, ListOrdered, ListChecks,
   Star, StarOff,
-  Quote, SquareCode, Minus, Table, Smile, Paperclip, Home, Save,
+  Quote, SquareCode, Minus, Table, Smile, Paperclip, Home, Save, Check,
 } from "lucide-react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { saveFileToAssets } from "@/utils/imageUtils";
@@ -290,8 +290,16 @@ function ToolbarDropdown({
 export function Toolbar({ editor }: ToolbarProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [highlight, setHighlight] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
-  const { selectedFile, favoriteFiles, addFavoriteFile, removeFavoriteFile } = useAppStore();
+  const { selectedFile, favoriteFiles, addFavoriteFile, removeFavoriteFile, tabs, activeTabId } = useAppStore();
   const isFavorite = selectedFile ? favoriteFiles.includes(selectedFile) : false;
+  const [saveFlash, setSaveFlash] = useState(false);
+  const isDirty = tabs.find((t) => t.id === activeTabId)?.isDirty ?? false;
+
+  useEffect(() => {
+    const handler = () => { setSaveFlash(true); setTimeout(() => setSaveFlash(false), 800); };
+    window.addEventListener("manual-save", handler);
+    return () => window.removeEventListener("manual-save", handler);
+  }, []);
 
   const handleHover = useCallback((el: HTMLButtonElement | null) => {
     if (!el || !containerRef.current) {
@@ -414,11 +422,18 @@ export function Toolbar({ editor }: ToolbarProps) {
       <div style={{ flex: 1, minWidth: "8px" }} />
 
       <ToolbarButton
-        onClick={() => window.dispatchEvent(new KeyboardEvent("keydown", { ctrlKey: true, key: "s" }))}
+        onClick={() => {
+          window.dispatchEvent(new KeyboardEvent("keydown", { ctrlKey: true, key: "s" }));
+          setSaveFlash(true);
+          setTimeout(() => setSaveFlash(false), 800);
+        }}
         title="저장 (Ctrl+S)"
         onHover={handleHover}
       >
-        <Save size={15} />
+        {saveFlash
+          ? <Check size={15} style={{ color: "#22c55e" }} />
+          : <Save size={15} style={isDirty ? { color: "#ef4444" } : {}} />
+        }
       </ToolbarButton>
 
       <Divider />

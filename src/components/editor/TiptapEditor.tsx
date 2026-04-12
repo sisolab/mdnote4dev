@@ -393,20 +393,28 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
     return () => { editor.off("update", handler); };
   }, [editor, collectAssetPaths]);
 
-  // 실시간 자동 저장 (타이핑 멈추고 500ms 후)
-  const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  // 편집 시 isDirty 표시
   useEffect(() => {
     if (!editor) return;
     const handler = () => {
-      clearTimeout(saveTimer.current);
-      saveTimer.current = setTimeout(handleSave, 500);
+      const store = useAppStore.getState();
+      const tab = store.tabs.find((t) => t.id === store.activeTabId);
+      if (tab && !tab.isDirty) {
+        store.updateTabContent(tab.id, tab.content);
+      }
     };
     editor.on("update", handler);
-    return () => {
-      editor.off("update", handler);
-      clearTimeout(saveTimer.current);
-    };
-  }, [editor, handleSave]);
+    return () => { editor.off("update", handler); };
+  }, [editor]);
+
+  // TODO: 자동 저장 — @tiptap/markdown 안정화 후 복원
+  // const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  // useEffect(() => {
+  //   if (!editor) return;
+  //   const handler = () => { clearTimeout(saveTimer.current); saveTimer.current = setTimeout(handleSave, 500); };
+  //   editor.on("update", handler);
+  //   return () => { editor.off("update", handler); clearTimeout(saveTimer.current); };
+  // }, [editor, handleSave]);
 
   // Ctrl+S 즉시 저장도 유지
   useEffect(() => {
@@ -414,6 +422,7 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
       if (e.ctrlKey && e.key === "s") {
         e.preventDefault();
         handleSave();
+        window.dispatchEvent(new CustomEvent("manual-save"));
       }
     };
     window.addEventListener("keydown", handler);
