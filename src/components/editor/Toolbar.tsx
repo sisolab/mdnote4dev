@@ -314,9 +314,9 @@ export function Toolbar({ editor }: ToolbarProps) {
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
-  const showLists = toolbarWidth > 620;
-  const showFormat = toolbarWidth > 520;
-  const showHeadings = toolbarWidth > 420;
+  const showLists = toolbarWidth > 750;
+  const showFormat = toolbarWidth > 650;
+  const showHeadings = toolbarWidth > 550;
 
   const handleHover = useCallback((el: HTMLButtonElement | null) => {
     if (!el || !containerRef.current) {
