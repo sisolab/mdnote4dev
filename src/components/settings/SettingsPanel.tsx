@@ -10,13 +10,15 @@ import {
   DESIGN_OPTIONS,
   DEFAULT_DESIGN,
   getFontFamily,
+  getCodeFontFamily,
+  CODE_FONT_OPTIONS,
   type EditorSettings,
   type SaveMode,
   type SpacingStyleName,
   type DesignPresets,
 } from "@/stores/settingsStore";
 import { Sun, Moon, BookOpen, CloudMoon, Minimize2, AlignCenter, Maximize2, SlidersHorizontal, RotateCcw, Type, X, FileText } from "lucide-react";
-import { FontPreview } from "./FontPreview";
+import { CATEGORIES, CODE_FONT_GOOGLE_FAMILIES, buildFontUrl, type FontItem } from "./FontPreview";
 import { useAppStore } from "@/stores/appStore";
 
 function ResetButton({ onClick, visible }: { onClick: () => void; visible: boolean }) {
@@ -715,6 +717,157 @@ function DesignTab() {
   );
 }
 
+function FontTab({ currentFont, currentCodeFont, onApply, onApplyCodeFont }: {
+  currentFont: string; currentCodeFont: string;
+  onApply: (v: string) => void; onApplyCodeFont: (v: string) => void;
+}) {
+  const [selectedCategory, setSelectedCategory] = useState("popular");
+  const [selectedFont, setSelectedFont] = useState<FontItem | null>(null);
+  const [selectedCodeFont, setSelectedCodeFont] = useState(currentCodeFont);
+  const [loadedFonts, setLoadedFonts] = useState<Set<string>>(new Set());
+
+  const category = CATEGORIES.find((c) => c.id === selectedCategory)!;
+
+  // 본문 폰트 로드
+  useEffect(() => {
+    const families = category.fonts.map((f) => f.family).filter((f) => !loadedFonts.has(f));
+    if (families.length === 0) return;
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = buildFontUrl(families);
+    document.head.appendChild(link);
+    setLoadedFonts((prev) => { const n = new Set(prev); families.forEach((f) => n.add(f)); return n; });
+  }, [selectedCategory]);
+
+  // 코드 폰트 로드
+  useEffect(() => {
+    const toLoad = Object.values(CODE_FONT_GOOGLE_FAMILIES).filter((f) => f && !loadedFonts.has(f));
+    if (toLoad.length === 0) return;
+    toLoad.forEach((family) => {
+      const link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = `https://fonts.googleapis.com/css2?family=${family.replace(/ /g, "+")}&display=swap`;
+      document.head.appendChild(link);
+    });
+    setLoadedFonts((prev) => { const n = new Set(prev); toLoad.forEach((f) => n.add(f)); return n; });
+  }, []);
+
+  const previewFont = selectedFont ? `"${selectedFont.family}", sans-serif` : "inherit";
+  const previewCodeFont = getCodeFontFamily(selectedCodeFont);
+  const hasChanges = selectedFont || selectedCodeFont !== currentCodeFont;
+
+  return (<>
+    <div style={{ flex: 1, overflowY: "auto", padding: "12px 16px" }}>
+      {/* 언어 선택 */}
+      <div className="hide-scrollbar" style={{ display: "flex", gap: "4px", overflowX: "auto", marginBottom: "16px", paddingBottom: "2px" }}>
+        {["popular", "ko", "en", "ja", "zh", "es", "fr", "de"].map((id) => {
+          const cat = CATEGORIES.find((c) => c.id === id)!;
+          const active = selectedCategory === id;
+          return (
+            <button key={id} onClick={() => { setSelectedCategory(id); setSelectedFont(null); }} style={{
+              padding: "4px 10px", fontSize: "11px", fontWeight: active ? 600 : 400,
+              borderRadius: "4px", border: "none", cursor: "pointer", flexShrink: 0,
+              background: active ? "var(--color-accent-subtle)" : "transparent",
+              color: active ? "var(--color-accent)" : "var(--color-text-secondary)",
+            }}>
+              {cat.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* 본문 폰트 */}
+      <SectionTitle>본문</SectionTitle>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", marginBottom: "16px" }}>
+        {category.fonts.map((font) => {
+          const isSelected = selectedFont?.value === font.value;
+          const isCurrent = currentFont === font.value;
+          return (
+            <button key={font.value} onClick={() => setSelectedFont(font)} style={{
+              padding: "5px 12px", fontSize: "12px", fontWeight: isSelected ? 600 : 400,
+              fontFamily: `"${font.family}", sans-serif`,
+              borderRadius: "6px", cursor: "pointer",
+              border: isSelected ? "1.5px solid var(--color-accent)" : isCurrent ? "1.5px solid var(--color-border-medium)" : "1px solid var(--color-border-input)",
+              background: isSelected ? "var(--color-accent-subtle)" : "var(--color-bg-primary)",
+              color: isSelected ? "var(--color-accent)" : "var(--color-text-primary)",
+              transition: "all 0.15s",
+            }}>
+              {font.label}{isCurrent && !isSelected ? " ✓" : ""}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* 코드 폰트 */}
+      <SectionTitle>코드</SectionTitle>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", marginBottom: "16px" }}>
+        {CODE_FONT_OPTIONS.map((opt) => {
+          const isSelected = selectedCodeFont === opt.value;
+          const isCurrent = currentCodeFont === opt.value;
+          return (
+            <button key={opt.value} onClick={() => setSelectedCodeFont(opt.value)} style={{
+              padding: "5px 12px", fontSize: "12px", fontWeight: isSelected ? 600 : 400,
+              fontFamily: getCodeFontFamily(opt.value),
+              borderRadius: "6px", cursor: "pointer",
+              border: isSelected ? "1.5px solid var(--color-accent)" : isCurrent && !isSelected ? "1.5px solid var(--color-border-medium)" : "1px solid var(--color-border-input)",
+              background: isSelected ? "var(--color-accent-subtle)" : "var(--color-bg-primary)",
+              color: isSelected ? "var(--color-accent)" : "var(--color-text-primary)",
+              transition: "all 0.15s",
+            }}>
+              {opt.label}{isCurrent && !isSelected ? " ✓" : ""}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* 미리보기 */}
+      <SectionTitle>미리보기</SectionTitle>
+      <div style={{
+        padding: "12px 16px", borderRadius: "6px",
+        border: "1px solid var(--color-border-light)",
+        fontFamily: previewFont, fontSize: "14px", lineHeight: 1.7,
+        color: "var(--color-text-primary)", marginBottom: "8px",
+      }}>
+        <div style={{ fontWeight: 700, fontSize: "18px", marginBottom: "6px" }}>Typography Preview</div>
+        <div style={{ marginBottom: "8px" }}>
+          The quick brown fox jumps over the lazy dog. 다람쥐 헌 쳇바퀴에 타고파.
+        </div>
+        <div style={{ marginBottom: "6px" }}>
+          <code style={{
+            fontFamily: previewCodeFont, fontSize: "12px",
+            background: "var(--color-bg-secondary)", padding: "1px 4px", borderRadius: "3px",
+          }}>const hello = "world";</code> 인라인 코드
+        </div>
+        <pre style={{
+          fontFamily: previewCodeFont, fontSize: "12px", lineHeight: 1.5,
+          background: "#1e1e2e", color: "#cdd6f4",
+          padding: "8px 10px", borderRadius: "4px", margin: 0,
+        }}>{`function greet(name) {\n  return "Hello, " + name;\n}`}</pre>
+      </div>
+    </div>
+
+    {/* 하단 */}
+    <div style={{
+      display: "flex", alignItems: "center", justifyContent: "space-between",
+      padding: "12px 16px", borderTop: "1px solid var(--color-border-light)",
+    }}>
+      <button onClick={() => { setSelectedFont({ value: "system", label: "시스템 기본", family: "-apple-system, BlinkMacSystemFont, sans-serif", type: "sans" }); setSelectedCodeFont("cascadia"); }}
+        style={{ fontSize: "12px", color: "var(--color-text-tertiary)", background: "transparent", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: "3px" }}
+      ><RotateCcw size={10} /> 기본값으로</button>
+      <button
+        onClick={() => { if (selectedFont) onApply(selectedFont.value); if (selectedCodeFont !== currentCodeFont) onApplyCodeFont(selectedCodeFont); }}
+        disabled={!hasChanges}
+        style={{
+          padding: "6px 16px", fontSize: "12px", fontWeight: 600,
+          background: hasChanges ? "var(--color-accent)" : "var(--color-bg-active)",
+          color: hasChanges ? "#fff" : "var(--color-text-tertiary)",
+          border: "none", borderRadius: "6px", cursor: hasChanges ? "pointer" : "default",
+        }}
+      >적용하기</button>
+    </div>
+  </>);
+}
+
 function PreviewDocButton() {
   const openPreviewDoc = () => {
     const { openTab, tabs, setActiveTab } = useAppStore.getState();
@@ -751,17 +904,16 @@ export function SettingsPanel() {
   const { settings, updateSetting, applyPreset, resetToDefault, setShowSettings, themeMode, setThemeMode, accentColor, setAccentColor, spacingStyle, setSpacingStyle, codeFontFamily, setCodeFontFamily } =
     useSettingsStore();
 
-  const [showFontPreview, setShowFontPreview] = useState(false);
-  const [activeTab, setActiveTab] = useState<"settings" | "docstyle" | "design">("settings");
+  const [activeTab, setActiveTab] = useState<"settings" | "docstyle" | "design" | "font">("settings");
 
-  // ESC로 닫기 (글꼴 미리보기가 열려있으면 무시)
+  // ESC로 닫기
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !showFontPreview) setShowSettings(false);
+      if (e.key === "Escape") setShowSettings(false);
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [setShowSettings, showFontPreview]);
+  }, [setShowSettings]);
 
   return (
     <>
@@ -774,7 +926,7 @@ export function SettingsPanel() {
       {/* 헤더 */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderBottom: "1px solid var(--color-border-light)" }}>
         <div style={{ display: "flex", gap: "4px" }}>
-          {([["settings", "설정"], ["docstyle", "스타일"], ["design", "디자인"]] as const).map(([tab, label]) => (
+          {([["settings", "설정"], ["docstyle", "스타일"], ["design", "디자인"], ["font", "글꼴"]] as const).map(([tab, label]) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab as any)}
@@ -846,29 +998,26 @@ export function SettingsPanel() {
 
           <div style={{ height: "1px", background: "var(--color-border-light)", margin: "16px 0" }} />
 
-          {/* 글꼴 (프리셋 독립) */}
+          {/* 글꼴 */}
           <SectionTitle>글꼴</SectionTitle>
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <button
-              onClick={() => setShowFontPreview(true)}
-              style={{
-                display: "flex", alignItems: "center", gap: "8px",
-                padding: "8px 16px", fontSize: "13px", fontWeight: 500,
-                fontFamily: getFontFamily(settings.fontFamily),
-                borderRadius: "6px", cursor: "pointer",
-                border: "1px solid var(--color-border-light)",
-                background: "var(--color-bg-elevated)",
-                color: "var(--color-text-primary)",
-                transition: "all 0.15s",
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--color-accent)"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--color-border-light)"; }}
-            >
-              <Type size={14} style={{ color: "var(--color-accent)" }} />
-              {FONT_OPTIONS.find((o) => o.value === settings.fontFamily)?.label ?? settings.fontFamily}
-            </button>
-            <ResetButton onClick={() => updateSetting("fontFamily", "system")} visible={settings.fontFamily !== "system"} />
-          </div>
+          <button
+            onClick={() => setActiveTab("font")}
+            style={{
+              display: "flex", alignItems: "center", gap: "8px",
+              padding: "8px 16px", fontSize: "13px", fontWeight: 500,
+              fontFamily: getFontFamily(settings.fontFamily),
+              borderRadius: "6px", cursor: "pointer",
+              border: "1px solid var(--color-border-light)",
+              background: "var(--color-bg-elevated)",
+              color: "var(--color-text-primary)",
+              transition: "all 0.15s",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--color-accent)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--color-border-light)"; }}
+          >
+            <Type size={14} style={{ color: "var(--color-accent)" }} />
+            {FONT_OPTIONS.find((o) => o.value === settings.fontFamily)?.label ?? settings.fontFamily}
+          </button>
 
           <div style={{ height: "1px", background: "var(--color-border-light)", margin: "16px 0" }} />
 
@@ -899,7 +1048,7 @@ export function SettingsPanel() {
             onMouseLeave={(e) => { e.currentTarget.style.color = "var(--color-text-tertiary)"; }}
           >기본값으로 초기화</button>
         </div>
-      </>) : (<>
+      </>) : activeTab === "design" ? (<>
         <DesignTab />
         <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-start", padding: "12px 16px", borderTop: "1px solid var(--color-border-light)" }}>
           <button onClick={() => useSettingsStore.getState().resetDesign()} style={{ fontSize: "12px", color: "var(--color-text-tertiary)", background: "transparent", border: "none", cursor: "pointer" }}
@@ -907,17 +1056,11 @@ export function SettingsPanel() {
             onMouseLeave={(e) => { e.currentTarget.style.color = "var(--color-text-tertiary)"; }}
           >기본값으로 초기화</button>
         </div>
-      </>)}
-
-      {showFontPreview && (
-        <FontPreview
-          currentFont={settings.fontFamily}
-          currentCodeFont={codeFontFamily}
-          onApply={(value) => updateSetting("fontFamily", value)}
-          onApplyCodeFont={(value) => setCodeFontFamily(value)}
-          onClose={() => setShowFontPreview(false)}
-        />
+      </>) : (
+        <FontTab currentFont={settings.fontFamily} currentCodeFont={codeFontFamily}
+          onApply={(v) => updateSetting("fontFamily", v)} onApplyCodeFont={setCodeFontFamily} />
       )}
+
     </div>
     </>
   );

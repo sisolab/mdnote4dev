@@ -16,9 +16,11 @@ interface FontCategory {
   sample: string;
 }
 
-const SYSTEM_FONT: FontItem = { value: "system", label: "시스템 기본", family: "-apple-system, BlinkMacSystemFont, sans-serif", type: "sans" };
+export const SYSTEM_FONT: FontItem = { value: "system", label: "시스템 기본", family: "-apple-system, BlinkMacSystemFont, sans-serif", type: "sans" };
 
-const CATEGORIES: FontCategory[] = [
+export { type FontItem, type FontCategory };
+
+export const CATEGORIES: FontCategory[] = [
   {
     id: "popular",
     label: "Popular",
@@ -154,13 +156,13 @@ const CATEGORIES: FontCategory[] = [
   },
 ];
 
-function buildFontUrl(families: string[]): string {
+export function buildFontUrl(families: string[]): string {
   const params = families.map((f) => `family=${f.replace(/ /g, "+")}:wght@400;500;600;700`).join("&");
   return `https://fonts.googleapis.com/css2?${params}&display=swap`;
 }
 
 // 코드 폰트 → Google Fonts 패밀리명 매핑 (Google Fonts에 있는 것만)
-const CODE_FONT_GOOGLE_FAMILIES: Record<string, string> = {
+export const CODE_FONT_GOOGLE_FAMILIES: Record<string, string> = {
   "fira-code": "Fira Code",
   "jetbrains-mono": "JetBrains Mono",
   "source-code-pro": "Source Code Pro",
