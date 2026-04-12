@@ -115,6 +115,96 @@ function escapeHtml(text: string): string {
   return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
+/** 리스트를 줄 단위로 파싱 (중첩 지원) */
+function parseListBlocks(text: string): string {
+  const lines = text.split("\n");
+  const result: string[] = [];
+  let i = 0;
+
+  while (i < lines.length) {
+    const line = lines[i];
+    // 리스트 항목인지 확인
+    const listMatch = line.match(/^([ \t]*)(- \[[ x]\]\s*|- |\d+\.\s+)(.*)$/);
+    if (!listMatch) {
+      result.push(line);
+      i++;
+      continue;
+    }
+
+    // 연속 리스트 블록 수집
+    const listLines: { indent: number; type: "ul" | "ol" | "task"; checked?: boolean; content: string }[] = [];
+    while (i < lines.length) {
+      const m = lines[i].match(/^([ \t]*)(- \[(x| ?)\]\s*|- |\d+\.\s+)(.*)$/);
+      if (!m) break;
+      const indent = m[1].replace(/\t/g, "  ").length;
+      let type: "ul" | "ol" | "task";
+      let checked: boolean | undefined;
+      const content = m[4];
+      if (m[2].startsWith("- [")) {
+        type = "task";
+        checked = m[3] === "x";
+      } else if (m[2].startsWith("- ")) {
+        type = "ul";
+      } else {
+        type = "ol";
+      }
+      listLines.push({ indent, type, checked, content });
+      i++;
+    }
+
+    // 리스트 HTML 생성 (재귀적 중첩)
+    result.push(buildListHtml(listLines, 0, 0).html);
+  }
+
+  return result.join("\n");
+}
+
+function buildListHtml(items: { indent: number; type: "ul" | "ol" | "task"; checked?: boolean; content: string }[], startIdx: number, baseIndent: number): { html: string; endIdx: number } {
+  if (startIdx >= items.length) return { html: "", endIdx: startIdx };
+
+  const firstType = items[startIdx].type;
+  let tag: string;
+  let openTag: string;
+  if (firstType === "task") {
+    tag = "ul";
+    openTag = '<ul data-type="taskList">';
+  } else if (firstType === "ol") {
+    tag = "ol";
+    openTag = "<ol>";
+  } else {
+    tag = "ul";
+    openTag = "<ul>";
+  }
+
+  let html = openTag;
+  let idx = startIdx;
+
+  while (idx < items.length && items[idx].indent >= baseIndent) {
+    const item = items[idx];
+    if (item.indent > baseIndent) {
+      // 하위 레벨: 이전 li 안에 중첩
+      const sub = buildListHtml(items, idx, item.indent);
+      // 마지막 </li> 앞에 삽입
+      html = html.replace(/<\/li>$/, sub.html + "</li>");
+      idx = sub.endIdx;
+      continue;
+    }
+    if (item.indent < baseIndent) break;
+
+    if (item.type === "task") {
+      const checkedAttr = item.checked ? ' data-checked="true"' : ' data-checked="false"';
+      const inputChecked = item.checked ? " checked" : "";
+      html += `<li data-type="taskItem"${checkedAttr}><label><input type="checkbox"${inputChecked}><span>${item.content}</span></label></li>`;
+    } else {
+      html += `<li>${item.content}</li>`;
+    }
+    idx++;
+  }
+
+  html += `</${tag}>`;
+  return { html, endIdx: idx };
+}
+
 /** 코드블록을 줄 단위로 파싱하여 placeholder로 치환 (regex보다 정확) */
 function extractCodeBlocks(text: string): { text: string; blocks: string[] } {
   const blocks: string[] = [];
@@ -206,15 +296,8 @@ export function markdownToHtml(md: string, docFilePath?: string | null): string 
   // 인용문
   html = html.replace(/^>\s+(.+)$/gm, "<blockquote><p>$1</p></blockquote>");
 
-  // 체크박스 리스트
-  html = html.replace(/^[ \t]*- \[x\]\s*(.*)$/gm,
-    '<ul data-type="taskList"><li data-type="taskItem" data-checked="true"><label><input type="checkbox" checked><span>$1</span></label></li></ul>');
-  html = html.replace(/^[ \t]*- \[ ?\]\s*(.*)$/gm,
-    '<ul data-type="taskList"><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span>$1</span></label></li></ul>');
-  // 일반 리스트 (들여쓰기 포함)
-  html = html.replace(/^[ \t]*- (.+)$/gm, "<ul><li>$1</li></ul>");
-  // 번호 리스트
-  html = html.replace(/^[ \t]*\d+\.\s+(.+)$/gm, "<ol><li>$1</li></ol>");
+  // 리스트 파싱 (줄 단위 — 중첩 지원)
+  html = parseListBlocks(html);
 
   // 테이블
   html = html.replace(/(^\|.*\|[ \t]*$\n?)+/gm, (match) => {
@@ -259,7 +342,7 @@ export function markdownToHtml(md: string, docFilePath?: string | null): string 
   });
 
   // 링크
-  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" title="$2">$1</a>');
 
   // 문단
   html = html.split("\n\n").map((block) => {
