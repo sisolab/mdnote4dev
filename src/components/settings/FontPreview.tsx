@@ -434,7 +434,10 @@ export function FontPreview({
           background: "var(--color-bg-secondary)",
         }}>
           <button
-            onClick={() => { onApply("system"); onApplyCodeFont("cascadia"); onClose(); }}
+            onClick={() => {
+              setSelectedFont({ value: "system", label: "시스템 기본", family: "-apple-system, BlinkMacSystemFont, sans-serif", type: "sans" });
+              setSelectedCodeFont("cascadia");
+            }}
             style={{
               display: "flex", alignItems: "center", gap: "4px",
               fontSize: "12px", color: "var(--color-text-tertiary)", background: "transparent",
@@ -444,6 +447,16 @@ export function FontPreview({
             <RotateCcw size={11} /> 기본값으로
           </button>
           <div style={{ display: "flex", gap: "8px" }}>
+            <button
+              onClick={onClose}
+              style={{
+                padding: "6px 16px", fontSize: "12px", fontWeight: 500,
+                background: "var(--color-bg-hover)", color: "var(--color-text-primary)",
+                border: "none", borderRadius: "6px", cursor: "pointer",
+              }}
+            >
+              취소
+            </button>
             <button
               onClick={() => {
                 if (selectedFont) onApply(selectedFont.value);
