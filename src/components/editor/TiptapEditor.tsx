@@ -64,7 +64,7 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
         },
       }),
       Code.extend({
-        inclusive: false,
+        inclusive: true,
         exitable: false,
         addInputRules() {
           return [
