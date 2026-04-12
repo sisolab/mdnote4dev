@@ -579,7 +579,6 @@ export function TabBar() {
       <button
         onClick={() => toggleSidebar()}
         onMouseEnter={(e) => handleHover(e.currentTarget)}
-        title={sidebarCollapsed ? "사이드바 펼치기" : "사이드바 좁히기"}
         style={{
           width: "34px", height: "40px",
           display: "flex", alignItems: "center", justifyContent: "center",
