@@ -731,7 +731,7 @@ export function TabBar() {
                 onClick={() => { closeTab(closeConfirmId); setCloseConfirmId(null); }}
                 style={{
                   padding: "6px 16px", fontSize: "12px", fontWeight: 600,
-                  background: "#e53935", color: "#fff",
+                  background: "var(--color-bg-hover)", color: "var(--color-text-primary)",
                   border: "none", borderRadius: "6px", cursor: "pointer",
                 }}
               >
@@ -765,7 +765,7 @@ export function TabBar() {
                 onClick={() => { closeTab(closeConfirmId); setCloseConfirmId(null); }}
                 style={{
                   padding: "6px 16px", fontSize: "12px", fontWeight: 600,
-                  background: "#e53935", color: "#fff",
+                  background: "var(--color-bg-hover)", color: "var(--color-text-primary)",
                   border: "none", borderRadius: "6px", cursor: "pointer",
                 }}
               >
