@@ -36,7 +36,6 @@ interface TiptapEditorProps {
 
 // 모듈 레벨: 탭 전환/리마운트해도 유지
 const globalTrashMap = new Map<string, string>(); // assetName → trashPath
-const editorStateCache = new Map<string, any>(); // tabId → ProseMirror EditorState
 
 function stripFrontmatter(md: string): string {
   return md.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, "");
@@ -47,7 +46,6 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
   const contentRef = useRef(content);
   contentRef.current = content;
   const mountedTabId = useRef(useAppStore.getState().activeTabId);
-  const restoredFromCache = useRef(false);
   const { settings, showSettings, codeFontFamily, designPresets } = useSettingsStore();
 
   const filePathRef = useRef(filePath);
@@ -189,19 +187,6 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
     },
     onCreate: ({ editor: e }) => {
       (e as any).__initializing = true;
-
-      // 캐시된 EditorState가 있으면 복원 (undo 히스토리 + 커서 보존)
-      const currentTabId = useAppStore.getState().activeTabId;
-      const cachedState = currentTabId ? editorStateCache.get(currentTabId) : null;
-      if (cachedState) {
-        try {
-          e.view.updateState(cachedState);
-          editorStateCache.delete(currentTabId!);
-          restoredFromCache.current = true;
-          requestAnimationFrame(() => { (e as any).__initializing = false; });
-          return;
-        } catch {}
-      }
 
       e.commands.setContent(stripFrontmatter(content), { contentType: "markdown" } as any);
       // .assets/ 링크를 fileAttachment 노드로 변환 (이미지 제외)
@@ -372,12 +357,6 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
 
   useEffect(() => {
     if (!editor) return;
-    if (restoredFromCache.current) {
-      // 캐시에서 복원된 경우 content sync 스킵
-      lastMarkdown.current = content;
-      restoredFromCache.current = false;
-      return;
-    }
     if (content !== lastMarkdown.current) {
       lastMarkdown.current = content;
       editor.commands.setContent(stripFrontmatter(content), { contentType: "markdown" } as any);
@@ -535,10 +514,7 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
         const tabId = mountedTabId.current;
         const store = useAppStore.getState();
         const tab = tabId ? store.tabs.find((t) => t.id === tabId) : null;
-        if (!tab) return;
-        // EditorState 캐시 (undo 히스토리 + 커서 위치 보존)
-        editorStateCache.set(tab.id, editor.state);
-        if (!tab.isDirty) return;
+        if (!tab?.isDirty) return;
         let body = editor.getMarkdown();
         body = body.replace(/http:\/\/asset\.localhost\/[^)"\s]*?\.assets(?:[/\\]|%5C|%2F)([^)"\s?]+)(?:\?[^)"\s]*)?/gi,
           (_m: string, f: string) => `./.assets/${decodeURIComponent(f)}`);
@@ -551,16 +527,6 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
     return () => { editor.off("blur", syncToTab); };
   }, [editor]);
 
-  // 언마운트 시 EditorState 캐시 (blur가 안 발생하는 경우 대비)
-  useEffect(() => {
-    if (!editor) return;
-    return () => {
-      try {
-        const tabId = mountedTabId.current;
-        if (tabId) editorStateCache.set(tabId, editor.state);
-      } catch {}
-    };
-  }, [editor]);
 
   // 자동 저장 (saveMode에 따라 동작)
   const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
