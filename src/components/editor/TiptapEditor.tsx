@@ -363,7 +363,7 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
     const currentFilePath = filePath;
     return () => {
       try {
-        if (!editor || editor.isDestroyed) return;
+        if (!editor) return;
         const store = useAppStore.getState();
         const tab = currentFilePath
           ? store.tabs.find((t) => t.filePath === currentFilePath)
