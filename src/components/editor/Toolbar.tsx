@@ -5,7 +5,7 @@ import {
   Bold, Italic, Strikethrough, Code,
   List, ListOrdered, ListChecks,
   Star, StarOff,
-  Quote, SquareCode, Minus, Table, Smile, Paperclip, Home,
+  Quote, SquareCode, Minus, Table, Smile, Paperclip, Home, Save,
 } from "lucide-react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { saveFileToAssets } from "@/utils/imageUtils";
@@ -410,8 +410,18 @@ export function Toolbar({ editor }: ToolbarProps) {
         <Paperclip size={15} />
       </ToolbarButton>
 
-      {/* 오른쪽: 즐겨찾기 */}
+      {/* 오른쪽: 저장 + 즐겨찾기 */}
       <div style={{ flex: 1, minWidth: "8px" }} />
+
+      <ToolbarButton
+        onClick={() => window.dispatchEvent(new KeyboardEvent("keydown", { ctrlKey: true, key: "s" }))}
+        title="저장 (Ctrl+S)"
+        onHover={handleHover}
+      >
+        <Save size={15} />
+      </ToolbarButton>
+
+      <Divider />
 
       <ToolbarDropdown
         icon={<Star size={15} style={isFavorite ? { color: "#f5c518", fill: "#f5c518" } : {}} />}

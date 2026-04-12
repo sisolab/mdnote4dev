@@ -91,7 +91,7 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
       Typography,
       Markdown,
     ],
-    content: stripFrontmatter(content),
+    content: { type: "doc", content: [] }, // 초기 빈 문서, onCreate에서 마크다운 로드
     editorProps: {
       attributes: {
         class: "outline-none prose prose-sm max-w-none",
@@ -174,6 +174,9 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
 
         return true;
       },
+    },
+    onCreate: ({ editor: e }) => {
+      e.commands.setContent(stripFrontmatter(content), { contentType: "markdown" } as any);
     },
     onTransaction: ({ editor: e }) => {
       setTick((t) => t + 1);
@@ -259,7 +262,7 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
     if (!editor) return;
     if (content !== lastMarkdown.current) {
       lastMarkdown.current = content;
-      editor.commands.setContent(stripFrontmatter(content));
+      editor.commands.setContent(stripFrontmatter(content), { contentType: "markdown" } as any);
     }
   }, [content, editor]);
 
@@ -387,20 +390,14 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
     return () => { editor.off("update", handler); };
   }, [editor, collectAssetPaths]);
 
-  // 실시간 자동 저장 (타이핑 멈추고 500ms 후)
-  const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
-  useEffect(() => {
-    if (!editor) return;
-    const handler = () => {
-      clearTimeout(saveTimer.current);
-      saveTimer.current = setTimeout(handleSave, 500);
-    };
-    editor.on("update", handler);
-    return () => {
-      editor.off("update", handler);
-      clearTimeout(saveTimer.current);
-    };
-  }, [editor, handleSave]);
+  // TODO: 자동 저장 — @tiptap/markdown 안정화 후 복원
+  // const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  // useEffect(() => {
+  //   if (!editor) return;
+  //   const handler = () => { clearTimeout(saveTimer.current); saveTimer.current = setTimeout(handleSave, 500); };
+  //   editor.on("update", handler);
+  //   return () => { editor.off("update", handler); clearTimeout(saveTimer.current); };
+  // }, [editor, handleSave]);
 
   // Ctrl+S 즉시 저장도 유지
   useEffect(() => {
