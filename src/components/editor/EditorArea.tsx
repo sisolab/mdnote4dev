@@ -130,6 +130,7 @@ export function EditorArea() {
           await writeTextFile(selected, activeTab.content);
           markTabClean(activeTab.id);
           useAppStore.getState().refreshFileTree();
+          window.dispatchEvent(new CustomEvent("manual-save"));
         } catch (err) {
           console.error("저장 실패:", err);
         }
