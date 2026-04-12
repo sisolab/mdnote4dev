@@ -197,7 +197,10 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
         try {
           e.view.updateState(cachedState);
           editorStateCache.delete(currentTabId!);
-          requestAnimationFrame(() => { (e as any).__initializing = false; });
+          requestAnimationFrame(() => {
+            (e as any).__initializing = false;
+            e.commands.focus();
+          });
           return;
         } catch {}
       }
@@ -542,6 +545,17 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
     };
     editor.on("blur", syncToTab);
     return () => { editor.off("blur", syncToTab); };
+  }, [editor]);
+
+  // 언마운트 시 EditorState 캐시 (blur가 안 발생하는 경우 대비)
+  useEffect(() => {
+    if (!editor) return;
+    return () => {
+      try {
+        const tabId = mountedTabId.current;
+        if (tabId) editorStateCache.set(tabId, editor.state);
+      } catch {}
+    };
   }, [editor]);
 
   // 자동 저장 (saveMode에 따라 동작)
