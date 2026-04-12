@@ -550,10 +550,72 @@ function SaveModeSetting() {
   );
 }
 
-const DESIGN_SECTION_LABELS: Record<keyof DesignPresets, string> = {
-  h1: "제목 1 (H1)", h2: "제목 2 (H2)", h3: "제목 3 (H3)",
-  blockquote: "인용문", codeBlock: "코드 블록", hr: "수평선",
-};
+const DESIGN_SECTIONS: { key: keyof DesignPresets; label: string; preview: (style: string) => React.ReactNode }[] = [
+  {
+    key: "h1", label: "제목 1 (H1)",
+    preview: (style) => {
+      const base: React.CSSProperties = { fontSize: "22px", fontWeight: 700, color: "var(--color-text-heading)", margin: 0, lineHeight: 1.3 };
+      const variants: Record<string, React.CSSProperties> = {
+        underline: { paddingBottom: "4px", borderBottom: "2px solid var(--color-border-medium)" },
+        background: { background: "var(--color-bg-secondary)", padding: "4px 8px", borderRadius: "4px" },
+        "accent-left": { borderLeft: "4px solid var(--color-accent)", paddingLeft: "8px" },
+      };
+      return <div style={{ ...base, ...variants[style] }}>Hello World 72!</div>;
+    },
+  },
+  {
+    key: "h2", label: "제목 2 (H2)",
+    preview: (style) => {
+      const base: React.CSSProperties = { fontSize: "18px", fontWeight: 600, color: "var(--color-text-heading)", margin: 0, lineHeight: 1.35 };
+      const variants: Record<string, React.CSSProperties> = {
+        underline: { paddingBottom: "3px", borderBottom: "1px solid var(--color-border-light)" },
+        "accent-left": { borderLeft: "3px solid var(--color-accent)", paddingLeft: "6px" },
+      };
+      return <div style={{ ...base, ...variants[style] }}>프로젝트 개요</div>;
+    },
+  },
+  {
+    key: "h3", label: "제목 3 (H3)",
+    preview: (style) => {
+      const base: React.CSSProperties = { fontSize: "15px", fontWeight: 600, color: "var(--color-text-heading)", margin: 0, lineHeight: 1.4 };
+      const variants: Record<string, React.CSSProperties> = {
+        "accent-left": { borderLeft: "3px solid var(--color-accent)", paddingLeft: "6px" },
+        muted: { color: "var(--color-text-secondary)", fontStyle: "italic" },
+      };
+      return <div style={{ ...base, ...variants[style] }}>핵심 기능</div>;
+    },
+  },
+  {
+    key: "blockquote", label: "인용문",
+    preview: (style) => {
+      const base: React.CSSProperties = { borderLeft: "3px solid var(--color-accent)", paddingLeft: "12px", color: "var(--color-text-secondary)", fontSize: "13px", margin: 0, lineHeight: 1.6 };
+      if (style === "background") return <div style={{ ...base, background: "var(--color-bg-secondary)", padding: "8px 12px", borderRadius: "0 6px 6px 0" }}>좋은 디자인은 가능한 한 적게 디자인하는 것이다.</div>;
+      if (style === "quote-mark") return <div style={{ borderLeft: "none", paddingLeft: "28px", position: "relative", color: "var(--color-text-secondary)", fontSize: "13px", margin: 0, lineHeight: 1.6 }}><span style={{ position: "absolute", left: "2px", top: "-4px", fontSize: "28px", color: "var(--color-accent)", opacity: 0.4, lineHeight: 1 }}>{"\u201C"}</span>좋은 디자인은 가능한 한 적게 디자인하는 것이다.</div>;
+      return <div style={base}>좋은 디자인은 가능한 한 적게 디자인하는 것이다.</div>;
+    },
+  },
+  {
+    key: "codeBlock", label: "코드 블록",
+    preview: (style) => {
+      const code = 'def hello():\n    print("Hello!")';
+      const variants: Record<string, React.CSSProperties> = {
+        default: { background: "#1e1e2e", color: "#cdd6f4" },
+        light: { background: "var(--color-bg-secondary)", color: "var(--color-text-primary)", border: "1px solid var(--color-border-light)" },
+        bordered: { background: "transparent", color: "var(--color-text-primary)", border: "1px solid var(--color-border-medium)", borderRadius: "6px" },
+      };
+      return <pre style={{ ...variants[style] || variants.default, padding: "8px 10px", borderRadius: "4px", fontSize: "11px", fontFamily: "monospace", margin: 0, lineHeight: 1.5, whiteSpace: "pre" }}>{code}</pre>;
+    },
+  },
+  {
+    key: "hr", label: "수평선",
+    preview: (style) => {
+      if (style === "dotted") return <hr style={{ border: "none", borderTop: "2px dotted var(--color-border-medium)", margin: "8px auto", width: "100%" }} />;
+      if (style === "thick") return <hr style={{ border: "none", borderTop: "4px solid var(--color-border-medium)", margin: "8px auto", width: "60%" }} />;
+      if (style === "dots") return <div style={{ textAlign: "center", fontSize: "18px", letterSpacing: "6px", color: "var(--color-text-light)", margin: "4px 0" }}>···</div>;
+      return <hr style={{ border: "none", borderTop: "3px solid var(--color-border-medium)", margin: "8px auto", width: "98%" }} />;
+    },
+  },
+];
 
 function DesignTab() {
   const { designPresets, setDesignPreset, resetDesign } = useSettingsStore();
@@ -570,11 +632,16 @@ function DesignTab() {
         )}
       </div>
 
-      {(Object.keys(DESIGN_OPTIONS) as (keyof DesignPresets)[]).map((key) => (
-        <div key={key} style={{ marginBottom: "16px" }}>
+      {DESIGN_SECTIONS.map(({ key, label, preview }) => (
+        <div key={key} style={{ marginBottom: "20px" }}>
           <div style={{ fontSize: "12px", fontWeight: 600, color: "var(--color-text-primary)", marginBottom: "8px" }}>
-            {DESIGN_SECTION_LABELS[key]}
+            {label}
           </div>
+          {/* 미리보기 */}
+          <div style={{ padding: "12px 14px", borderRadius: "6px", background: "var(--color-bg-secondary)", marginBottom: "8px" }}>
+            {preview(designPresets[key])}
+          </div>
+          {/* 스타일 선택 */}
           <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
             {DESIGN_OPTIONS[key].map((opt) => {
               const active = designPresets[key] === opt.value;
@@ -583,7 +650,7 @@ function DesignTab() {
                   key={opt.value}
                   onClick={() => setDesignPreset(key, opt.value)}
                   style={{
-                    padding: "6px 14px", fontSize: "11px", fontWeight: active ? 600 : 400,
+                    padding: "5px 12px", fontSize: "11px", fontWeight: active ? 600 : 400,
                     borderRadius: "6px", cursor: "pointer",
                     border: active ? "1.5px solid var(--color-accent)" : "1px solid var(--color-border-input)",
                     background: active ? "var(--color-accent-subtle)" : "var(--color-bg-primary)",

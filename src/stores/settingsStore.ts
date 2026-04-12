@@ -229,7 +229,7 @@ export const DESIGN_OPTIONS: Record<keyof DesignPresets, { value: string; label:
   h2: [
     { value: "default", label: "기본" },
     { value: "underline", label: "하단선" },
-    { value: "dot", label: "강조 점" },
+    { value: "accent-left", label: "강조선" },
   ],
   h3: [
     { value: "default", label: "기본" },
