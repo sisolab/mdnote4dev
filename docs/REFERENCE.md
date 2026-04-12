@@ -157,8 +157,9 @@ data-design-h1="underline" → [data-design-h1="underline"] .tiptap h1 { border-
 | Ctrl+W | 탭 닫기 (pinned 보호, isDirty 경고) |
 | Ctrl+N | 새 탭 |
 | Ctrl+Tab / Ctrl+Shift+Tab | 다음/이전 탭 |
-| Ctrl+Shift+F | 검색 탭 |
-| Ctrl+Shift+A | 첨부파일 탭 |
+| Alt+1 | 검색 탭 |
+| Alt+2 | 열린 탭 탐색기 |
+| Alt+3 | 첨부파일 탭 |
 | Tab / Shift+Tab | 코드블록 들여쓰기, 리스트 들여쓰기 |
 
 ## 앱 종료 처리
