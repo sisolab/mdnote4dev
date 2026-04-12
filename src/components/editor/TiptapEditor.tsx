@@ -277,10 +277,12 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
         const initMd = e.getMarkdown();
         if (initMd.trim()) {
           undoSnapshots.set(initTabId, [initMd]);
-          console.log("[undo] init snapshot for", initTabId, "len:", initMd.length);
-        }
+            }
       }
-      requestAnimationFrame(() => { (e as any).__initializing = false; });
+      requestAnimationFrame(() => {
+        (e as any).__initializing = false;
+        e.commands.focus("end");
+      });
     },
     onTransaction: ({ editor: e }) => {
       setTick((t) => t + 1);
@@ -546,7 +548,6 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
           stack.push(md);
           if (stack.length > UNDO_MAX + 1) stack.shift();
           undoSnapshots.set(tabId, stack);
-          console.log("[undo] snapshot saved, stack:", stack.length);
         } catch {}
       }, 2000);
     };
@@ -635,7 +636,6 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
       if (!document.activeElement?.closest(".tiptap")) return;
       const tabId = mountedTabId.current;
       const stack = tabId ? undoSnapshots.get(tabId) : null;
-      console.log("[undo] Ctrl+Z pressed", { canUndo: editor.can().undo(), userEdits: userEditCount.current, stackSize: stack?.length, tabId });
 
       // 네이티브 undo가 있고 사용자가 편집한 적 있으면 TipTap에게 위임
       if (editor.can().undo() && userEditCount.current > 0) {
@@ -652,15 +652,11 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
       }
 
       // 네이티브 undo 비었거나 setContent undo만 남음 → 스냅샷에서 복원
-      if (!tabId || !stack || stack.length <= 1) {
-        console.log("[undo] no snapshot to restore", { tabId, stackSize: stack?.length });
-        return;
-      }
+      if (!tabId || !stack || stack.length <= 1) return;
       e.preventDefault();
       e.stopImmediatePropagation();
       stack.pop();
       const prev = stack[stack.length - 1];
-      console.log("[undo] restoring snapshot", { remaining: stack.length, prevLength: prev?.length, preview: prev?.substring(0, 50) });
       (editor as any).__initializing = true;
       editor.commands.setContent(stripFrontmatter(prev), { contentType: "markdown" } as any);
       requestAnimationFrame(() => { (editor as any).__initializing = false; });
