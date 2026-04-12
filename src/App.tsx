@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getCurrentWindow } from "@tauri-apps/api/window";
+import { getCurrentWindow, LogicalSize } from "@tauri-apps/api/window";
 import { readDir, readTextFile, stat, exists } from "@tauri-apps/plugin-fs";
 import { parseFrontmatter, assignTagColors } from "./utils/frontmatter";
 import { cleanupOrphanedImages } from "./utils/imageUtils";
@@ -60,6 +60,19 @@ function App() {
     root.style.setProperty("--style-bq", style.bq);
     root.style.setProperty("--style-hr", style.hr);
   }, [spacingStyle]);
+
+  // 동적 최소 창 크기: 사이드바 폭 + 에디터 고정폭 + 여백
+  const { sidebarCollapsed, sidebarWidth } = useAppStore();
+  const editorMaxWidth = useSettingsStore((s) => s.settings.editorMaxWidth);
+  const widthMode = useSettingsStore((s) => s.settings.widthMode);
+  useEffect(() => {
+    const appWindow = getCurrentWindow();
+    const padding = 96; // 에디터 좌우 패딩 + 여유
+    const sidebar = sidebarCollapsed ? 0 : sidebarWidth;
+    const editorMin = widthMode === "fixed" ? editorMaxWidth : 400;
+    const minW = Math.max(720, sidebar + editorMin + padding);
+    appWindow.setMinSize(new LogicalSize(minW, 500));
+  }, [sidebarCollapsed, sidebarWidth, editorMaxWidth, widthMode]);
 
   // 앱 시작 시 즐겨찾기 폴더의 .md 파일 태그 + 최근 문서 스캔
   // persist hydration 완료 후 실행
