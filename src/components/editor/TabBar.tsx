@@ -5,13 +5,11 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { useAppStore } from "@/stores/appStore";
 import { renameDocImages } from "@/utils/imageUtils";
 import { Save, FolderOpen, Maximize2, Minimize2, Settings, Search, Paperclip } from "lucide-react";
-import { getCurrentWindow, LogicalSize } from "@tauri-apps/api/window";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
 
 export function TabBar() {
-  const { tabs, activeTabId, setActiveTab, closeTab, updateTabTitle, newTab, reorderTabs, toggleSidebar, sidebarCollapsed, sidebarWidth } = useAppStore();
-  const { settings } = useSettingsStore();
+  const { tabs, activeTabId, setActiveTab, closeTab, updateTabTitle, newTab, reorderTabs, toggleSidebar, sidebarCollapsed } = useAppStore();
   const { setShowSettings } = useSettingsStore();
   const containerRef = useRef<HTMLDivElement>(null);
   const [highlight, setHighlight] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
@@ -602,35 +600,7 @@ export function TabBar() {
         <Settings size={15} />
       </button>
       <button
-        onClick={async () => {
-          const wasCollapsed = sidebarCollapsed;
-          toggleSidebar();
-          if (settings.widthMode === "fixed") {
-            const appWindow = getCurrentWindow();
-            const factor = await appWindow.scaleFactor();
-            const size = await appWindow.innerSize();
-            const startWidth = size.width / factor;
-            const height = size.height / factor;
-            let targetWidth: number;
-            if (wasCollapsed) {
-              targetWidth = startWidth + sidebarWidth;
-            } else {
-              targetWidth = settings.editorMaxWidth + 96 + 40;
-            }
-            // 부드러운 리사이즈 애니메이션 (사이드바 전환과 동기화)
-            const duration = 350;
-            const startTime = performance.now();
-            const animate = async (now: number) => {
-              const elapsed = now - startTime;
-              const progress = Math.min(elapsed / duration, 1);
-              const ease = 1 - Math.pow(1 - progress, 4); // ease-out quartic
-              const w = startWidth + (targetWidth - startWidth) * ease;
-              await appWindow.setSize(new LogicalSize(Math.round(w), height));
-              if (progress < 1) requestAnimationFrame(animate);
-            };
-            requestAnimationFrame(animate);
-          }
-        }}
+        onClick={() => toggleSidebar()}
         onMouseEnter={(e) => handleHover(e.currentTarget)}
         title={sidebarCollapsed ? "사이드바 펼치기" : "사이드바 좁히기"}
         style={{

@@ -67,10 +67,9 @@ function App() {
   const widthMode = useSettingsStore((s) => s.settings.widthMode);
   useEffect(() => {
     const appWindow = getCurrentWindow();
-    const padding = 96; // 에디터 좌우 패딩 + 여유
     const sidebar = sidebarCollapsed ? 0 : sidebarWidth;
-    const editorMin = widthMode === "fixed" ? editorMaxWidth : 400;
-    const minW = Math.max(720, sidebar + editorMin + padding);
+    const editorMin = widthMode === "fixed" ? editorMaxWidth + 120 : 400;
+    const minW = Math.max(720, sidebar + editorMin);
     appWindow.setMinSize(new LogicalSize(minW, 500));
   }, [sidebarCollapsed, sidebarWidth, editorMaxWidth, widthMode]);
 
