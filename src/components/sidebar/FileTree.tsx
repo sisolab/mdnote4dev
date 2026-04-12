@@ -41,11 +41,22 @@ async function loadDirectory(path: string): Promise<FileEntry[]> {
       );
       result.sort((a, b) => {
         if (a.isDirectory !== b.isDirectory) return a.isDirectory ? -1 : 1;
+        if (!a.isDirectory) {
+          const aMd = /\.(md|markdown)$/i.test(a.name);
+          const bMd = /\.(md|markdown)$/i.test(b.name);
+          if (aMd !== bMd) return aMd ? -1 : 1;
+        }
         return (mtimes.get(b.path) ?? 0) - (mtimes.get(a.path) ?? 0);
       });
     } else {
       result.sort((a, b) => {
         if (a.isDirectory !== b.isDirectory) return a.isDirectory ? -1 : 1;
+        // 마크다운 파일 우선 정렬
+        if (!a.isDirectory) {
+          const aMd = /\.(md|markdown)$/i.test(a.name);
+          const bMd = /\.(md|markdown)$/i.test(b.name);
+          if (aMd !== bMd) return aMd ? -1 : 1;
+        }
         const useCustom = folderSort === "custom" || tempCustomFolders.has(path);
         if (useCustom) {
           const order = customFileOrder[path];
@@ -160,12 +171,12 @@ function FileTreeItem({
           isOpened
             ? "text-accent"
             : "text-text-primary"
-        } ${!entry.isDirectory && !isMarkdown ? "opacity-30" : ""}`}
+        }`}
         style={{
           paddingLeft: `${depth * 16 + 32}px`, paddingRight: "16px", height: compact ? "22px" : "30px",
           fontSize: compact ? "11px" : "13px",
           background: isMultiSelected ? "var(--color-accent-subtle)" : "transparent",
-          opacity: dragPaths?.includes(entry.path) ? 0.4 : 1,
+          opacity: dragPaths?.includes(entry.path) ? 0.4 : (!entry.isDirectory && !isMarkdown) ? 0.35 : 1,
         }}
       >
         {entry.isDirectory ? (
@@ -562,6 +573,16 @@ export function FileTree({ rootPath, searchQuery = "", compact = false }: { root
   const [renamingPath, setRenamingPath] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const lastClickedPath = useRef<string | null>(null);
+
+  // 다이얼로그 ESC 닫기
+  useEffect(() => {
+    if (!deleteConfirm && !moveConfirm) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { setDeleteConfirm(null); setMoveConfirm(null); }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [!!deleteConfirm, !!moveConfirm]);
 
   const startRename = (entry: FileEntry) => {
     setRenamingPath(entry.path);

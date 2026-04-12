@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { saveFileToAssets } from "@/utils/imageUtils";
+import { useSettingsStore } from "@/stores/settingsStore";
 
 interface ToolbarProps {
   editor: Editor;
@@ -294,6 +295,7 @@ export function Toolbar({ editor }: ToolbarProps) {
   const isFavorite = selectedFile ? favoriteFiles.includes(selectedFile) : false;
   const [saveFlash, setSaveFlash] = useState(false);
   const isDirty = tabs.find((t) => t.id === activeTabId)?.isDirty ?? false;
+  const saveMode = useSettingsStore((s) => s.saveMode);
 
   useEffect(() => {
     const handler = () => { setSaveFlash(true); setTimeout(() => setSaveFlash(false), 800); };
@@ -421,6 +423,7 @@ export function Toolbar({ editor }: ToolbarProps) {
       {/* 오른쪽: 저장 + 즐겨찾기 */}
       <div style={{ flex: 1, minWidth: "8px" }} />
 
+      {saveMode !== "realtime" && (
       <ToolbarButton
         onClick={() => {
           window.dispatchEvent(new KeyboardEvent("keydown", { ctrlKey: true, key: "s" }));
@@ -435,6 +438,7 @@ export function Toolbar({ editor }: ToolbarProps) {
           : <Save size={15} style={isDirty ? { color: "#ef4444" } : {}} />
         }
       </ToolbarButton>
+      )}
 
       <Divider />
 

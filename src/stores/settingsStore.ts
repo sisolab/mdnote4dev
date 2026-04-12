@@ -136,6 +136,26 @@ export const FONT_OPTIONS = [
   { value: "mono", label: "Monospace" },
 ];
 
+export const CODE_FONT_OPTIONS = [
+  { value: "cascadia", label: "Cascadia Code" },
+  { value: "fira-code", label: "Fira Code" },
+  { value: "jetbrains-mono", label: "JetBrains Mono" },
+  { value: "consolas", label: "Consolas" },
+  { value: "d2coding", label: "D2Coding" },
+  { value: "nanum-gothic-coding", label: "나눔고딕코딩" },
+  { value: "source-code-pro", label: "Source Code Pro" },
+];
+
+export type SaveMode = "manual" | "on-tab-close" | "1min" | "3min" | "realtime";
+
+export const SAVE_MODE_OPTIONS: { value: SaveMode; label: string; desc: string }[] = [
+  { value: "manual", label: "수동 저장", desc: "Ctrl+S로 직접 저장" },
+  { value: "on-tab-close", label: "탭 닫을 때", desc: "탭 닫을 때 자동 저장" },
+  { value: "1min", label: "1분마다", desc: "1분 간격으로 자동 저장" },
+  { value: "3min", label: "3분마다", desc: "3분 간격으로 자동 저장" },
+  { value: "realtime", label: "실시간", desc: "편집할 때마다 즉시 저장" },
+];
+
 export type SpacingStyleName = "default" | "general";
 
 export interface SpacingStyle {
@@ -182,6 +202,8 @@ interface SettingsState {
   accentColor: AccentColor;
   tabSize: 2 | 4;
   spacingStyle: SpacingStyleName;
+  codeFontFamily: string;
+  saveMode: SaveMode;
   updateSetting: <K extends keyof EditorSettings>(key: K, value: EditorSettings[K]) => void;
   applyPreset: (preset: EditorSettings) => void;
   resetToDefault: () => void;
@@ -191,6 +213,8 @@ interface SettingsState {
   setAccentColor: (color: AccentColor) => void;
   setTabSize: (size: 2 | 4) => void;
   setSpacingStyle: (name: SpacingStyleName) => void;
+  setCodeFontFamily: (font: string) => void;
+  setSaveMode: (mode: SaveMode) => void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -203,6 +227,8 @@ export const useSettingsStore = create<SettingsState>()(
       accentColor: "blue" as AccentColor,
       tabSize: 2 as 2 | 4,
       spacingStyle: "default" as SpacingStyleName,
+      codeFontFamily: "cascadia",
+      saveMode: "manual" as SaveMode,
 
       updateSetting: (key, value) =>
         set((state) => ({
@@ -224,6 +250,8 @@ export const useSettingsStore = create<SettingsState>()(
       setAccentColor: (color) => set({ accentColor: color }),
       setTabSize: (size) => set({ tabSize: size }),
       setSpacingStyle: (name) => set({ spacingStyle: name }),
+      setCodeFontFamily: (font) => set({ codeFontFamily: font }),
+      setSaveMode: (mode) => set({ saveMode: mode }),
     }),
     {
       name: "marknote-settings",
@@ -233,6 +261,8 @@ export const useSettingsStore = create<SettingsState>()(
         accentColor: state.accentColor,
         tabSize: state.tabSize,
         spacingStyle: state.spacingStyle,
+        codeFontFamily: state.codeFontFamily,
+        saveMode: state.saveMode,
       }),
     }
   )
@@ -273,4 +303,18 @@ const DEFAULT_FONT = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "He
 
 export function getFontFamily(value: string): string {
   return FONT_FAMILIES[value] ?? DEFAULT_FONT;
+}
+
+const CODE_FONT_FAMILIES: Record<string, string> = {
+  "cascadia": '"Cascadia Code", "Fira Code", "Consolas", monospace',
+  "fira-code": '"Fira Code", "Cascadia Code", "Consolas", monospace',
+  "jetbrains-mono": '"JetBrains Mono", "Fira Code", "Consolas", monospace',
+  "consolas": '"Consolas", "Cascadia Code", monospace',
+  "d2coding": '"D2Coding", "Nanum Gothic Coding", "Consolas", monospace',
+  "nanum-gothic-coding": '"Nanum Gothic Coding", "D2Coding", "Consolas", monospace',
+  "source-code-pro": '"Source Code Pro", "Fira Code", "Consolas", monospace',
+};
+
+export function getCodeFontFamily(value: string): string {
+  return CODE_FONT_FAMILIES[value] ?? CODE_FONT_FAMILIES["cascadia"];
 }

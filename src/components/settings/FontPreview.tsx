@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { RotateCcw, X } from "lucide-react";
+import { CODE_FONT_OPTIONS, getCodeFontFamily } from "@/stores/settingsStore";
 
 interface FontItem {
   value: string;
@@ -145,12 +146,13 @@ function buildFontUrl(families: string[]): string {
   return `https://fonts.googleapis.com/css2?${params}&display=swap`;
 }
 
-function renderMarkdown(md: string): string {
+function renderMarkdown(md: string, codeFontCss?: string): string {
   let html = md;
+  const cf = codeFontCss || "monospace";
   html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (_m, _lang, code) =>
-    `<pre style="background:#1e1e2e;color:#cdd6f4;padding:12px;border-radius:6px;font-family:monospace;font-size:12px;overflow-x:auto;margin:8px 0">${code.replace(/</g, "&lt;").trimEnd()}</pre>`
+    `<pre style="background:#1e1e2e;color:#cdd6f4;padding:12px;border-radius:6px;font-family:${cf};font-size:12px;overflow-x:auto;margin:8px 0">${code.replace(/</g, "&lt;").trimEnd()}</pre>`
   );
-  html = html.replace(/`([^`]+)`/g, '<code style="background:var(--color-bg-hover);padding:1px 4px;border-radius:3px;font-size:0.9em">$1</code>');
+  html = html.replace(/`([^`]+)`/g, `<code style="background:var(--color-bg-hover);padding:1px 4px;border-radius:3px;font-size:0.9em;font-family:${cf}">$1</code>`);
   html = html.replace(/^### (.+)$/gm, '<h3 style="font-size:1.1em;font-weight:600;margin:12px 0 4px">$1</h3>');
   html = html.replace(/^## (.+)$/gm, '<h2 style="font-size:1.3em;font-weight:600;margin:12px 0 6px">$1</h2>');
   html = html.replace(/^# (.+)$/gm, '<h1 style="font-size:1.6em;font-weight:700;margin:0 0 8px">$1</h1>');
@@ -168,15 +170,20 @@ function renderMarkdown(md: string): string {
 
 export function FontPreview({
   currentFont,
+  currentCodeFont,
   onApply,
+  onApplyCodeFont,
   onClose,
 }: {
   currentFont: string;
+  currentCodeFont: string;
   onApply: (fontValue: string) => void;
+  onApplyCodeFont: (fontValue: string) => void;
   onClose: () => void;
 }) {
   const [selectedCategory, setSelectedCategory] = useState("popular");
   const [selectedFont, setSelectedFont] = useState<FontItem | null>(null);
+  const [selectedCodeFont, setSelectedCodeFont] = useState<string>(currentCodeFont);
   const [loadedFonts, setLoadedFonts] = useState<Set<string>>(new Set());
 
   // 슬라이딩 하이라이트 — 언어 목록
@@ -220,6 +227,7 @@ export function FontPreview({
   }, [onClose]);
 
   const previewFont = selectedFont ? `"${selectedFont.family}", sans-serif` : "inherit";
+  const previewCodeFont = getCodeFontFamily(selectedCodeFont);
 
   return (
     <div
@@ -300,11 +308,11 @@ export function FontPreview({
             })}
           </div>
 
-          {/* 2열: 폰트 목록 */}
+          {/* 2열: 폰트 목록 (본문 + 코드 섹션) */}
           <div
             ref={fontRef}
             onMouseLeave={() => setFontHighlight(null)}
-            style={{ width: "220px", borderRight: "1px solid var(--color-border-light)", overflowY: "auto", padding: "8px 0", position: "relative", flexShrink: 0 }}
+            style={{ width: "220px", borderRight: "1px solid var(--color-border-light)", overflowY: "auto", position: "relative", flexShrink: 0 }}
           >
             {/* 슬라이딩 하이라이트 */}
             <div style={{
@@ -316,6 +324,10 @@ export function FontPreview({
               opacity: fontHighlight ? 1 : 0, pointerEvents: "none",
             }} />
 
+            {/* 본문 폰트 섹션 */}
+            <div style={{ padding: "10px 16px 4px", fontSize: "10px", fontWeight: 600, color: "var(--color-text-tertiary)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+              본문
+            </div>
             {category.fonts.map((font) => {
               const isSelected = selectedFont?.value === font.value;
               const isCurrent = currentFont === font.value;
@@ -326,7 +338,7 @@ export function FontPreview({
                   onMouseEnter={(e) => handleFontHover(e.currentTarget)}
                   style={{
                     display: "flex", alignItems: "center", justifyContent: "space-between",
-                    width: "100%", padding: "10px 16px",
+                    width: "100%", padding: "8px 16px",
                     border: "none", cursor: "pointer", background: "transparent",
                     position: "relative", zIndex: 1, transition: "color 0.1s",
                   }}
@@ -344,12 +356,9 @@ export function FontPreview({
                       {font.type === "sans" ? "Sans-serif" : font.type === "serif" ? "Serif" : "Monospace"}
                     </div>
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                    {isCurrent && (
-                      <span style={{ fontSize: "9px", color: "var(--color-text-muted)", fontWeight: 500, padding: "1px 4px", borderRadius: "3px", background: "var(--color-bg-hover)" }}>현재</span>
-                    )}
-                  </div>
-                  {/* 미니멀 언더라인 */}
+                  {isCurrent && (
+                    <span style={{ fontSize: "9px", color: "var(--color-text-muted)", fontWeight: 500, padding: "1px 4px", borderRadius: "3px", background: "var(--color-bg-hover)" }}>현재</span>
+                  )}
                   <div style={{
                     position: "absolute", bottom: "2px", left: "16px",
                     width: isSelected ? "14px" : "0px", height: "2px", borderRadius: "1px",
@@ -359,6 +368,52 @@ export function FontPreview({
                 </button>
               );
             })}
+
+            {/* 구분선 */}
+            <div style={{ height: "1px", background: "var(--color-border-light)", margin: "8px 16px" }} />
+
+            {/* 코드 폰트 섹션 */}
+            <div style={{ padding: "4px 16px 4px", fontSize: "10px", fontWeight: 600, color: "var(--color-text-tertiary)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+              코드
+            </div>
+            {CODE_FONT_OPTIONS.map((opt) => {
+              const isSelected = selectedCodeFont === opt.value;
+              const isCurrent = currentCodeFont === opt.value;
+              return (
+                <button
+                  key={opt.value}
+                  onClick={() => setSelectedCodeFont(opt.value)}
+                  onMouseEnter={(e) => handleFontHover(e.currentTarget)}
+                  style={{
+                    display: "flex", alignItems: "center", justifyContent: "space-between",
+                    width: "100%", padding: "8px 16px",
+                    border: "none", cursor: "pointer", background: "transparent",
+                    position: "relative", zIndex: 1, transition: "color 0.1s",
+                  }}
+                >
+                  <div>
+                    <div style={{
+                      fontSize: "13px", fontWeight: 500,
+                      fontFamily: getCodeFontFamily(opt.value),
+                      color: isSelected ? "var(--color-accent)" : "var(--color-text-primary)",
+                      marginBottom: "1px",
+                        }}>
+                          {opt.label}
+                        </div>
+                        <div style={{ fontSize: "10px", color: "var(--color-text-light)" }}>Monospace</div>
+                      </div>
+                      {isCurrent && (
+                        <span style={{ fontSize: "9px", color: "var(--color-text-muted)", fontWeight: 500, padding: "1px 4px", borderRadius: "3px", background: "var(--color-bg-hover)" }}>현재</span>
+                      )}
+                      <div style={{
+                        position: "absolute", bottom: "2px", left: "16px",
+                        width: isSelected ? "14px" : "0px", height: "2px", borderRadius: "1px",
+                        background: "var(--color-accent)",
+                        transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+                      }} />
+                    </button>
+                  );
+                })}
           </div>
 
           {/* 3열: 미리보기 */}
@@ -368,13 +423,7 @@ export function FontPreview({
             fontSize: "14px", lineHeight: 1.7,
             color: "var(--color-text-primary)",
           }}>
-            {selectedFont ? (
-              <div dangerouslySetInnerHTML={{ __html: renderMarkdown(category.sample) }} />
-            ) : (
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "var(--color-text-light)", fontSize: "13px" }}>
-                폰트를 선택하면 미리보기가 표시됩니다
-              </div>
-            )}
+            <div dangerouslySetInnerHTML={{ __html: renderMarkdown(category.sample, previewCodeFont) }} />
           </div>
         </div>
 
@@ -385,24 +434,29 @@ export function FontPreview({
           background: "var(--color-bg-secondary)",
         }}>
           <button
-            onClick={() => { onApply("system"); onClose(); }}
+            onClick={() => { onApply("system"); onApplyCodeFont("cascadia"); onClose(); }}
             style={{
               display: "flex", alignItems: "center", gap: "4px",
               fontSize: "12px", color: "var(--color-text-tertiary)", background: "transparent",
               border: "none", cursor: "pointer",
             }}
           >
-            <RotateCcw size={11} /> 시스템 기본으로
+            <RotateCcw size={11} /> 기본값으로
           </button>
           <div style={{ display: "flex", gap: "8px" }}>
             <button
-              onClick={() => { if (selectedFont) { onApply(selectedFont.value); onClose(); } }}
-              disabled={!selectedFont}
+              onClick={() => {
+                if (selectedFont) onApply(selectedFont.value);
+                if (selectedCodeFont !== currentCodeFont) onApplyCodeFont(selectedCodeFont);
+                onClose();
+              }}
+              disabled={!selectedFont && selectedCodeFont === currentCodeFont}
               style={{
                 padding: "6px 16px", fontSize: "12px", fontWeight: 600,
-                background: selectedFont ? "var(--color-accent)" : "var(--color-bg-hover)",
-                color: selectedFont ? "#fff" : "var(--color-text-muted)",
-                border: "none", borderRadius: "6px", cursor: selectedFont ? "pointer" : "default",
+                background: (selectedFont || selectedCodeFont !== currentCodeFont) ? "var(--color-accent)" : "var(--color-bg-hover)",
+                color: (selectedFont || selectedCodeFont !== currentCodeFont) ? "#fff" : "var(--color-text-muted)",
+                border: "none", borderRadius: "6px",
+                cursor: (selectedFont || selectedCodeFont !== currentCodeFont) ? "pointer" : "default",
               }}
             >
               적용하기

@@ -51,6 +51,24 @@ export function TabBar() {
     }
   }, [activeTabId]);
 
+  // Ctrl+W 등 외부에서 닫기 요청 시 확인 다이얼로그
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const tabId = (e as CustomEvent).detail as string;
+      setCloseConfirmId(tabId);
+    };
+    window.addEventListener("request-close-tab", handler);
+    return () => window.removeEventListener("request-close-tab", handler);
+  }, []);
+
+  // 닫기 확인 다이얼로그 ESC 닫기
+  useEffect(() => {
+    if (!closeConfirmId) return;
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") setCloseConfirmId(null); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [closeConfirmId]);
+
   const scrollTabs = (direction: "left" | "right") => {
     const el = scrollRef.current;
     if (!el) return;
@@ -445,8 +463,19 @@ export function TabBar() {
                 {tab.type !== "tag-explorer" && tab.type !== "attachment-explorer" && <button
                   onClick={(e) => {
                     e.stopPropagation();
+                    const saveMode = useSettingsStore.getState().saveMode;
                     if (!tab.filePath && tab.content) {
                       setCloseConfirmId(tab.id);
+                    } else if (tab.isDirty && tab.filePath) {
+                      if (saveMode === "on-tab-close" || saveMode === "realtime") {
+                        // 자동 저장 후 닫기
+                        setActiveTab(tab.id);
+                        window.dispatchEvent(new KeyboardEvent("keydown", { ctrlKey: true, key: "s" }));
+                        const onSaved = () => { closeTab(tab.id); window.removeEventListener("manual-save", onSaved); };
+                        window.addEventListener("manual-save", onSaved);
+                      } else {
+                        setCloseConfirmId(tab.id);
+                      }
                     } else {
                       closeTab(tab.id);
                     }
@@ -626,7 +655,13 @@ export function TabBar() {
           menuItems.push({ label: "이름 바꾸기", onClick: () => startRename(tab.id, tab.title) });
         }
         if (!isSpecial) {
-          menuItems.push({ label: "닫기", onClick: () => closeTab(tab.id) });
+          menuItems.push({ label: "닫기", onClick: () => {
+            if ((tab.isDirty && tab.filePath) || (!tab.filePath && tab.content)) {
+              setCloseConfirmId(tab.id);
+            } else {
+              closeTab(tab.id);
+            }
+          } });
         }
         menuItems.push({
           label: "이 탭 외에 모두 닫기",
@@ -650,7 +685,10 @@ export function TabBar() {
         );
       })()}
 
-      {closeConfirmId && (
+      {closeConfirmId && (() => {
+        const confirmTab = tabs.find((t) => t.id === closeConfirmId);
+        const isTemp = confirmTab && !confirmTab.filePath;
+        return (
         <div
           onClick={() => setCloseConfirmId(null)}
           style={{
@@ -669,11 +707,13 @@ export function TabBar() {
             }}
           >
             <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--color-text-heading)", marginBottom: "8px" }}>
-              임시 문서 닫기
+              {isTemp ? "임시 문서 닫기" : "변경 사항 저장"}
             </div>
             <div style={{ fontSize: "12px", color: "var(--color-text-secondary)", marginBottom: "20px", lineHeight: 1.6 }}>
-              이 문서는 아직 파일로 저장되지 않았습니다.<br />
-              닫으면 내용이 삭제됩니다. 파일로 먼저 저장하세요.
+              {isTemp
+                ? <>이 문서는 아직 파일로 저장되지 않았습니다.<br />닫으면 내용이 삭제됩니다. 파일로 먼저 저장하세요.</>
+                : <>변경 사항이 저장되지 않았습니다.<br />저장하지 않고 닫으면 변경 내용이 사라집니다.</>
+              }
             </div>
             <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
               <button
@@ -686,11 +726,31 @@ export function TabBar() {
               >
                 취소
               </button>
+              {!isTemp && (
+              <button
+                onClick={() => { closeTab(closeConfirmId); setCloseConfirmId(null); }}
+                style={{
+                  padding: "6px 16px", fontSize: "12px", fontWeight: 600,
+                  background: "#e53935", color: "#fff",
+                  border: "none", borderRadius: "6px", cursor: "pointer",
+                }}
+              >
+                저장 안 함
+              </button>
+              )}
               <button
                 onClick={() => {
-                  setActiveTab(closeConfirmId);
-                  window.dispatchEvent(new KeyboardEvent("keydown", { ctrlKey: true, key: "s" }));
+                  const tabId = closeConfirmId;
+                  setActiveTab(tabId);
                   setCloseConfirmId(null);
+                  // 저장 이벤트 발송 후 탭 닫기
+                  requestAnimationFrame(() => {
+                    window.dispatchEvent(new KeyboardEvent("keydown", { ctrlKey: true, key: "s", bubbles: true }));
+                    if (!isTemp) {
+                      const onSaved = () => { closeTab(tabId); window.removeEventListener("manual-save", onSaved); };
+                      window.addEventListener("manual-save", onSaved);
+                    }
+                  });
                 }}
                 style={{
                   padding: "6px 16px", fontSize: "12px", fontWeight: 600,
@@ -698,8 +758,9 @@ export function TabBar() {
                   border: "none", borderRadius: "6px", cursor: "pointer",
                 }}
               >
-                저장
+                {isTemp ? "저장" : "저장 후 닫기"}
               </button>
+              {isTemp && (
               <button
                 onClick={() => { closeTab(closeConfirmId); setCloseConfirmId(null); }}
                 style={{
@@ -710,10 +771,12 @@ export function TabBar() {
               >
                 닫기
               </button>
+              )}
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

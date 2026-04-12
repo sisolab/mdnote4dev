@@ -193,7 +193,7 @@ body {
   border-radius: 4px;
   padding: 0.15rem 0.35rem;
   font-size: 0.875em;
-  font-family: "Cascadia Code", "Fira Code", "Consolas", monospace;
+  font-family: var(--editor-code-font-family, "Cascadia Code", "Fira Code", "Consolas", monospace);
   color: #c7254e;
 }
 
@@ -204,7 +204,7 @@ body {
   padding: var(--editor-code-padding, 12px);
   margin: var(--style-pre, 0.5rem) 0;
   overflow-x: auto;
-  font-family: "Cascadia Code", "Fira Code", "Consolas", monospace;
+  font-family: var(--editor-code-font-family, "Cascadia Code", "Fira Code", "Consolas", monospace);
   font-size: var(--editor-code-font-size, 0.875rem);
   line-height: var(--editor-code-line-height, 1.6);
 }

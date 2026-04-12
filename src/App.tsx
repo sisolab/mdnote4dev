@@ -18,6 +18,14 @@ function App() {
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   useFsWatcher();
 
+  // 종료 확인 다이얼로그 ESC 닫기
+  useEffect(() => {
+    if (!showExitConfirm) return;
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") setShowExitConfirm(false); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [showExitConfirm]);
+
   // 테마 CSS 변수 적용
   useEffect(() => {
     const root = document.documentElement;
@@ -269,12 +277,24 @@ function App() {
         return;
       }
 
-      // Ctrl+W — 현재 탭 닫기
+      // Ctrl+W — 현재 탭 닫기 (isDirty 경고는 TabBar가 처리)
       if (key === "w") {
         e.preventDefault();
         if (store.activeTabId) {
           const tab = store.tabs.find((t) => t.id === store.activeTabId);
-          if (tab && tab.type !== "tag-explorer" && tab.type !== "attachment-explorer") store.closeTab(store.activeTabId);
+          if (tab && tab.type !== "tag-explorer" && tab.type !== "attachment-explorer") {
+            const saveMode = useSettingsStore.getState().saveMode;
+            if (tab.isDirty && tab.filePath && (saveMode === "on-tab-close" || saveMode === "realtime")) {
+              // 자동 저장 후 닫기
+              window.dispatchEvent(new KeyboardEvent("keydown", { ctrlKey: true, key: "s" }));
+              const onSaved = () => { store.closeTab(tab.id); window.removeEventListener("manual-save", onSaved); };
+              window.addEventListener("manual-save", onSaved);
+            } else if ((tab.isDirty && tab.filePath) || (!tab.filePath && tab.content)) {
+              window.dispatchEvent(new CustomEvent("request-close-tab", { detail: tab.id }));
+            } else {
+              store.closeTab(store.activeTabId);
+            }
+          }
         }
         return;
       }

@@ -26,7 +26,7 @@ import { Toolbar } from "./Toolbar";
 import { ImageToolbar } from "./ImageToolbar";
 import { TableToolbar } from "./TableToolbar";
 import { FileToolbar } from "./FileToolbar";
-import { useSettingsStore, getFontFamily } from "@/stores/settingsStore";
+import { useSettingsStore, getFontFamily, getCodeFontFamily } from "@/stores/settingsStore";
 
 interface TiptapEditorProps {
   content: string;
@@ -45,7 +45,7 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
   const lastMarkdown = useRef(content);
   const contentRef = useRef(content);
   contentRef.current = content;
-  const { settings, showSettings } = useSettingsStore();
+  const { settings, showSettings, codeFontFamily } = useSettingsStore();
 
   const filePathRef = useRef(filePath);
   filePathRef.current = filePath;
@@ -456,14 +456,43 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
     return () => { editor.off("update", handler); };
   }, [editor]);
 
-  // TODO: 자동 저장 — @tiptap/markdown 안정화 후 복원
-  // const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
-  // useEffect(() => {
-  //   if (!editor) return;
-  //   const handler = () => { clearTimeout(saveTimer.current); saveTimer.current = setTimeout(handleSave, 500); };
-  //   editor.on("update", handler);
-  //   return () => { editor.off("update", handler); clearTimeout(saveTimer.current); };
-  // }, [editor, handleSave]);
+  // 자동 저장 (saveMode에 따라 동작)
+  const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const intervalRef = useRef<ReturnType<typeof setInterval>>(undefined);
+  useEffect(() => {
+    if (!editor) return;
+    const saveMode = useSettingsStore.getState().saveMode;
+
+    // realtime: 편집할 때마다 500ms 디바운스 저장
+    if (saveMode === "realtime") {
+      const handler = () => {
+        clearTimeout(saveTimer.current);
+        saveTimer.current = setTimeout(() => {
+          handleSave();
+          window.dispatchEvent(new CustomEvent("manual-save"));
+        }, 500);
+      };
+      editor.on("update", handler);
+      return () => { editor.off("update", handler); clearTimeout(saveTimer.current); };
+    }
+
+    // 1min / 3min: 인터벌 저장
+    if (saveMode === "1min" || saveMode === "3min") {
+      const ms = saveMode === "1min" ? 60_000 : 180_000;
+      intervalRef.current = setInterval(() => {
+        const store = useAppStore.getState();
+        const tab = store.tabs.find((t) => t.id === store.activeTabId);
+        if (tab?.isDirty && tab.filePath) {
+          handleSave();
+          window.dispatchEvent(new CustomEvent("manual-save"));
+        }
+      }, ms);
+      return () => clearInterval(intervalRef.current);
+    }
+
+    // manual / on-tab-close: 자동 저장 없음
+    return;
+  }, [editor, handleSave]);
 
   // Ctrl+S 즉시 저장도 유지
   useEffect(() => {
@@ -496,6 +525,7 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
     "--editor-h2-size": `${s.fontSize * scale * scale}px`,
     "--editor-h3-size": `${s.fontSize * scale}px`,
     "--editor-h4-size": `${s.fontSize * 1.05}px`,
+    "--editor-code-font-family": getCodeFontFamily(codeFontFamily),
   } as React.CSSProperties;
 
   return (

@@ -133,6 +133,15 @@ export function TagExplorer() {
   };
 
   const [deleteConfirmTag, setDeleteConfirmTag] = useState<string | null>(null);
+
+  // 태그 삭제 확인 ESC 닫기
+  useEffect(() => {
+    if (!deleteConfirmTag) return;
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") setDeleteConfirmTag(null); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [deleteConfirmTag]);
+
   const handleDeleteTag = async (tag: string) => {
     const paths = allTags[tag] ?? [];
     const state = useAppStore.getState();
