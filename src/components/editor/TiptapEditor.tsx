@@ -51,6 +51,10 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
       StarterKit.configure({
         heading: { levels: [1, 2, 3, 4] },
         codeBlock: false, // CodeBlockLowlight로 대체
+        link: {
+          openOnClick: false,
+          HTMLAttributes: { class: "tiptap-link" },
+        },
       }),
       CodeBlockLowlight.extend({
         addNodeView() {
@@ -80,6 +84,25 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
         class: "outline-none prose prose-sm max-w-none",
       },
       handleKeyDown: (view, event) => {
+        // 인라인 코드 끝에서 오른쪽 화살표: 마크 밖으로 나가기
+        if (event.key === "ArrowRight" && !event.ctrlKey && !event.shiftKey) {
+          const { $from } = view.state.selection;
+          const codeMark = view.state.schema.marks.code;
+          if (codeMark && $from.marks().some((m) => m.type === codeMark)) {
+            // 코드 마크 안에 있고, 현재 위치가 텍스트 노드 끝이면
+            const after = $from.nodeAfter;
+            if (!after || (after.isText && !codeMark.isInSet(after.marks))) {
+              // 마크 밖 텍스트가 바로 뒤에 있으면 기본 동작
+            } else if (!after) {
+              // 노드 끝: 마크를 해제하고 커서 이동
+              event.preventDefault();
+              const tr = view.state.tr.removeStoredMark(codeMark);
+              view.dispatch(tr);
+              return true;
+            }
+          }
+        }
+
         // Ctrl+1~5: 제목/일반텍스트
         if (event.ctrlKey && !event.altKey && !event.shiftKey && ["1","2","3","4","5"].includes(event.key)) {
           event.preventDefault();
@@ -160,6 +183,12 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
     },
     onTransaction: ({ editor: e }) => {
       setTick((t) => t + 1);
+      // 링크에 title 속성 추가 (URL 툴팁)
+      e.view.dom.querySelectorAll("a[href]").forEach((a) => {
+        if (!a.getAttribute("title")) {
+          a.setAttribute("title", a.getAttribute("href") ?? "");
+        }
+      });
       // 범위 선택에 포함된 이미지 하이라이트
       const imgs = e.view.dom.querySelectorAll("img");
       const { from, to } = e.state.selection;
