@@ -20,8 +20,6 @@ import { parseFrontmatter } from "@/utils/frontmatter";
 import { saveImageToAssets, getAssetsDir } from "@/utils/imageUtils";
 import { moveToTrash, findFavoriteRoot } from "@/utils/trashUtils";
 import { rename, exists, stat } from "@tauri-apps/plugin-fs";
-import { Code } from "@tiptap/extension-code";
-import { markInputRule } from "@tiptap/core";
 import { useAppStore } from "@/stores/appStore";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { Toolbar } from "./Toolbar";
@@ -57,22 +55,9 @@ export function TiptapEditor({ content, filePath, onSave }: TiptapEditorProps) {
       StarterKit.configure({
         heading: { levels: [1, 2, 3, 4] },
         codeBlock: false, // CodeBlockLowlight로 대체
-        code: false, // 커스텀 Code로 대체 (입력 규칙 글자 먹힘 방지)
         link: {
           openOnClick: false,
           HTMLAttributes: { class: "tiptap-link" },
-        },
-      }),
-      Code.extend({
-        inclusive: true,
-        exitable: false,
-        addInputRules() {
-          return [
-            markInputRule({
-              find: /(?:`)([^`]+)(?:`)$/,
-              type: this.type,
-            }),
-          ];
         },
       }),
       CodeBlockLowlight.extend({
