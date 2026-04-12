@@ -197,7 +197,7 @@ function App() {
       const restoredTabs = [];
 
       for (const tab of tabs) {
-        if (tab.type === "tag-explorer" || tab.type === "attachment-explorer") {
+        if (tab.type === "tag-explorer" || tab.type === "attachment-explorer" || tab.type === "tab-explorer") {
           restoredTabs.push(tab);
           continue;
         }
@@ -221,6 +221,10 @@ function App() {
       if (!restoredTabs.find((t) => t.type === "attachment-explorer")) {
         const tagIdx = restoredTabs.findIndex((t) => t.type === "tag-explorer");
         restoredTabs.splice(tagIdx + 1, 0, { id: "attachment-explorer", title: "첨부파일", filePath: null, content: "", isDirty: false, type: "attachment-explorer" as const });
+      }
+      if (!restoredTabs.find((t) => t.type === "tab-explorer")) {
+        const attIdx = restoredTabs.findIndex((t) => t.type === "attachment-explorer");
+        restoredTabs.splice(attIdx + 1, 0, { id: "tab-explorer", title: "열린 탭", filePath: null, content: "", isDirty: false, type: "tab-explorer" as const });
       }
 
       // activeTabId 검증
@@ -326,7 +330,7 @@ function App() {
         e.preventDefault();
         if (store.activeTabId) {
           const tab = store.tabs.find((t) => t.id === store.activeTabId);
-          if (tab && tab.type !== "tag-explorer" && tab.type !== "attachment-explorer" && !tab.pinned) {
+          if (tab && tab.type !== "tag-explorer" && tab.type !== "attachment-explorer" && tab.type !== "tab-explorer" && !tab.pinned) {
             const saveMode = useSettingsStore.getState().saveMode;
             if (tab.isDirty && tab.filePath && (saveMode === "on-tab-close" || saveMode === "realtime")) {
               // 자동 저장 후 닫기

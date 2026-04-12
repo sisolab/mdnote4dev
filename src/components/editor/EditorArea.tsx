@@ -7,6 +7,7 @@ import { TabBar } from "./TabBar";
 import { StatusBar } from "./StatusBar";
 import { TagExplorer } from "./TagExplorer";
 import { AttachmentExplorer } from "./AttachmentExplorer";
+import { TabExplorer } from "./TabExplorer";
 import { FileText } from "lucide-react";
 import { parseFrontmatter, updateFrontmatterTags } from "@/utils/frontmatter";
 
@@ -149,6 +150,10 @@ export function EditorArea() {
       ) : activeTab?.type === "attachment-explorer" ? (
         <div className="flex-1 min-h-0">
           <AttachmentExplorer />
+        </div>
+      ) : activeTab?.type === "tab-explorer" ? (
+        <div className="flex-1 min-h-0">
+          <TabExplorer />
         </div>
       ) : activeTab ? (
         <>

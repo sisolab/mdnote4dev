@@ -4,7 +4,7 @@ import { rename, readTextFile, writeTextFile } from "@tauri-apps/plugin-fs";
 import { open } from "@tauri-apps/plugin-dialog";
 import { useAppStore } from "@/stores/appStore";
 import { renameDocImages } from "@/utils/imageUtils";
-import { FolderOpen, Maximize2, Minimize2, Settings, Search, Paperclip, Pin } from "lucide-react";
+import { FolderOpen, Maximize2, Minimize2, Settings, Search, Paperclip, Pin, LayoutList } from "lucide-react";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
 
@@ -302,6 +302,26 @@ export function TabBar() {
         );
       })}
 
+      <div style={{ width: "1px", height: "14px", background: "var(--color-border-light)", flexShrink: 0, margin: "0 2px" }} />
+
+      {/* 고정 탭 탐색기 */}
+      {tabs.filter((t) => t.type === "tab-explorer").map((tab) => {
+        const isActive = tab.id === activeTabId;
+        return (
+          <div key={tab.id} data-tab-id={tab.id} onClick={() => setActiveTab(tab.id)}
+            onMouseEnter={(e) => handleHover(e.currentTarget)}
+            style={{ height: "40px", display: "flex", alignItems: "center", justifyContent: "center",
+              padding: "0 14px", cursor: "pointer", position: "relative", zIndex: 1,
+              color: isActive ? "var(--color-accent)" : "var(--color-text-secondary)",
+              transition: "color 0.1s", flexShrink: 0 }}>
+            <LayoutList size={13} />
+            <div style={{ position: "absolute", bottom: "0", left: "50%", transform: "translateX(-50%)",
+              width: isActive ? "80%" : "0%", height: "2px", borderRadius: "1px",
+              background: "var(--color-accent)", transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)" }} />
+          </div>
+        );
+      })}
+
       {/* 구분선 */}
       <div style={{ width: "1px", height: "14px", background: "var(--color-border-light)", flexShrink: 0, margin: "0 2px" }} />
 
@@ -312,7 +332,7 @@ export function TabBar() {
         style={{ display: "flex", alignItems: "center", overflowX: "auto", overflowY: "hidden", flex: 1, minWidth: 0, position: "relative" }}
       >
 
-      {tabs.filter((t) => t.type !== "tag-explorer" && t.type !== "attachment-explorer").map((tab, filteredIndex) => {
+      {tabs.filter((t) => t.type !== "tag-explorer" && t.type !== "attachment-explorer" && t.type !== "tab-explorer").map((tab, filteredIndex) => {
         const index = tabs.indexOf(tab);
         const isActive = tab.id === activeTabId;
         const isDragging = dragIndex === index;
@@ -435,7 +455,7 @@ export function TabBar() {
                 </div>
 
                 {/* 고정 핀 또는 닫기 버튼 */}
-                {tab.type !== "tag-explorer" && tab.type !== "attachment-explorer" && (
+                {tab.type !== "tag-explorer" && tab.type !== "attachment-explorer" && tab.type !== "tab-explorer" && (
                   tab.pinned ? (
                     <button
                       onClick={(e) => { e.stopPropagation(); unpinTab(tab.id); }}
@@ -614,7 +634,7 @@ export function TabBar() {
       {tabContextMenu && (() => {
         const tab = tabs.find((t) => t.id === tabContextMenu.tabId);
         if (!tab) return null;
-        const isSpecial = tab.type === "tag-explorer" || tab.type === "attachment-explorer";
+        const isSpecial = tab.type === "tag-explorer" || tab.type === "attachment-explorer" || tab.type === "tab-explorer";
         const menuItems: ContextMenuItem[] = [];
         if (!isSpecial) {
           menuItems.push({

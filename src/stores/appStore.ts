@@ -35,7 +35,7 @@ export interface Tab {
   content: string;
   isDirty: boolean;
   pinned?: boolean;
-  type?: "document" | "tag-explorer" | "attachment-explorer";
+  type?: "document" | "tag-explorer" | "attachment-explorer" | "tab-explorer";
   tagFilters?: string[]; // tag-explorer 탭에서 선택된 태그들
 }
 
@@ -104,6 +104,7 @@ interface AppState {
   unpinTab: (id: string) => void;
   openTagExplorer: (tag?: string) => void;
   openAttachmentExplorer: () => void;
+  openTabExplorer: () => void;
 
   // 첨부파일
   allAttachments: AttachmentInfo[];
@@ -221,6 +222,7 @@ export const useAppStore = create<AppState>()(
       tabs: [
         { id: "tag-explorer", title: "검색", filePath: null, content: "", isDirty: false, type: "tag-explorer" as const, tagFilters: [] },
         { id: "attachment-explorer", title: "첨부파일", filePath: null, content: "", isDirty: false, type: "attachment-explorer" as const },
+        { id: "tab-explorer", title: "열린 탭", filePath: null, content: "", isDirty: false, type: "tab-explorer" as const },
       ],
       activeTabId: "tag-explorer",
 
@@ -386,6 +388,15 @@ export const useAppStore = create<AppState>()(
           return { tabs: [tab, ...state.tabs], activeTabId: id };
         }),
 
+      openTabExplorer: () =>
+        set((state) => {
+          const existing = state.tabs.find((t) => t.type === "tab-explorer");
+          if (existing) return { activeTabId: existing.id };
+          const id = `tab-${++tabCounter}`;
+          const tab: Tab = { id, title: "열린 탭", filePath: null, content: "", isDirty: false, type: "tab-explorer" };
+          return { tabs: [tab, ...state.tabs], activeTabId: id };
+        }),
+
       allAttachments: [],
       setAllAttachments: (attachments) => set({ allAttachments: attachments }),
       favoriteAttachments: [],
@@ -432,7 +443,7 @@ export const useAppStore = create<AppState>()(
         // 탭: content 제외, filePath 있는 탭만 저장
         favoriteAttachments: state.favoriteAttachments,
         tabs: state.tabs
-          .filter((t) => t.type === "tag-explorer" || t.type === "attachment-explorer" || t.filePath)
+          .filter((t) => t.type === "tag-explorer" || t.type === "attachment-explorer" || t.type === "tab-explorer" || t.filePath)
           .map((t) => ({ id: t.id, title: t.title, filePath: t.filePath, content: "", isDirty: false, type: t.type, tagFilters: t.tagFilters })),
         activeTabId: state.activeTabId,
       }),
